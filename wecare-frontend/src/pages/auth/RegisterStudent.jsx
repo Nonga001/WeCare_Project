@@ -20,7 +20,7 @@ const RegisterStudent = () => {
     e.preventDefault();
     try {
       await register("student", form);
-      navigate("/login?role=student");
+      navigate("/login/student");
     } catch (err) {
       setError(err.response?.data?.message || "Registration failed");
     }
@@ -99,7 +99,7 @@ const RegisterStudent = () => {
         <p className="mt-5 text-sm text-center text-gray-700">
           Already have an account?{" "}
           <Link
-            to="/login?role=student"
+            to="/login/student"
             className="text-blue-600 font-medium hover:underline"
           >
             Login here

@@ -20,7 +20,7 @@ const RegisterDonor = () => {
     e.preventDefault();
     try {
       await register("donor", form);
-      navigate("/login?role=donor");
+      navigate("/login/donor");
     } catch (err) {
       setError(err.response?.data?.message || "Registration failed");
     }
@@ -98,7 +98,7 @@ const RegisterDonor = () => {
         <p className="mt-5 text-sm text-center text-gray-700">
           Already have an account?{" "}
           <Link
-            to="/login?role=donor"
+            to="/login/donor"
             className="text-blue-600 font-medium hover:underline"
           >
             Login here

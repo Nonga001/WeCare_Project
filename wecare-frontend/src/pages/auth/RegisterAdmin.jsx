@@ -19,7 +19,7 @@ const RegisterAdmin = () => {
     e.preventDefault();
     try {
       await register("admin", form);
-      navigate("/login?role=admin");
+      navigate("/login/admin");
     } catch (err) {
       setError(err.response?.data?.message || "Registration failed");
     }
@@ -88,7 +88,7 @@ const RegisterAdmin = () => {
         <p className="mt-5 text-sm text-center text-gray-700">
           Already have an account?{" "}
           <Link
-            to="/login?role=admin"
+            to="/login/admin"
             className="text-blue-600 font-medium hover:underline"
           >
             Login here

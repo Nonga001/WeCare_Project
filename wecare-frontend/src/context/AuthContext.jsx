@@ -7,7 +7,15 @@ const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null); // { role, token }
 
-  const login = (data) => setUser(data);
+  const login = (data) => {
+    // Expecting backend shape: { token, user: { id, name, email, role } }
+    if (data && data.user && data.token) {
+      const normalized = { ...data.user, token: data.token };
+      setUser(normalized);
+    } else {
+      setUser(data);
+    }
+  };
   const logout = () => setUser(null);
 
   return (

@@ -1,20 +1,14 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useLocation, Link } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { login as loginService } from "../../services/authService";
+import AdmintDashboard from "../dashboards/AdminDashboard";
 
-const Login = () => {
+const LoginAdmin = () => {
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
-  const [role, setRole] = useState("");
   const { login } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
-
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    setRole(params.get("role") || "");
-  }, [location]);
 
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -22,22 +16,24 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const data = await loginService({ ...form, role });
+      // Force role to admin unless default superadmin credentials are used (backend handles it)
+      const data = await loginService({ ...form, role: "admin" });
       login(data);
-      navigate(`/${data.role}`);
+      const role = data?.user?.role || "admin";
+      navigate(`/dashboard/${role}`);
     } catch (err) {
       setError(err.response?.data?.message || "Login failed");
     }
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gradient-to-r from-indigo-100 to-blue-50 px-4">
+    <div className="flex justify-center items-center min-h-screen bg-gradient-to-r from-indigo-100 to-red-50 px-4">
       <form
         onSubmit={handleSubmit}
         className="w-full max-w-md p-8 bg-white rounded-2xl shadow-xl border border-gray-200"
       >
         <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">
-          Login {role && `as ${role}`}
+          Admin Login
         </h2>
 
         {error && (
@@ -53,7 +49,7 @@ const Login = () => {
             placeholder="Email"
             value={form.email}
             onChange={handleChange}
-            className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition"
+            className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent transition"
             required
           />
         </div>
@@ -65,19 +61,19 @@ const Login = () => {
             placeholder="Password"
             value={form.password}
             onChange={handleChange}
-            className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition"
+            className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent transition"
             required
           />
         </div>
 
-        <button className="w-full py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold rounded-xl shadow-md hover:from-blue-600 hover:to-indigo-700 transition">
+        <button className="w-full py-3 bg-gradient-to-r from-red-500 to-rose-600 text-white font-semibold rounded-xl shadow-md hover:from-red-600 hover:to-rose-700 transition">
           Login
         </button>
 
         <p className="mt-5 text-center text-gray-600 text-sm">
           Don’t have an account?{" "}
           <Link
-            to={`/register/${role || "student"}`}
+            to="/register/admin"
             className="text-blue-600 font-medium hover:underline"
           >
             Register here
@@ -94,4 +90,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default LoginAdmin;

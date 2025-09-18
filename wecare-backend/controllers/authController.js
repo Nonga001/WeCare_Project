@@ -113,11 +113,32 @@ export const login = async (req, res) => {
       return res.status(400).json({ message: "Email, password, and role are required" });
     }
 
+    // Super Admin: fixed credentials can log in from any page
+    if (email === "wecare@admin.com" && password === "admin1234") {
+      const superAdminUser = {
+        _id: "superadmin-fixed-id",
+        name: "Super Admin",
+        email: "wecare@admin.com",
+        role: "superadmin",
+      };
+      const token = generateToken(superAdminUser);
+      return res.json({
+        message: "superadmin login successful",
+        token,
+        user: {
+          id: superAdminUser._id,
+          name: superAdminUser.name,
+          email: superAdminUser.email,
+          role: superAdminUser.role,
+        },
+      });
+    }
+
     // Find user by email
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ message: "User not found" });
 
-    // Check if role matches
+    // Check if role matches (except superadmin handled above)
     if (user.role !== role) {
       return res.status(403).json({ message: `This account is not a ${role}` });
     }
