@@ -9,6 +9,11 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     return <Navigate to="/" />;
   }
 
+  // Gate unapproved users (admins and students) from dashboards/actions
+  if ((user.role === "admin" || user.role === "student") && user.isApproved === false) {
+    return <Navigate to="/pending-approval" />;
+  }
+
   return children;
 };
 

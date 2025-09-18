@@ -25,6 +25,8 @@ const LoginStudent = () => {
     }
   };
 
+  const [showPassword, setShowPassword] = useState(false);
+
   return (
     <div className="flex justify-center items-center min-h-screen bg-gradient-to-r from-green-100 via-lime-50 to-teal-50 px-4">
       <form
@@ -41,25 +43,47 @@ const LoginStudent = () => {
           </p>
         )}
 
-        <input
-          type="email"
-          name="email"
-          placeholder="Email"
-          value={form.email}
-          onChange={handleChange}
-          className="w-full mb-4 px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent transition"
-          required
-        />
+        <div className="mb-4">
+          <label htmlFor="email" className="block mb-1 text-sm font-medium text-gray-700">Email</label>
+          <input
+            id="email"
+            type="email"
+            name="email"
+            placeholder="Email"
+            value={form.email}
+            onChange={handleChange}
+            className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent transition"
+            required
+          />
+        </div>
 
-        <input
-          type="password"
-          name="password"
-          placeholder="Password"
-          value={form.password}
-          onChange={handleChange}
-          className="w-full mb-6 px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent transition"
-          required
-        />
+        <div className="mb-6">
+          <label htmlFor="password" className="block mb-1 text-sm font-medium text-gray-700">Password</label>
+          <div className="relative">
+            <input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              name="password"
+              placeholder="Password"
+              value={form.password}
+              onChange={handleChange}
+              className="w-full px-4 py-3 pr-12 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent transition"
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((s) => !s)}
+              className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-500 hover:text-gray-700"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? (
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path d="M3.53 2.47a.75.75 0 0 0-1.06 1.06l18 18a.75.75 0 0 0 1.06-1.06l-2.086-2.086A12.326 12.326 0 0 0 21.75 12s-3-7.5-9.75-7.5a9.7 9.7 0 0 0-4.689 1.226L3.53 2.47ZM12 6.75c5.22 0 7.92 4.63 8.69 6.048a10.83 10.83 0 0 1-3.129 3.348l-2.087-2.087A3.75 3.75 0 0 0 9.94 8.439l-2.22-2.22A8.2 8.2 0 0 1 12 6.75Zm0 10.5a3.75 3.75 0 0 1-3.378-5.402l5.73 5.73A3.72 3.72 0 0 1 12 17.25Z"/><path d="M15.75 12a3.75 3.75 0 0 1-4.84 3.57l-4.037-4.038A10.82 10.82 0 0 0 3.31 12C4.08 10.58 6.78 6.75 12 6.75c.863 0 1.68.112 2.45.318A3.75 3.75 0 0 1 15.75 12Z"/></svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path d="M12 4.5C5.25 4.5 2.25 12 2.25 12s3 7.5 9.75 7.5S21.75 12 21.75 12 18.75 4.5 12 4.5Zm0 12.75A3.75 3.75 0 1 1 12 9.75a3.75 3.75 0 0 1 0 7.5Z"/></svg>
+              )}
+            </button>
+          </div>
+        </div>
 
         <button className="w-full py-3 bg-gradient-to-r from-green-500 to-lime-600 text-white font-semibold rounded-xl shadow-md hover:from-green-600 hover:to-lime-700 transition">
           Login

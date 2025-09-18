@@ -14,6 +14,7 @@ const userSchema = new mongoose.Schema(
       required: true,
     },
     isApproved: { type: Boolean, default: false }, // superadmin approves admins; admins approve students
+    isSuspended: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

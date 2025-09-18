@@ -27,3 +27,14 @@ export const protect = async (req, res, next) => {
     res.status(401).json({ message: "Not authorized, no token" });
   }
 };
+
+// Require approved users for protected actions (admins and students)
+export const requireApproved = (req, res, next) => {
+  // Superadmin bypass
+  if (req.user && req.user.role === "superadmin") return next();
+  if (!req.user) return res.status(401).json({ message: "Not authorized" });
+  if ((req.user.role === "admin" || req.user.role === "student") && !req.user.isApproved) {
+    return res.status(403).json({ message: "Account not approved yet" });
+  }
+  return next();
+};

@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import ProtectedRoute from "./ProtectedRoute";
 
 import Landing from "../pages/Landing";
+import PendingApproval from "../pages/PendingApproval";
 import RegisterStudent from "../pages/auth/RegisterStudent";
 import RegisterDonor from "../pages/auth/RegisterDonor";
 import RegisterAdmin from "../pages/auth/RegisterAdmin";
@@ -45,6 +46,7 @@ const AppRoutes = () => {
         <Route path="/login/student" element={<LoginStudent />} />
         <Route path="/login/donor" element={<LoginDonor />} />
         <Route path="/login/admin" element={<LoginAdmin />} />
+        <Route path="/pending-approval" element={<PendingApproval />} />
 
         <Route path="/register/student" element={<RegisterStudent />} />
         <Route path="/register/donor" element={<RegisterDonor />} />

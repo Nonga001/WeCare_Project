@@ -180,10 +180,27 @@ export const login = async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: "Invalid password" });
 
+    // Suspension check for all roles except superadmin
+    if (user.isSuspended) {
+      return res.status(403).json({ message: "Account suspended. Contact support." });
+    }
+
     // Approval checks: admins approved by superadmin; students by their admin
     if ((user.role === "admin" || user.role === "student") && !user.isApproved) {
       const pendingBy = user.role === "admin" ? "Super Admin" : "Your University Admin";
-      return res.status(403).json({ message: `Account awaiting approval by ${pendingBy}` });
+      // Allow login but indicate pending status in response; frontend will gate features
+      const token = generateToken(user);
+      return res.json({
+        message: `Login successful, awaiting approval by ${pendingBy}`,
+        token,
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          isApproved: user.isApproved,
+        },
+      });
     }
 
     // Generate JWT
@@ -197,6 +214,7 @@ export const login = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        isApproved: user.isApproved,
       },
     });
   } catch (err) {
