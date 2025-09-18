@@ -11,6 +11,17 @@ const generateToken = (user) => {
   );
 };
 
+// Password strength validator
+const isStrongPassword = (password) => {
+  if (typeof password !== "string") return false;
+  const lengthOk = password.length >= 8;
+  const upperOk = /[A-Z]/.test(password);
+  const lowerOk = /[a-z]/.test(password);
+  const numberOk = /[0-9]/.test(password);
+  const specialOk = /[^A-Za-z0-9]/.test(password);
+  return lengthOk && upperOk && lowerOk && numberOk && specialOk;
+};
+
 // ---------------- REGISTER ----------------
 
 // Register Student
@@ -20,6 +31,13 @@ export const registerStudent = async (req, res) => {
 
     if (!name || !university || !phone || !email || !password) {
       return res.status(400).json({ message: "All fields are required" });
+    }
+
+    if (!isStrongPassword(password)) {
+      return res.status(400).json({
+        message:
+          "Password must be at least 8 chars and include uppercase, lowercase, number, and special character",
+      });
     }
 
     const existingUser = await User.findOne({ email });
@@ -49,8 +67,15 @@ export const registerDonor = async (req, res) => {
   try {
     const { name, organization, phone, email, password } = req.body;
 
-    if (!name || !phone || !email || !password) {
-      return res.status(400).json({ message: "Required fields missing" });
+    if (!name || !organization || !phone || !email || !password) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    if (!isStrongPassword(password)) {
+      return res.status(400).json({
+        message:
+          "Password must be at least 8 chars and include uppercase, lowercase, number, and special character",
+      });
     }
 
     const existingUser = await User.findOne({ email });
@@ -78,10 +103,17 @@ export const registerDonor = async (req, res) => {
 // Register Admin
 export const registerAdmin = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, university } = req.body;
 
-    if (!name || !email || !password) {
+    if (!name || !email || !password || !university) {
       return res.status(400).json({ message: "All fields are required" });
+    }
+
+    if (!isStrongPassword(password)) {
+      return res.status(400).json({
+        message:
+          "Password must be at least 8 chars and include uppercase, lowercase, number, and special character",
+      });
     }
 
     const existingUser = await User.findOne({ email });
@@ -92,6 +124,7 @@ export const registerAdmin = async (req, res) => {
 
     const newUser = new User({
       name,
+      university,
       email,
       password: hashedPassword,
       role: "admin",
@@ -146,6 +179,12 @@ export const login = async (req, res) => {
     // Compare password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: "Invalid password" });
+
+    // Approval checks: admins approved by superadmin; students by their admin
+    if ((user.role === "admin" || user.role === "student") && !user.isApproved) {
+      const pendingBy = user.role === "admin" ? "Super Admin" : "Your University Admin";
+      return res.status(403).json({ message: `Account awaiting approval by ${pendingBy}` });
+    }
 
     // Generate JWT
     const token = generateToken(user);

@@ -13,6 +13,7 @@ const userSchema = new mongoose.Schema(
       enum: ["student", "donor", "admin"],
       required: true,
     },
+    isApproved: { type: Boolean, default: false }, // superadmin approves admins; admins approve students
   },
   { timestamps: true }
 );
