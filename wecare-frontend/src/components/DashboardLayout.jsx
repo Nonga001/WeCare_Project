@@ -15,6 +15,11 @@ const DashboardLayout = ({ title, children }) => {
               Welcome, <span className="font-semibold text-slate-800">{user?.name || "User"}</span> 👋
             </p>
             <p className="text-sm text-slate-500">Role: {user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : "N/A"}</p>
+            {(user?.role === "admin" || user?.role === "student") && user?.isApproved === false && (
+              <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 text-amber-900 px-3 py-2 text-sm">
+                Awaiting approval. Some features are disabled until your account is verified.
+              </div>
+            )}
           </div>
         </div>
       </header>
@@ -24,6 +29,12 @@ const DashboardLayout = ({ title, children }) => {
       </main>
 
       <footer className="w-full px-4 sm:px-6 lg:px-10 py-6 bg-slate-50/80 border-t border-slate-200 text-center">
+        {(user?.role === "admin" || user?.role === "student") && user?.isApproved === false && (
+          <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 text-amber-900 px-4 py-3 text-sm">
+            <p className="font-medium">Account Pending Approval</p>
+            <p>Please wait for approval from {user?.role === "admin" ? "Super Admin" : "your University Admin"} to access all features.</p>
+          </div>
+        )}
         <button
           onClick={logout}
           className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-rose-500 text-white font-medium shadow hover:bg-rose-600 active:bg-rose-700 transition-colors duration-150"

@@ -24,7 +24,6 @@ import SuperAdminProfile from "../pages/dashboards/superadmin/SuperAdminProfile"
 import SuperAdminUsers from "../pages/dashboards/superadmin/SuperAdminUsers";
 import SuperAdminSettings from "../pages/dashboards/superadmin/SuperAdminSettings";
 import SuperAdminAnalytics from "../pages/dashboards/superadmin/SuperAdminAnalytics";
-import SuperAdminNotifications from "../pages/dashboards/superadmin/SuperAdminNotifications";
 import DonorHome from "../pages/dashboards/donor/DonorHome";
 import DonorProfile from "../pages/dashboards/donor/DonorProfile";
 import Donations from "../pages/dashboards/donor/Donations";
@@ -36,6 +35,8 @@ import AdminVerify from "../pages/dashboards/admin/AdminVerify";
 import AdminAid from "../pages/dashboards/admin/AdminAid";
 import AdminReports from "../pages/dashboards/admin/AdminReports";
 import AdminNotifications from "../pages/dashboards/admin/AdminNotifications";
+import StudentNotifications from "../pages/dashboards/student/StudentNotifications";
+import SuperAdminNotifications from "../pages/dashboards/superadmin/SuperAdminNotifications";
 
 const AppRoutes = () => {
   return (
@@ -65,6 +66,7 @@ const AppRoutes = () => {
           <Route path="profile" element={<StudentProfile />} />
           <Route path="aid" element={<StudentAid />} />
           <Route path="support" element={<StudentSupport />} />
+          <Route path="notifications" element={<StudentNotifications />} />
         </Route>
         <Route
           path="/dashboard/donor"

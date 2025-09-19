@@ -1,17 +1,58 @@
 // src/pages/dashboards/AdminDashboard.jsx
 import DashboardLayout from "../../components/DashboardLayout";
 import { NavLink, Outlet } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 
 const AdminDashboard = () => {
+  const { user } = useAuth();
+  const isApproved = user?.isApproved === true;
+
   return (
     <DashboardLayout title="Admin Dashboard 🔑">
       <nav className="mb-6 flex flex-wrap gap-2">
-        <NavLink to="/dashboard/admin" end className={({isActive})=>`px-4 py-2 rounded-xl text-sm font-medium ${isActive?"bg-slate-900 text-white":"bg-white border border-slate-200 text-slate-700 hover:bg-slate-50"}`}>Home</NavLink>
-        <NavLink to="/dashboard/admin/profile" className={({isActive})=>`px-4 py-2 rounded-xl text-sm font-medium ${isActive?"bg-slate-900 text-white":"bg-white border border-slate-200 text-slate-700 hover:bg-slate-50"}`}>Profile</NavLink>
-        <NavLink to="/dashboard/admin/verify" className={({isActive})=>`px-4 py-2 rounded-xl text-sm font-medium ${isActive?"bg-slate-900 text-white":"bg-white border border-slate-200 text-slate-700 hover:bg-slate-50"}`}>Student Verification</NavLink>
-        <NavLink to="/dashboard/admin/aid" className={({isActive})=>`px-4 py-2 rounded-xl text-sm font-medium ${isActive?"bg-slate-900 text-white":"bg-white border border-slate-200 text-slate-700 hover:bg-slate-50"}`}>Aid Management</NavLink>
-        <NavLink to="/dashboard/admin/reports" className={({isActive})=>`px-4 py-2 rounded-xl text-sm font-medium ${isActive?"bg-slate-900 text-white":"bg-white border border-slate-200 text-slate-700 hover:bg-slate-50"}`}>Reports</NavLink>
-        <NavLink to="/dashboard/admin/notifications" className={({isActive})=>`px-4 py-2 rounded-xl text-sm font-medium ${isActive?"bg-slate-900 text-white":"bg-white border border-slate-200 text-slate-700 hover:bg-slate-50"}`}>Notifications</NavLink>
+        <NavLink 
+          to="/dashboard/admin" 
+          end 
+          onClick={(e) => { if (!isApproved) e.preventDefault(); }}
+          className={({isActive})=>`px-4 py-2 rounded-xl text-sm font-medium ${isActive?"bg-slate-900 text-white":`${!isApproved ? "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed" : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-50"}`}`}
+        >
+          Home
+        </NavLink>
+        <NavLink 
+          to="/dashboard/admin/profile" 
+          onClick={(e) => { if (!isApproved) e.preventDefault(); }}
+          className={({isActive})=>`px-4 py-2 rounded-xl text-sm font-medium ${isActive?"bg-slate-900 text-white":`${!isApproved ? "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed" : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-50"}`}`}
+        >
+          Profile
+        </NavLink>
+        <NavLink 
+          to="/dashboard/admin/verify" 
+          onClick={(e) => { if (!isApproved) e.preventDefault(); }}
+          className={({isActive})=>`px-4 py-2 rounded-xl text-sm font-medium ${isActive?"bg-slate-900 text-white":`${!isApproved ? "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed" : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-50"}`}`}
+        >
+          Student Verification
+        </NavLink>
+        <NavLink 
+          to="/dashboard/admin/aid" 
+          onClick={(e) => { if (!isApproved) e.preventDefault(); }}
+          className={({isActive})=>`px-4 py-2 rounded-xl text-sm font-medium ${isActive?"bg-slate-900 text-white":`${!isApproved ? "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed" : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-50"}`}`}
+        >
+          Aid Management
+        </NavLink>
+        <NavLink 
+          to="/dashboard/admin/reports" 
+          onClick={(e) => { if (!isApproved) e.preventDefault(); }}
+          className={({isActive})=>`px-4 py-2 rounded-xl text-sm font-medium ${isActive?"bg-slate-900 text-white":`${!isApproved ? "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed" : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-50"}`}`}
+        >
+          Reports
+        </NavLink>
+        <NavLink 
+          to="/dashboard/admin/notifications" 
+          onClick={(e) => { if (!isApproved) e.preventDefault(); }}
+          className={({isActive})=>`px-4 py-2 rounded-xl text-sm font-medium ${isActive?"bg-slate-900 text-white":`${!isApproved ? "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed" : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-50"}`}`}
+        >
+          Notifications
+        </NavLink>
       </nav>
       <Outlet />
     </DashboardLayout>

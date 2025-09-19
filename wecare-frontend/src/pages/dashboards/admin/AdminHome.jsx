@@ -1,3 +1,8 @@
+import { useEffect, useState } from "react";
+import { useAuth } from "../../../context/AuthContext";
+import { getAdminStats } from "../../../services/userService";
+import { getNotifications } from "../../../services/notificationService";
+
 const StatCard = ({ label, value }) => (
   <div className="rounded-xl border border-slate-200 p-5 text-center">
     <p className="text-sm text-slate-500">{label}</p>
@@ -6,17 +11,48 @@ const StatCard = ({ label, value }) => (
 );
 
 const AdminHome = () => {
-  const stats = {
-    pendingMoms: 12,
-    verifiedMoms: 86,
-    aidPending: 9,
-    aidApproved: 21,
-    aidDistributed: 15,
+  const { user } = useAuth();
+  const [stats, setStats] = useState({
+    pendingMoms: 0,
+    verifiedMoms: 0,
+    aidPending: 0,
+    aidApproved: 0,
+    aidDistributed: 0,
+  });
+  const [loading, setLoading] = useState(true);
+
+  const fetchStats = async () => {
+    try {
+      const data = await getAdminStats(user?.token);
+      setStats(data);
+    } catch (err) {
+      console.error("Failed to fetch stats:", err);
+    } finally {
+      setLoading(false);
+    }
   };
-  const notifications = [
-    { id: 1, text: "3 new student mother registrations pending verification." },
-    { id: 2, text: "Donation update: Corporate sponsor added 50 care packages." },
-  ];
+
+  useEffect(() => {
+    if (user?.token) {
+      fetchStats();
+    }
+  }, [user?.token]);
+
+  const [notifications, setNotifications] = useState([]);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await getNotifications(user?.token);
+        setNotifications(data.slice(0, 5));
+      } catch {}
+    };
+    if (user?.token) load();
+  }, [user?.token]);
+
+  if (loading) {
+    return <div className="text-center py-8">Loading stats...</div>;
+  }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -43,11 +79,15 @@ const AdminHome = () => {
       <div className="space-y-4">
         <div className="rounded-xl border border-slate-200 p-5">
           <h4 className="font-semibold text-slate-800 mb-3">Notifications</h4>
-          <ul className="space-y-2">
-            {notifications.map((n) => (
-              <li key={n.id} className="text-sm text-slate-600">• {n.text}</li>
-            ))}
-          </ul>
+          {notifications.length === 0 ? (
+            <p className="text-sm text-slate-500">No notifications yet.</p>
+          ) : (
+            <ul className="space-y-2">
+              {notifications.map((n) => (
+                <li key={n._id} className="text-sm text-slate-600">• {n.title}: {n.message}</li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
     </div>

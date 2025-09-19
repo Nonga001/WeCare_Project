@@ -5,14 +5,24 @@ const Card = ({ title, children }) => (
   </div>
 );
 
+import { useEffect, useState } from "react";
+import { useAuth } from "../../../context/AuthContext";
+import { getAidStats } from "../../../services/aidService";
+
 const DonorHome = () => {
-  const needs = {
-    financial: 14,
-    essentials: 37,
-  };
-  const impact = {
-    mothersSupported: 3,
-  };
+  const { user } = useAuth();
+  const [needs, setNeeds] = useState({ financial: 0, essentials: 0 });
+  const [impact, setImpact] = useState({ mothersSupported: 0 });
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const s = await getAidStats(user?.token);
+        setNeeds({ financial: s.financialOpen || 0, essentials: s.essentialsOpen || 0 });
+      } catch {}
+    };
+    if (user?.token) load();
+  }, [user?.token]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

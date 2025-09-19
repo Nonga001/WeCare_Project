@@ -1,4 +1,7 @@
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
+import { getNotifications } from "../../../services/notificationService";
+import { getAidStats, myAidRequests } from "../../../services/aidService";
 
 const Badge = ({ status }) => {
   const map = {
@@ -12,16 +15,35 @@ const Badge = ({ status }) => {
 
 const StudentHome = () => {
   const { user } = useAuth();
-  const verified = user?.role === "superadmin" ? true : user?.verified || false;
+  const verified = user?.role === "superadmin" ? true : user?.isApproved || false;
   const status = verified ? "verified" : "pending";
-  const requests = [
-    { id: 1, type: "Financial", status: "approved" },
-    { id: 2, type: "Essentials", status: "pending" },
-  ];
-  const notifications = [
-    { id: 1, text: "Your profile is 60% complete. Upload proof of student status." },
-    { id: 2, text: "New peer group \"Mom Scholars 2025\" available." },
-  ];
+  const [requests, setRequests] = useState([]);
+  const [stats, setStats] = useState({ financialPending: 0, essentialsPending: 0 });
+  const [notifications, setNotifications] = useState([]);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await getNotifications(user?.token);
+        setNotifications(data.slice(0, 5));
+      } catch {}
+    };
+    if (user?.token) load();
+  }, [user?.token]);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [st, list] = await Promise.all([
+          getAidStats(user?.token),
+          myAidRequests(user?.token)
+        ]);
+        setStats(st);
+        setRequests(list);
+      } catch {}
+    };
+    if (user?.token) load();
+  }, [user?.token]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -40,11 +62,17 @@ const StudentHome = () => {
         </div>
 
         <div className="rounded-xl border border-slate-200 p-5">
-          <h4 className="font-semibold text-slate-800 mb-3">Current Requests</h4>
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="font-semibold text-slate-800">Current Requests</h4>
+            <div className="text-sm text-slate-500 flex gap-4">
+              <span>Financial pending: {stats.financialPending}</span>
+              <span>Essentials pending: {stats.essentialsPending}</span>
+            </div>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {requests.map((r) => (
-              <div key={r.id} className="rounded-lg border border-slate-200 p-4">
-                <p className="text-slate-700 font-medium">{r.type}</p>
+            {requests.slice(0, 6).map((r) => (
+              <div key={r._id} className="rounded-lg border border-slate-200 p-4">
+                <p className="text-slate-700 font-medium">{r.type === 'financial' ? 'Financial' : 'Essentials'}</p>
                 <p className="text-sm text-slate-500">Status: {r.status}</p>
               </div>
             ))}
@@ -55,11 +83,15 @@ const StudentHome = () => {
       <div className="space-y-4">
         <div className="rounded-xl border border-slate-200 p-5">
           <h4 className="font-semibold text-slate-800 mb-3">Notifications</h4>
-          <ul className="space-y-2">
-            {notifications.map((n) => (
-              <li key={n.id} className="text-sm text-slate-600">• {n.text}</li>
-            ))}
-          </ul>
+          {notifications.length === 0 ? (
+            <p className="text-sm text-slate-500">No notifications yet.</p>
+          ) : (
+            <ul className="space-y-2">
+              {notifications.map((n) => (
+                <li key={n._id} className="text-sm text-slate-600">• {n.title}: {n.message}</li>
+              ))}
+            </ul>
+          )}
         </div>
 
         <a

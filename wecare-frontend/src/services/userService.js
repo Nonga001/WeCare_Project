@@ -21,4 +21,24 @@ export const suspendUser = async (token, userId, suspended) => {
   return res.data;
 };
 
+export const listStudentsForAdmin = async (token) => {
+  const res = await axios.get(`${API_URL}/students`, getAuthHeaders(token));
+  return res.data;
+};
+
+export const approveStudent = async (token, studentId) => {
+  const res = await axios.post(`${API_URL}/approve/student/${studentId}`, {}, getAuthHeaders(token));
+  return res.data;
+};
+
+export const rejectStudent = async (token, studentId) => {
+  const res = await axios.post(`${API_URL}/reject/student/${studentId}`, {}, getAuthHeaders(token));
+  return res.data;
+};
+
+export const getAdminStats = async (token) => {
+  const res = await axios.get(`${API_URL}/admin/stats`, getAuthHeaders(token));
+  return res.data;
+};
+
 
