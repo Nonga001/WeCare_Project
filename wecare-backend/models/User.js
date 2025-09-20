@@ -25,6 +25,8 @@ const userSchema = new mongoose.Schema(
     documents: { type: String }, // file path or URL for uploaded documents
     profileSubmitted: { type: Boolean, default: false },
     profileSubmittedAt: { type: Date },
+    profileApproved: { type: Boolean, default: false }, // Admin approves the submitted profile
+    profileApprovedAt: { type: Date },
   },
   { timestamps: true }
 );

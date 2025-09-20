@@ -45,7 +45,16 @@ export const approveStudent = async (req, res) => {
     if (!req.user.university || req.user.university !== student.university) {
       return res.status(403).json({ message: "Admin can only approve students from their university" });
     }
-    student.isApproved = true;
+    
+    // If student has submitted profile, approve the profile
+    if (student.profileSubmitted && !student.profileApproved) {
+      student.profileApproved = true;
+      student.profileApprovedAt = new Date();
+    } else {
+      // Otherwise, just approve the student registration
+      student.isApproved = true;
+    }
+    
     await student.save();
     res.json({ message: "Student approved" });
   } catch (err) {
@@ -84,7 +93,7 @@ export const listStudentsForAdmin = async (req, res) => {
       return res.status(403).json({ message: "Only admins can list students" });
     }
     const university = req.user.university;
-    const students = await User.find({ role: "student", university }, "name email isApproved university createdAt").sort({ createdAt: -1 });
+    const students = await User.find({ role: "student", university }, "name email isApproved university createdAt profileSubmitted profileApproved phone studentId studentEmail course yearOfStudy childDetails documents").sort({ createdAt: -1 });
     res.json(students);
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
@@ -151,8 +160,25 @@ export const updateStudentProfile = async (req, res) => {
     if (childDetails !== undefined) user.childDetails = childDetails;
     if (documents !== undefined) user.documents = documents;
 
+    // Check if profile is now 100% complete and auto-submit if so
+    const requiredFields = ['phone', 'studentId', 'studentEmail', 'course', 'yearOfStudy', 'childDetails', 'documents'];
+    const completedFields = requiredFields.filter(field => user[field]);
+    const completionPercent = Math.round((completedFields.length / requiredFields.length) * 100);
+    const isComplete = completionPercent === 100;
+
+    // If profile is 100% complete and not already submitted, auto-submit
+    if (isComplete && !user.profileSubmitted) {
+      user.profileSubmitted = true;
+      user.profileSubmittedAt = new Date();
+    }
+
     await user.save();
-    res.json({ message: "Profile updated successfully", user });
+    
+    res.json({ 
+      message: isComplete && !user.profileSubmitted ? "Profile updated and automatically submitted for approval" : "Profile updated successfully", 
+      user,
+      autoSubmitted: isComplete && !user.profileSubmitted
+    });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
   }
@@ -216,6 +242,7 @@ export const getProfileCompletion = async (req, res) => {
       completedFields,
       missingFields: requiredFields.filter(field => !user[field]),
       profileSubmitted: user.profileSubmitted || false,
+      profileApproved: user.profileApproved || false,
       isApproved: user.isApproved || false
     });
   } catch (err) {
@@ -232,17 +259,36 @@ export const getAdminStats = async (req, res) => {
 
     const university = req.user.university;
     
-    // Count students by approval status
-    const pendingStudents = await User.countDocuments({ 
+    // Count students by verification status
+    const pendingRegistration = await User.countDocuments({ 
       role: "student", 
       university, 
-      isApproved: false 
+      isApproved: false,
+      profileSubmitted: false
     });
     
+    const awaitingProfileVerification = await User.countDocuments({ 
+      role: "student", 
+      university, 
+      isApproved: true,
+      profileSubmitted: true,
+      profileApproved: false
+    });
+    
+    // Verified Students: All students from university who are not pending verification
     const verifiedStudents = await User.countDocuments({ 
       role: "student", 
       university, 
-      isApproved: true 
+      isApproved: true
+    });
+    
+    // Approved Student Moms: Students whose profile has been approved by admin
+    const approvedStudentMoms = await User.countDocuments({ 
+      role: "student", 
+      university, 
+      isApproved: true,
+      profileSubmitted: true,
+      profileApproved: true
     });
 
     // TODO: Add aid stats when Aid model is created
@@ -251,8 +297,10 @@ export const getAdminStats = async (req, res) => {
     const aidDistributed = 0;
 
     res.json({
-      pendingMoms: pendingStudents,
-      verifiedMoms: verifiedStudents,
+      pendingRegistration,
+      awaitingProfileVerification,
+      verifiedStudents,
+      approvedStudentMoms,
       aidPending,
       aidApproved,
       aidDistributed

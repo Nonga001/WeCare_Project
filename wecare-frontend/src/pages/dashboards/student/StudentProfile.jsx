@@ -22,7 +22,7 @@ const StudentProfile = () => {
     childDetails: "",
     documents: "",
   });
-  const [completion, setCompletion] = useState({ completionPercent: 0, isComplete: false, profileSubmitted: false, isApproved: false });
+  const [completion, setCompletion] = useState({ completionPercent: 0, isComplete: false, profileSubmitted: false, profileApproved: false, isApproved: false });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -85,9 +85,15 @@ const StudentProfile = () => {
     try {
       setLoading(true);
       setError("");
-      await updateStudentProfile(user?.token, { [field]: form[field] });
-      setSuccess(`${fieldName} updated successfully`);
-      setTimeout(() => setSuccess(""), 3000);
+      const response = await updateStudentProfile(user?.token, { [field]: form[field] });
+      
+      // Check if profile was auto-submitted
+      if (response.autoSubmitted) {
+        setSuccess(`🎉 Profile completed 100% and automatically submitted for approval!`);
+      } else {
+        setSuccess(`${fieldName} updated successfully`);
+      }
+      setTimeout(() => setSuccess(""), 5000);
       
       // Reload both profile data and completion status
       const [completionData, profileData] = await Promise.all([
@@ -140,8 +146,32 @@ const StudentProfile = () => {
         {success && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded mb-4">{success}</div>}
         
         <form onSubmit={handleSubmitForApproval} className="space-y-4">
+          {!completion.isApproved && completion.profileSubmitted && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-amber-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-amber-800">
+                    <strong>Profile Submitted:</strong> Your profile has been submitted for verification. The university admin will review your information and approve it. You will be notified once approved.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+          
           <div className="rounded-xl border border-slate-200 p-5">
-            <h3 className="font-semibold text-slate-800 mb-4">Basic Information</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-slate-800">Basic Information</h3>
+              {completion.isApproved && completion.profileSubmitted && (
+                <span className="px-3 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full border border-green-200">
+                  ✓ Editable
+                </span>
+              )}
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm text-slate-600 mb-1">Full Name (Static)</label>
@@ -162,7 +192,14 @@ const StudentProfile = () => {
           </div>
 
           <div className="rounded-xl border border-slate-200 p-5">
-            <h3 className="font-semibold text-slate-800 mb-4">Extended Information</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-slate-800">Extended Information</h3>
+              {completion.isApproved && completion.profileSubmitted && (
+                <span className="px-3 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full border border-green-200">
+                  ✓ Editable
+                </span>
+              )}
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm text-slate-600 mb-1">Student ID</label>
@@ -203,7 +240,14 @@ const StudentProfile = () => {
           </div>
 
           <div className="rounded-xl border border-slate-200 p-5">
-            <h3 className="font-semibold text-slate-800 mb-4">Documents (Required)</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-slate-800">Documents (Required)</h3>
+              {completion.isApproved && completion.profileSubmitted && (
+                <span className="px-3 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full border border-green-200">
+                  ✓ Editable
+                </span>
+              )}
+            </div>
             <div className="grid grid-cols-1 gap-4">
               <label className="block">
                 <span className="text-sm text-slate-600">Student card / Admission letter</span>
@@ -232,15 +276,33 @@ const StudentProfile = () => {
             </div>
           </div>
 
-          <div className="flex justify-end">
-            <button 
-              type="submit" 
-              disabled={!completion.isComplete || completion.profileSubmitted || loading}
-              className="px-6 py-3 rounded-xl bg-emerald-600 text-white font-semibold shadow hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {completion.profileSubmitted ? "Submitted for Approval" : "Submit for Approval"}
-            </button>
-          </div>
+          {!completion.isApproved && (
+            <div className="flex justify-end">
+              <button 
+                type="submit" 
+                disabled={!completion.isComplete || completion.profileSubmitted || loading}
+                className="px-6 py-3 rounded-xl bg-emerald-600 text-white font-semibold shadow hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {completion.profileSubmitted ? "Submitted for Approval" : "Submit for Approval"}
+              </button>
+            </div>
+          )}
+          
+          {completion.isApproved && completion.profileSubmitted && completion.profileApproved && (
+            <div className="flex justify-end">
+              <div className="px-6 py-3 rounded-xl bg-green-100 text-green-800 font-semibold border border-green-200">
+                🎉 Approved Student Mom - You can now access aid requests
+              </div>
+            </div>
+          )}
+          
+          {completion.isApproved && completion.profileSubmitted && completion.profileApproved && (
+            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+              <p className="text-sm text-blue-800">
+                <strong>Note:</strong> You can now edit your profile information. Changes will be saved immediately.
+              </p>
+            </div>
+          )}
         </form>
       </div>
 
@@ -249,6 +311,9 @@ const StudentProfile = () => {
           <h4 className="font-semibold text-slate-800 mb-3">Profile Completion</h4>
           <ProgressBar value={completion.completionPercent} />
           <p className="mt-2 text-sm text-slate-600">{completion.completionPercent}% complete ({completion.completedFields?.length || 0} of 7 fields)</p>
+          {completion.completionPercent === 100 && !completion.profileSubmitted && (
+            <p className="text-xs text-emerald-600 mt-1 font-medium">🎉 Profile 100% complete! It will be automatically submitted for approval.</p>
+          )}
           {completion.completionPercent < 100 && (
             <p className="text-xs text-amber-600 mt-1">Complete all 7 required fields: phone, student ID, email, course, year, child details, and documents</p>
           )}
@@ -256,7 +321,10 @@ const StudentProfile = () => {
         <div className="rounded-xl border border-slate-200 p-5">
           <h4 className="font-semibold text-slate-800 mb-2">Status</h4>
           <p className="text-slate-600 text-sm">
-            {completion.isApproved ? "Unverified" : completion.profileSubmitted ? "Pending approval" : "Not submitted"}
+            {completion.isApproved && completion.profileSubmitted && completion.profileApproved ? "🎉 Approved Student Mom" : 
+             completion.profileSubmitted && !completion.profileApproved ? "📤 Submitted (Awaiting Verification)" : 
+             completion.profileSubmitted && completion.profileApproved ? "✅ Profile Approved - Awaiting Final Verification" :
+             "❌ Not submitted"}
           </p>
         </div>
       </div>

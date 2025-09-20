@@ -13,18 +13,23 @@ const StatCard = ({ label, value }) => (
 const AdminHome = () => {
   const { user } = useAuth();
   const [stats, setStats] = useState({
-    pendingMoms: 0,
-    verifiedMoms: 0,
+    pendingRegistration: 0,
+    awaitingProfileVerification: 0,
+    verifiedStudents: 0,
+    approvedStudentMoms: 0,
     aidPending: 0,
     aidApproved: 0,
     aidDistributed: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState(null);
 
   const fetchStats = async () => {
     try {
+      setLoading(true);
       const data = await getAdminStats(user?.token);
       setStats(data);
+      setLastUpdated(new Date());
     } catch (err) {
       console.error("Failed to fetch stats:", err);
     } finally {
@@ -35,6 +40,9 @@ const AdminHome = () => {
   useEffect(() => {
     if (user?.token) {
       fetchStats();
+      // Auto-refresh stats every 30 seconds
+      const interval = setInterval(fetchStats, 30000);
+      return () => clearInterval(interval);
     }
   }, [user?.token]);
 
@@ -57,9 +65,32 @@ const AdminHome = () => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2 space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-xl font-semibold text-slate-800">Dashboard Overview</h2>
+            {lastUpdated && (
+              <p className="text-sm text-slate-500 mt-1">
+                Last updated: {lastUpdated.toLocaleTimeString()}
+              </p>
+            )}
+          </div>
+          <button 
+            onClick={fetchStats} 
+            disabled={loading}
+            className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+          >
+            {loading ? "Refreshing..." : "Refresh Stats"}
+          </button>
+        </div>
+        
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <StatCard label="Pending Registration" value={stats.pendingRegistration} />
+          <StatCard label="Awaiting Profile Verification" value={stats.awaitingProfileVerification} />
+          <StatCard label="Verified Students" value={stats.verifiedStudents} />
+          <StatCard label="Approved Student Moms" value={stats.approvedStudentMoms} />
+        </div>
+        
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          <StatCard label="Pending Moms" value={stats.pendingMoms} />
-          <StatCard label="Verified Moms" value={stats.verifiedMoms} />
           <StatCard label="Aid Pending" value={stats.aidPending} />
           <StatCard label="Aid Approved" value={stats.aidApproved} />
           <StatCard label="Distributed" value={stats.aidDistributed} />
