@@ -41,4 +41,19 @@ export const getAdminStats = async (token) => {
   return res.data;
 };
 
+export const updateStudentProfile = async (token, profileData) => {
+  const res = await axios.patch(`${API_URL}/profile`, profileData, getAuthHeaders(token));
+  return res.data;
+};
+
+export const submitProfileForApproval = async (token) => {
+  const res = await axios.post(`${API_URL}/profile/submit`, {}, getAuthHeaders(token));
+  return res.data;
+};
+
+export const getProfileCompletion = async (token) => {
+  const res = await axios.get(`${API_URL}/profile/completion`, getAuthHeaders(token));
+  return res.data;
+};
+
 

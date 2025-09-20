@@ -128,6 +128,101 @@ export const setSuspended = async (req, res) => {
   }
 };
 
+// Update student profile
+export const updateStudentProfile = async (req, res) => {
+  try {
+    if (req.user.role !== "student") {
+      return res.status(403).json({ message: "Only students can update their profile" });
+    }
+
+    const { phone, studentId, studentEmail, course, yearOfStudy, childDetails, documents } = req.body;
+    
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Update allowed fields
+    if (phone !== undefined) user.phone = phone;
+    if (studentId !== undefined) user.studentId = studentId;
+    if (studentEmail !== undefined) user.studentEmail = studentEmail;
+    if (course !== undefined) user.course = course;
+    if (yearOfStudy !== undefined) user.yearOfStudy = yearOfStudy;
+    if (childDetails !== undefined) user.childDetails = childDetails;
+    if (documents !== undefined) user.documents = documents;
+
+    await user.save();
+    res.json({ message: "Profile updated successfully", user });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+// Submit profile for approval
+export const submitProfileForApproval = async (req, res) => {
+  try {
+    if (req.user.role !== "student") {
+      return res.status(403).json({ message: "Only students can submit profiles" });
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Check if profile is complete
+    const requiredFields = ['phone', 'studentId', 'studentEmail', 'course', 'yearOfStudy', 'childDetails', 'documents'];
+    const missingFields = requiredFields.filter(field => !user[field]);
+    
+    if (missingFields.length > 0) {
+      return res.status(400).json({ 
+        message: "Profile incomplete", 
+        missingFields,
+        completionPercent: Math.round(((requiredFields.length - missingFields.length) / requiredFields.length) * 100)
+      });
+    }
+
+    // Mark as submitted for approval
+    user.profileSubmitted = true;
+    user.profileSubmittedAt = new Date();
+    await user.save();
+
+    res.json({ message: "Profile submitted for approval", user });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+// Get student profile completion status
+export const getProfileCompletion = async (req, res) => {
+  try {
+    if (req.user.role !== "student") {
+      return res.status(403).json({ message: "Only students can check profile completion" });
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const requiredFields = ['phone', 'studentId', 'studentEmail', 'course', 'yearOfStudy', 'childDetails', 'documents'];
+    const completedFields = requiredFields.filter(field => user[field]);
+    const completionPercent = Math.round((completedFields.length / requiredFields.length) * 100);
+    const isComplete = completionPercent === 100;
+
+    res.json({
+      completionPercent,
+      isComplete,
+      completedFields,
+      missingFields: requiredFields.filter(field => !user[field]),
+      profileSubmitted: user.profileSubmitted || false,
+      isApproved: user.isApproved || false
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
 // Get admin dashboard stats
 export const getAdminStats = async (req, res) => {
   try {

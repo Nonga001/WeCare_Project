@@ -1,5 +1,5 @@
 import express from "express";
-import { getProfile, approveAdmin, approveStudent, listUsers, setSuspended, listStudentsForAdmin, rejectStudent, getAdminStats } from "../controllers/userController.js";
+import { getProfile, approveAdmin, approveStudent, listUsers, setSuspended, listStudentsForAdmin, rejectStudent, getAdminStats, updateStudentProfile, submitProfileForApproval, getProfileCompletion } from "../controllers/userController.js";
 import { protect } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
@@ -18,5 +18,10 @@ router.patch("/:userId/suspend", protect, setSuspended);
 
 // Admin stats
 router.get("/admin/stats", protect, getAdminStats);
+
+// Student profile management
+router.patch("/profile", protect, updateStudentProfile);
+router.post("/profile/submit", protect, submitProfileForApproval);
+router.get("/profile/completion", protect, getProfileCompletion);
 
 export default router;

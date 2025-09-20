@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useAuth } from "../../../context/AuthContext";
+import { updateStudentProfile, submitProfileForApproval, getProfileCompletion } from "../../../services/userService";
 
 const ProgressBar = ({ value = 0 }) => (
   <div className="w-full h-2.5 bg-slate-200 rounded-full">
@@ -10,75 +12,234 @@ const ProgressBar = ({ value = 0 }) => (
 );
 
 const StudentProfile = () => {
+  const { user } = useAuth();
   const [form, setForm] = useState({
-    name: "",
     phone: "",
-    university: "",
     studentId: "",
     studentEmail: "",
     course: "",
-    year: "",
-    childInfo: "",
-    docFile: null,
+    yearOfStudy: "",
+    childDetails: "",
+    documents: "",
   });
+  const [completion, setCompletion] = useState({ completionPercent: 0, isComplete: false, profileSubmitted: false, isApproved: false });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [userProfile, setUserProfile] = useState(null);
 
-  const completion = [
-    form.name,
-    form.phone,
-    form.university,
-    form.studentId,
-    form.studentEmail,
-    form.course,
-    form.year,
-  ].filter(Boolean).length;
-  const completionPercent = Math.round((completion / 7) * 100);
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const [completionData, profileData] = await Promise.all([
+          getProfileCompletion(user?.token),
+          fetch('http://localhost:5000/api/users/profile', {
+            headers: { Authorization: `Bearer ${user?.token}` }
+          }).then(res => res.json())
+        ]);
+        
+        setUserProfile(profileData);
+        setCompletion(completionData);
+        setForm({
+          phone: profileData.phone || "",
+          studentId: profileData.studentId || "",
+          studentEmail: profileData.studentEmail || "",
+          course: profileData.course || "",
+          yearOfStudy: profileData.yearOfStudy || "",
+          childDetails: profileData.childDetails || "",
+          documents: profileData.documents || "",
+        });
+      } catch (err) {
+        setError("Failed to load profile data");
+      }
+    };
+    if (user?.token) loadProfile();
+  }, [user?.token]);
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
-    setForm((prev) => ({ ...prev, [name]: files ? files[0] : value }));
+    if (files && files[0]) {
+      // For file uploads, store the file name
+      setForm((prev) => ({ ...prev, [name]: files[0].name }));
+    } else {
+      setForm((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
-  const handleSubmit = (e) => {
+  const handleUpdate = async (field) => {
+    if (!form[field] || form[field].trim() === "") {
+      setError("Please enter a value before updating");
+      return;
+    }
+
+    const fieldName = field === 'phone' ? 'phone number' : 
+                     field === 'studentId' ? 'student ID' :
+                     field === 'studentEmail' ? 'student email' :
+                     field === 'course' ? 'course' :
+                     field === 'yearOfStudy' ? 'year of study' :
+                     field === 'childDetails' ? 'child details' : field;
+    
+    const confirmed = window.confirm(`Are you sure you want to update your ${fieldName}?`);
+    if (!confirmed) return;
+
+    try {
+      setLoading(true);
+      setError("");
+      await updateStudentProfile(user?.token, { [field]: form[field] });
+      setSuccess(`${fieldName} updated successfully`);
+      setTimeout(() => setSuccess(""), 3000);
+      
+      // Reload both profile data and completion status
+      const [completionData, profileData] = await Promise.all([
+        getProfileCompletion(user?.token),
+        fetch('http://localhost:5000/api/users/profile', {
+          headers: { Authorization: `Bearer ${user?.token}` }
+        }).then(res => res.json())
+      ]);
+      
+      setUserProfile(profileData);
+      setCompletion(completionData);
+      
+      // Update form with fresh data from database
+      setForm({
+        phone: profileData.phone || "",
+        studentId: profileData.studentId || "",
+        studentEmail: profileData.studentEmail || "",
+        course: profileData.course || "",
+        yearOfStudy: profileData.yearOfStudy || "",
+        childDetails: profileData.childDetails || "",
+        documents: profileData.documents || "",
+      });
+      
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to update");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmitForApproval = async (e) => {
     e.preventDefault();
-    // Submit to API later
+    try {
+      setLoading(true);
+      setError("");
+      await submitProfileForApproval(user?.token);
+      setSuccess("Profile submitted for approval");
+      setCompletion(prev => ({ ...prev, profileSubmitted: true }));
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to submit profile");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2">
-        <form onSubmit={handleSubmit} className="space-y-4">
+        {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">{error}</div>}
+        {success && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded mb-4">{success}</div>}
+        
+        <form onSubmit={handleSubmitForApproval} className="space-y-4">
           <div className="rounded-xl border border-slate-200 p-5">
             <h3 className="font-semibold text-slate-800 mb-4">Basic Information</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <input name="name" placeholder="Full Name" value={form.name} onChange={handleChange} className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300" />
-              <input name="phone" placeholder="Phone Number" value={form.phone} onChange={handleChange} className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300" />
-              <input name="university" placeholder="University" value={form.university} onChange={handleChange} className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300" />
+              <div>
+                <label className="block text-sm text-slate-600 mb-1">Full Name (Static)</label>
+                <input value={user?.name || ""} disabled className="w-full px-4 py-3 border rounded-xl bg-slate-50 text-slate-500" />
+              </div>
+              <div>
+                <label className="block text-sm text-slate-600 mb-1">University (Static)</label>
+                <input value={userProfile?.university || "Loading..."} disabled className="w-full px-4 py-3 border rounded-xl bg-slate-50 text-slate-500" />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-sm text-slate-600 mb-1">Phone Number</label>
+                <div className="flex gap-2">
+                  <input name="phone" placeholder="Phone Number" value={form.phone} onChange={handleChange} className="flex-1 px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300" />
+                  <button type="button" onClick={() => handleUpdate('phone')} disabled={loading} className="px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50">Update</button>
+                </div>
+              </div>
             </div>
           </div>
 
           <div className="rounded-xl border border-slate-200 p-5">
             <h3 className="font-semibold text-slate-800 mb-4">Extended Information</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <input name="studentId" placeholder="Student ID / Admission No." value={form.studentId} onChange={handleChange} className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300" />
-              <input name="studentEmail" placeholder="Student Email" value={form.studentEmail} onChange={handleChange} className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300" />
-              <input name="course" placeholder="Course" value={form.course} onChange={handleChange} className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300" />
-              <input name="year" placeholder="Year of Study" value={form.year} onChange={handleChange} className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300" />
-              <textarea name="childInfo" placeholder="Child details (optional)" value={form.childInfo} onChange={handleChange} className="sm:col-span-2 w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300" />
+              <div>
+                <label className="block text-sm text-slate-600 mb-1">Student ID</label>
+                <div className="flex gap-2">
+                  <input name="studentId" placeholder="Student ID / Admission No." value={form.studentId} onChange={handleChange} className="flex-1 px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300" />
+                  <button type="button" onClick={() => handleUpdate('studentId')} disabled={loading} className="px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50">Update</button>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm text-slate-600 mb-1">Student Email</label>
+                <div className="flex gap-2">
+                  <input name="studentEmail" placeholder="Student Email" value={form.studentEmail} onChange={handleChange} className="flex-1 px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300" />
+                  <button type="button" onClick={() => handleUpdate('studentEmail')} disabled={loading} className="px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50">Update</button>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm text-slate-600 mb-1">Course</label>
+                <div className="flex gap-2">
+                  <input name="course" placeholder="Course" value={form.course} onChange={handleChange} className="flex-1 px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300" />
+                  <button type="button" onClick={() => handleUpdate('course')} disabled={loading} className="px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50">Update</button>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm text-slate-600 mb-1">Year of Study</label>
+                <div className="flex gap-2">
+                  <input name="yearOfStudy" placeholder="Year of Study" value={form.yearOfStudy} onChange={handleChange} className="flex-1 px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300" />
+                  <button type="button" onClick={() => handleUpdate('yearOfStudy')} disabled={loading} className="px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50">Update</button>
+                </div>
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-sm text-slate-600 mb-1">Child Details (Required)</label>
+                <div className="flex gap-2">
+                  <textarea name="childDetails" placeholder="Child details (required)" value={form.childDetails} onChange={handleChange} className="flex-1 px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300" required />
+                  <button type="button" onClick={() => handleUpdate('childDetails')} disabled={loading} className="px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50">Update</button>
+                </div>
+              </div>
             </div>
           </div>
 
           <div className="rounded-xl border border-slate-200 p-5">
-            <h3 className="font-semibold text-slate-800 mb-4">Documents</h3>
+            <h3 className="font-semibold text-slate-800 mb-4">Documents (Required)</h3>
             <div className="grid grid-cols-1 gap-4">
               <label className="block">
                 <span className="text-sm text-slate-600">Student card / Admission letter</span>
-                <input type="file" name="docFile" onChange={handleChange} className="mt-2 block w-full text-sm" />
+                <div className="flex gap-2 mt-2">
+                  <input 
+                    type="file" 
+                    name="documents"
+                    onChange={handleChange}
+                    className="flex-1 block text-sm" 
+                    accept=".pdf,.jpg,.jpeg,.png"
+                  />
+                  <button 
+                    type="button" 
+                    onClick={() => handleUpdate('documents')} 
+                    disabled={loading || !form.documents}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    Upload
+                  </button>
+                </div>
+                <p className="text-xs text-slate-500 mt-1">Upload your student ID or admission letter (PDF, JPG, PNG)</p>
+                {form.documents && (
+                  <p className="text-xs text-green-600 mt-1">Document uploaded: {form.documents}</p>
+                )}
               </label>
             </div>
           </div>
 
           <div className="flex justify-end">
-            <button className="px-6 py-3 rounded-xl bg-emerald-600 text-white font-semibold shadow hover:bg-emerald-700">Submit for Approval</button>
+            <button 
+              type="submit" 
+              disabled={!completion.isComplete || completion.profileSubmitted || loading}
+              className="px-6 py-3 rounded-xl bg-emerald-600 text-white font-semibold shadow hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {completion.profileSubmitted ? "Submitted for Approval" : "Submit for Approval"}
+            </button>
           </div>
         </form>
       </div>
@@ -86,12 +247,17 @@ const StudentProfile = () => {
       <div className="space-y-4">
         <div className="rounded-xl border border-slate-200 p-5">
           <h4 className="font-semibold text-slate-800 mb-3">Profile Completion</h4>
-          <ProgressBar value={completionPercent} />
-          <p className="mt-2 text-sm text-slate-600">{completionPercent}% complete</p>
+          <ProgressBar value={completion.completionPercent} />
+          <p className="mt-2 text-sm text-slate-600">{completion.completionPercent}% complete ({completion.completedFields?.length || 0} of 7 fields)</p>
+          {completion.completionPercent < 100 && (
+            <p className="text-xs text-amber-600 mt-1">Complete all 7 required fields: phone, student ID, email, course, year, child details, and documents</p>
+          )}
         </div>
         <div className="rounded-xl border border-slate-200 p-5">
           <h4 className="font-semibold text-slate-800 mb-2">Status</h4>
-          <p className="text-slate-600 text-sm">Pending verification</p>
+          <p className="text-slate-600 text-sm">
+            {completion.isApproved ? "Unverified" : completion.profileSubmitted ? "Pending approval" : "Not submitted"}
+          </p>
         </div>
       </div>
     </div>

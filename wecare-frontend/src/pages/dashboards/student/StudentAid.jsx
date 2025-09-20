@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import { createAid, myAidRequests } from "../../../services/aidService";
+import { getProfileCompletion } from "../../../services/userService";
 
 const StudentAid = () => {
   const { user } = useAuth();
@@ -8,11 +9,16 @@ const StudentAid = () => {
   const [essential, setEssential] = useState({ item: "", quantity: "" });
   const [history, setHistory] = useState([]);
   const [error, setError] = useState("");
+  const [profileComplete, setProfileComplete] = useState(false);
 
   const load = async () => {
     try {
-      const data = await myAidRequests(user?.token);
+      const [data, profile] = await Promise.all([
+        myAidRequests(user?.token),
+        getProfileCompletion(user?.token)
+      ]);
       setHistory(data);
+      setProfileComplete(profile.isComplete && profile.isApproved);
     } catch (err) {
       setError(err.response?.data?.message || "Failed to load requests");
     }
@@ -21,6 +27,10 @@ const StudentAid = () => {
   useEffect(() => { if (user?.token) load(); }, [user?.token]);
 
   const submitFinancial = async () => {
+    if (!profileComplete) {
+      setError("Complete your profile and get approval before requesting aid");
+      return;
+    }
     try {
       await createAid(user?.token, { type: "financial", amount: Number(financial.amount), reason: financial.reason });
       setFinancial({ amount: "", reason: "" });
@@ -31,6 +41,10 @@ const StudentAid = () => {
   };
 
   const submitEssential = async () => {
+    if (!profileComplete) {
+      setError("Complete your profile and get approval before requesting aid");
+      return;
+    }
     try {
       const items = essential.item ? [{ name: essential.item, quantity: Number(essential.quantity || 1) }] : [];
       await createAid(user?.token, { type: "essentials", items, reason: `${essential.item} x${essential.quantity || 1}` });
@@ -51,7 +65,13 @@ const StudentAid = () => {
             <input placeholder="Reason" value={financial.reason} onChange={(e)=>setFinancial({...financial,reason:e.target.value})} className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300" />
           </div>
           <div className="mt-3">
-            <button onClick={submitFinancial} className="px-5 py-2.5 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700">Submit</button>
+            <button 
+              onClick={submitFinancial} 
+              disabled={!profileComplete}
+              className="px-5 py-2.5 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {profileComplete ? "Submit" : "Complete Profile First"}
+            </button>
           </div>
         </div>
 
@@ -62,7 +82,13 @@ const StudentAid = () => {
             <input placeholder="Quantity" value={essential.quantity} onChange={(e)=>setEssential({...essential,quantity:e.target.value})} className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300" />
           </div>
           <div className="mt-3">
-            <button onClick={submitEssential} className="px-5 py-2.5 rounded-xl bg-emerald-600 text-white font-medium hover:bg-emerald-700">Submit</button>
+            <button 
+              onClick={submitEssential} 
+              disabled={!profileComplete}
+              className="px-5 py-2.5 rounded-xl bg-emerald-600 text-white font-medium hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {profileComplete ? "Submit" : "Complete Profile First"}
+            </button>
           </div>
         </div>
       </div>
