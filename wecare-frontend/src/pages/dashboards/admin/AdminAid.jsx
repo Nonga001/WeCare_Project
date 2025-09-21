@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
-import { disburseAid, setAidStatus, uniAidRequests } from "../../../services/aidService";
+import { disburseAid, setAidStatus, moveToWaiting, uniAidRequests } from "../../../services/aidService";
 
 const AdminAid = () => {
   const { user } = useAuth();
@@ -18,6 +18,10 @@ const AdminAid = () => {
         detail: d.type === 'financial' ? `KES ${d.amount}` : (d.items?.map(i=>`${i.name} x${i.quantity}`).join(', ') || d.reason),
         requester: d.student?.name || 'Unknown',
         status: d.status,
+        reason: d.reason,
+        createdAt: d.createdAt,
+        approvedAt: d.approvedAt,
+        disbursedAt: d.disbursedAt,
       }));
       setRequests(normalized);
     } catch (err) {
@@ -34,14 +38,53 @@ const AdminAid = () => {
     ));
   }, [requests, query, typeFilter]);
 
-  const approve = async (id) => { await setAidStatus(user?.token, id, 'approved'); await load(); };
-  const reject = async (id) => { await setAidStatus(user?.token, id, 'rejected'); await load(); };
-  const disburse = async (id) => { await disburseAid(user?.token, id); await load(); };
+  const approve = async (id) => { 
+    try {
+      await setAidStatus(user?.token, id, 'approved'); 
+      await load(); 
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to approve request');
+    }
+  };
+  
+  const reject = async (id) => { 
+    try {
+      await setAidStatus(user?.token, id, 'rejected'); 
+      await load(); 
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to reject request');
+    }
+  };
+  
+  const moveToWaitingStatus = async (id) => {
+    try {
+      await moveToWaiting(user?.token, id);
+      await load();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to move to waiting');
+    }
+  };
+  
+  const disburse = async (id) => { 
+    try {
+      await disburseAid(user?.token, id); 
+      await load(); 
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to disburse');
+    }
+  };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <div className="rounded-xl border border-slate-200 p-5">
         <h3 className="font-semibold text-slate-800 mb-3">Aid Requests</h3>
+        
+        {error && (
+          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3">
+            <p className="text-red-600 text-sm">{error}</p>
+          </div>
+        )}
+        
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
           <input value={query} onChange={(e)=>setQuery(e.target.value)} placeholder="Search requester or detail" className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-300" />
           <select value={typeFilter} onChange={(e)=>setTypeFilter(e.target.value)} className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-300">
@@ -58,12 +101,40 @@ const AdminAid = () => {
                 <p className="font-medium text-slate-800">{r.type}</p>
                 <p className="text-slate-700">{r.detail}</p>
                 <p className="text-slate-700">Requester: {r.requester}</p>
-                <p className="text-xs text-slate-500">Status: {r.status}</p>
+                <p className="text-xs">
+                  Status: <span className={`font-medium ${
+                    r.status === 'pending' ? 'text-yellow-600' :
+                    r.status === 'approved' ? 'text-blue-600' :
+                    r.status === 'waiting' ? 'text-orange-600' :
+                    r.status === 'disbursed' ? 'text-green-600' :
+                    r.status === 'rejected' ? 'text-red-600' : 'text-gray-600'
+                  }`}>{r.status}</span>
+                </p>
               </div>
+              <p className="text-sm text-slate-600 mt-2">Reason: {r.reason}</p>
+              <p className="text-xs text-slate-400 mt-1">Created: {new Date(r.createdAt).toLocaleString()}</p>
+              {r.approvedAt && <p className="text-xs text-slate-400">Approved: {new Date(r.approvedAt).toLocaleString()}</p>}
+              {r.disbursedAt && <p className="text-xs text-slate-400">Disbursed: {new Date(r.disbursedAt).toLocaleString()}</p>}
+              
               <div className="mt-3 flex flex-wrap gap-2">
-                <button onClick={()=>approve(r._id)} className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700">Approve</button>
-                <button onClick={()=>reject(r._id)} className="px-4 py-2 rounded-lg bg-rose-600 text-white text-sm hover:bg-rose-700">Reject</button>
-                <button onClick={()=>disburse(r._id)} className="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm hover:bg-emerald-700">Disburse</button>
+                {r.status === 'pending' && (
+                  <>
+                    <button onClick={()=>approve(r._id)} className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700">✅ Approve</button>
+                    <button onClick={()=>reject(r._id)} className="px-4 py-2 rounded-lg bg-rose-600 text-white text-sm hover:bg-rose-700">❌ Reject</button>
+                  </>
+                )}
+                {r.status === 'approved' && (
+                  <button onClick={()=>moveToWaitingStatus(r._id)} className="px-4 py-2 rounded-lg bg-orange-600 text-white text-sm hover:bg-orange-700">⏳ Move to Waiting</button>
+                )}
+                {r.status === 'waiting' && (
+                  <button onClick={()=>disburse(r._id)} className="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm hover:bg-emerald-700">💰 Disburse</button>
+                )}
+                {r.status === 'rejected' && (
+                  <span className="px-4 py-2 rounded-lg bg-gray-100 text-gray-600 text-sm">No actions available</span>
+                )}
+                {r.status === 'disbursed' && (
+                  <span className="px-4 py-2 rounded-lg bg-green-100 text-green-600 text-sm">✅ Completed</span>
+                )}
               </div>
             </div>
           ))}

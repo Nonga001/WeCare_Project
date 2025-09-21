@@ -6,6 +6,7 @@ import {
   listUniversityAidRequests,
   setAidStatus,
   disburseAid,
+  moveToWaiting,
   getAidStats
 } from "../controllers/aidController.js";
 
@@ -20,6 +21,7 @@ router.get("/mine", listMyAidRequests);
 // Admin
 router.get("/university", listUniversityAidRequests);
 router.patch("/:id/status", setAidStatus);
+router.patch("/:id/waiting", moveToWaiting);
 router.post("/:id/disburse", disburseAid);
 
 // Stats

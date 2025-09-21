@@ -24,6 +24,11 @@ export const setAidStatus = async (token, id, status) => {
   return res.data;
 };
 
+export const moveToWaiting = async (token, id) => {
+  const res = await axios.patch(`${API_URL}/${id}/waiting`, {}, auth(token));
+  return res.data;
+};
+
 export const disburseAid = async (token, id) => {
   const res = await axios.post(`${API_URL}/${id}/disburse`, {}, auth(token));
   return res.data;

@@ -19,6 +19,7 @@ const AdminHome = () => {
     approvedStudentMoms: 0,
     aidPending: 0,
     aidApproved: 0,
+    aidWaiting: 0,
     aidDistributed: 0,
   });
   const [loading, setLoading] = useState(true);
@@ -90,9 +91,10 @@ const AdminHome = () => {
           <StatCard label="Approved Student Moms" value={stats.approvedStudentMoms} />
         </div>
         
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <StatCard label="Aid Pending" value={stats.aidPending} />
           <StatCard label="Aid Approved" value={stats.aidApproved} />
+          <StatCard label="Aid Waiting" value={stats.aidWaiting} />
           <StatCard label="Distributed" value={stats.aidDistributed} />
         </div>
 

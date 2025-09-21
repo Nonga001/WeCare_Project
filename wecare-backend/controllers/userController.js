@@ -291,10 +291,14 @@ export const getAdminStats = async (req, res) => {
       profileApproved: true
     });
 
-    // TODO: Add aid stats when Aid model is created
-    const aidPending = 0;
-    const aidApproved = 0;
-    const aidDistributed = 0;
+    // Get aid stats
+    const AidRequest = (await import("../models/AidRequest.js")).default;
+    const [aidPending, aidApproved, aidWaiting, aidDistributed] = await Promise.all([
+      AidRequest.countDocuments({ university, status: "pending" }),
+      AidRequest.countDocuments({ university, status: "approved" }),
+      AidRequest.countDocuments({ university, status: "waiting" }),
+      AidRequest.countDocuments({ university, status: "disbursed" })
+    ]);
 
     res.json({
       pendingRegistration,
@@ -303,6 +307,7 @@ export const getAdminStats = async (req, res) => {
       approvedStudentMoms,
       aidPending,
       aidApproved,
+      aidWaiting,
       aidDistributed
     });
   } catch (err) {

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import { createAid, myAidRequests } from "../../../services/aidService";
 import { getProfileCompletion } from "../../../services/userService";
+import { ESSENTIAL_ITEMS } from "../../../constants/essentials";
 
 const StudentAid = () => {
   const { user } = useAuth();
@@ -31,8 +32,24 @@ const StudentAid = () => {
       setError("Complete your profile and get approval before requesting aid");
       return;
     }
+    
+    // Validation
+    if (!financial.amount || financial.amount.trim() === "") {
+      setError("Amount is required");
+      return;
+    }
+    if (!financial.reason || financial.reason.trim() === "") {
+      setError("Reason is required");
+      return;
+    }
+    if (isNaN(Number(financial.amount)) || Number(financial.amount) <= 0) {
+      setError("Amount must be a valid positive number");
+      return;
+    }
+    
     try {
-      await createAid(user?.token, { type: "financial", amount: Number(financial.amount), reason: financial.reason });
+      setError("");
+      await createAid(user?.token, { type: "financial", amount: Number(financial.amount), reason: financial.reason.trim() });
       setFinancial({ amount: "", reason: "" });
       await load();
     } catch (err) {
@@ -45,9 +62,25 @@ const StudentAid = () => {
       setError("Complete your profile and get approval before requesting aid");
       return;
     }
+    
+    // Validation
+    if (!essential.item || essential.item.trim() === "") {
+      setError("Item is required");
+      return;
+    }
+    if (!essential.quantity || essential.quantity.trim() === "") {
+      setError("Quantity is required");
+      return;
+    }
+    if (isNaN(Number(essential.quantity)) || Number(essential.quantity) <= 0) {
+      setError("Quantity must be a valid positive number");
+      return;
+    }
+    
     try {
-      const items = essential.item ? [{ name: essential.item, quantity: Number(essential.quantity || 1) }] : [];
-      await createAid(user?.token, { type: "essentials", items, reason: `${essential.item} x${essential.quantity || 1}` });
+      setError("");
+      const items = [{ name: essential.item.trim(), quantity: Number(essential.quantity) }];
+      await createAid(user?.token, { type: "essentials", items, reason: `${essential.item} x${essential.quantity}` });
       setEssential({ item: "", quantity: "" });
       await load();
     } catch (err) {
@@ -58,11 +91,28 @@ const StudentAid = () => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2 space-y-6">
+        {error && (
+          <div className="rounded-xl border border-red-200 bg-red-50 p-4">
+            <p className="text-red-600 text-sm">{error}</p>
+          </div>
+        )}
+        
         <div className="rounded-xl border border-slate-200 p-5">
           <h3 className="font-semibold text-slate-800 mb-3">Apply for Financial Aid</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <input placeholder="Amount (KES)" value={financial.amount} onChange={(e)=>setFinancial({...financial,amount:e.target.value})} className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300" />
-            <input placeholder="Reason" value={financial.reason} onChange={(e)=>setFinancial({...financial,reason:e.target.value})} className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300" />
+            <input 
+              type="number"
+              placeholder="Amount (KES)" 
+              value={financial.amount} 
+              onChange={(e)=>setFinancial({...financial,amount:e.target.value})} 
+              className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300" 
+            />
+            <input 
+              placeholder="Reason" 
+              value={financial.reason} 
+              onChange={(e)=>setFinancial({...financial,reason:e.target.value})} 
+              className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300" 
+            />
           </div>
           <div className="mt-3">
             <button 
@@ -78,8 +128,23 @@ const StudentAid = () => {
         <div className="rounded-xl border border-slate-200 p-5">
           <h3 className="font-semibold text-slate-800 mb-3">Request Essentials</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <input placeholder="Item (e.g., diapers)" value={essential.item} onChange={(e)=>setEssential({...essential,item:e.target.value})} className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300" />
-            <input placeholder="Quantity" value={essential.quantity} onChange={(e)=>setEssential({...essential,quantity:e.target.value})} className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300" />
+            <select 
+              value={essential.item} 
+              onChange={(e)=>setEssential({...essential,item:e.target.value})} 
+              className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300"
+            >
+              <option value="">Select an item</option>
+              {ESSENTIAL_ITEMS.map(item => (
+                <option key={item} value={item}>{item}</option>
+              ))}
+            </select>
+            <input 
+              type="number"
+              placeholder="Quantity" 
+              value={essential.quantity} 
+              onChange={(e)=>setEssential({...essential,quantity:e.target.value})} 
+              className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300" 
+            />
           </div>
           <div className="mt-3">
             <button 
@@ -103,7 +168,18 @@ const StudentAid = () => {
               history.map((h)=> (
                 <div key={h._id} className="rounded-lg border border-slate-200 p-3">
                   <p className="text-slate-700 text-sm"><span className="font-medium">{h.type}:</span> {h.type === 'financial' ? `KES ${h.amount}` : (h.items?.map(i=>`${i.name} x${i.quantity}`).join(', ') || h.reason)}</p>
-                  <p className="text-slate-500 text-xs">Status: {h.status}</p>
+                  <p className="text-slate-500 text-xs">
+                    Status: <span className={`font-medium ${
+                      h.status === 'pending' ? 'text-yellow-600' :
+                      h.status === 'approved' ? 'text-blue-600' :
+                      h.status === 'waiting' ? 'text-orange-600' :
+                      h.status === 'disbursed' ? 'text-green-600' :
+                      h.status === 'rejected' ? 'text-red-600' : 'text-gray-600'
+                    }`}>{h.status}</span>
+                  </p>
+                  <p className="text-slate-400 text-xs">Created: {new Date(h.createdAt).toLocaleString()}</p>
+                  {h.approvedAt && <p className="text-slate-400 text-xs">Approved: {new Date(h.approvedAt).toLocaleString()}</p>}
+                  {h.disbursedAt && <p className="text-slate-400 text-xs">Disbursed: {new Date(h.disbursedAt).toLocaleString()}</p>}
                 </div>
               ))
             )}
