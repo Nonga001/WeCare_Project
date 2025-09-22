@@ -7,7 +7,8 @@ import {
   setAidStatus,
   disburseAid,
   moveToWaiting,
-  getAidStats
+  getAidStats,
+  getAdminReports
 } from "../controllers/aidController.js";
 
 const router = express.Router();
@@ -26,6 +27,7 @@ router.post("/:id/disburse", disburseAid);
 
 // Stats
 router.get("/stats", getAidStats);
+router.get("/reports", getAdminReports);
 
 export default router;
 

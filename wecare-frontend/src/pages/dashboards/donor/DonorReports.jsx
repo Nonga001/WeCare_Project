@@ -1,3 +1,7 @@
+import { useEffect, useState } from "react";
+import { useAuth } from "../../../context/AuthContext";
+import { getDonorStats } from "../../../services/donationService";
+
 const Metric = ({ title, value }) => (
   <div className="rounded-xl border border-slate-200 p-5">
     <p className="text-sm text-slate-500">{title}</p>
@@ -6,13 +10,37 @@ const Metric = ({ title, value }) => (
 );
 
 const DonorReports = () => {
+  const { user } = useAuth();
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true);
+        const s = await getDonorStats(user?.token);
+        setStats(s);
+      } catch (e) {
+        setError("Failed to load stats");
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (user?.token) load();
+  }, [user?.token]);
+
+  if (loading) return <div className="py-8 text-center">Loading...</div>;
+  if (error) return <div className="py-8 text-center text-red-600">{error}</div>;
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <Metric title="Mothers Supported" value="12" />
-        <Metric title="Financial Donated" value="KES 140k" />
-        <Metric title="Essentials Funded" value="220 items" />
-        <Metric title="Events Sponsored" value="3" />
+        <Metric title="Mothers Supported" value={(stats?.mothersSupported || 0).toLocaleString()} />
+        <Metric title="Financial Donated" value={`KES ${(stats?.financialDonated || 0).toLocaleString()}`} />
+        <Metric title="Essentials Funded" value={`${(stats?.essentialsDonated || 0).toLocaleString()} items`} />
+        <Metric title="Events Sponsored" value={(stats?.eventsSponsored || 0)} />
       </div>
 
       <div className="rounded-xl border border-slate-200 p-5">

@@ -1,3 +1,7 @@
+import { useEffect, useState } from "react";
+import { useAuth } from "../../../context/AuthContext";
+import { getAdminReports } from "../../../services/aidService";
+
 const ReportCard = ({ title, value, trend }) => (
   <div className="rounded-xl border border-slate-200 p-5">
     <p className="text-sm text-slate-500">{title}</p>
@@ -7,13 +11,44 @@ const ReportCard = ({ title, value, trend }) => (
 );
 
 const AdminReports = () => {
+  const { user } = useAuth();
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true);
+        const res = await getAdminReports(user?.token);
+        setData(res);
+      } catch (e) {
+        setError("Failed to load reports");
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (user?.token) load();
+  }, [user?.token]);
+
+  if (loading) return <div className="py-8 text-center">Loading reports...</div>;
+  if (error) return <div className="py-8 text-center text-red-600">{error}</div>;
+
+  const vm = data.verifiedMoms;
+  const fa = data.financialAid;
+  const ed = data.essentialsDistributed;
+  const vmTrend = `${vm.currentMonth - vm.previousMonth >= 0 ? '↑' : '↓'} ${Math.abs(vm.currentMonth - vm.previousMonth)}`;
+  const faTrend = `${fa.currentMonth - fa.previousMonth >= 0 ? '↑' : '↓'} ${Math.abs(fa.currentMonth - fa.previousMonth).toLocaleString()}`;
+  const edTrend = `${ed.currentMonthItems - ed.previousMonthItems >= 0 ? '↑' : '↓'} ${Math.abs(ed.currentMonthItems - ed.previousMonthItems).toLocaleString()} items`;
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <ReportCard title="Verified Moms" value="86" trend="↑ 5% vs last month" />
-        <ReportCard title="Financial Aid" value="KES 320k" trend="↑ 12%" />
-        <ReportCard title="Essentials Distributed" value="410 items" trend="↑ 8%" />
-        <ReportCard title="Retention Rate" value="92%" trend="—" />
+        <ReportCard title="Verified Moms" value={vm.currentTotal.toLocaleString()} trend={`${vmTrend} vs last month`} />
+        <ReportCard title="Financial Aid" value={`KES ${fa.currentMonth.toLocaleString()}`} trend={`${faTrend} vs last month`} />
+        <ReportCard title="Essentials Distributed" value={`${ed.currentMonthItems.toLocaleString()} items`} trend={`${edTrend} vs last month`} />
+        <ReportCard title="Retention Rate" value={`${data.retention}%`} trend="" />
       </div>
 
       <div className="rounded-xl border border-slate-200 p-5">

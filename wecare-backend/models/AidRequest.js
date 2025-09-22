@@ -14,7 +14,13 @@ const aidRequestSchema = new mongoose.Schema(
     rejectedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     rejectedAt: { type: Date },
     disbursedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-    disbursedAt: { type: Date }
+    disbursedAt: { type: Date },
+    disbursementMatches: [{ 
+      donationId: { type: mongoose.Schema.Types.ObjectId, ref: "Donation" },
+      amount: { type: Number }, // For financial disbursements
+      items: [{ name: String, quantity: Number }], // For essentials disbursements
+      disbursedAt: { type: Date, default: Date.now }
+    }]
   },
   { timestamps: true }
 );

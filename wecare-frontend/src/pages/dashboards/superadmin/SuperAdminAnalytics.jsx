@@ -1,3 +1,7 @@
+import { useEffect, useState } from "react";
+import { useAuth } from "../../../context/AuthContext";
+import { getSuperAnalytics } from "../../../services/donationService";
+
 const Tile = ({ title, value, sub }) => (
   <div className="rounded-xl border border-slate-200 p-5">
     <p className="text-sm text-slate-500">{title}</p>
@@ -7,38 +11,75 @@ const Tile = ({ title, value, sub }) => (
 );
 
 const SuperAdminAnalytics = () => {
+  const { user } = useAuth();
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true);
+        const res = await getSuperAnalytics(user?.token);
+        setData(res);
+      } catch (e) {
+        setError("Failed to load analytics");
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (user?.token) load();
+  }, [user?.token]);
+
+  if (loading) return <div className="py-8 text-center">Loading analytics...</div>;
+  if (error) return <div className="py-8 text-center text-red-600">{error}</div>;
+
+  const weeklyDeltaUsers = (data.weekly.current.users - data.weekly.previous.users) || 0;
+  const weeklyDeltaDonations = (data.weekly.current.donationsAmount - data.weekly.previous.donationsAmount) || 0;
+  const weeklyDeltaRequests = (data.weekly.current.requests - data.weekly.previous.requests) || 0;
+  const weeklyDeltaFulfilled = (data.weekly.current.fulfilled - data.weekly.previous.fulfilled) || 0;
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <Tile title="Users" value="768" sub="↑ 6%" />
-        <Tile title="Donations (KES)" value="1,250,000" sub="↑ 12%" />
-        <Tile title="Requests" value="420" sub="↑ 3%" />
-        <Tile title="Fulfilled" value="310" sub="↑ 5%" />
+        <Tile title="Users" value={data.totals.users.toLocaleString()} sub={`${weeklyDeltaUsers >= 0 ? "↑" : "↓"} ${Math.abs(weeklyDeltaUsers)}`} />
+        <Tile title="Donations (KES)" value={data.totals.donations.financialAmount.toLocaleString()} sub={`${weeklyDeltaDonations >= 0 ? "↑" : "↓"} ${Math.abs(weeklyDeltaDonations).toLocaleString()}`} />
+        <Tile title="Requests" value={data.totals.requests.toLocaleString()} sub={`${weeklyDeltaRequests >= 0 ? "↑" : "↓"} ${Math.abs(weeklyDeltaRequests)}`} />
+        <Tile title="Fulfilled" value={data.totals.fulfilled.toLocaleString()} sub={`${weeklyDeltaFulfilled >= 0 ? "↑" : "↓"} ${Math.abs(weeklyDeltaFulfilled)}`} />
       </div>
 
       <div className="rounded-xl border border-slate-200 p-5">
         <h3 className="font-semibold text-slate-800 mb-3">University Breakdown</h3>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm text-slate-700">
-          <div className="rounded-lg border border-slate-200 p-4">
-            <p className="font-medium">UON</p>
-            <p>Verified Moms: 120</p>
-            <p>Donations: KES 450k</p>
-          </div>
-          <div className="rounded-lg border border-slate-200 p-4">
-            <p className="font-medium">KU</p>
-            <p>Verified Moms: 95</p>
-            <p>Donations: KES 320k</p>
-          </div>
-          <div className="rounded-lg border border-slate-200 p-4">
-            <p className="font-medium">DEKUT</p>
-            <p>Verified Moms: 70</p>
-            <p>Donations: KES 210k</p>
-          </div>
+          {data.universityBreakdown.map((u) => (
+            <div key={u.university} className="rounded-lg border border-slate-200 p-4">
+              <p className="font-medium">{u.university}</p>
+              <p>Verified Moms: {u.verifiedMoms.toLocaleString()}</p>
+              <p>Donations to Uni: KES {u.donationsToUniversity.financialAmount.toLocaleString()}</p>
+              <p>Essentials Items: {u.donationsToUniversity.essentialsItems.toLocaleString()}</p>
+            </div>
+          ))}
         </div>
 
         <div className="mt-4 flex flex-wrap gap-3">
           <button className="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-medium hover:bg-slate-800">Export CSV</button>
           <button className="px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">Export PDF</button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="rounded-xl border border-slate-200 p-5">
+          <h3 className="font-semibold text-slate-800 mb-2">Balances</h3>
+          <p className="text-sm text-slate-600">Financial balance: KES {data.balances.financialAmount.toLocaleString()}</p>
+          <p className="text-sm text-slate-600">Essentials balance (items): {data.balances.essentialsItems.toLocaleString()}</p>
+        </div>
+        <div className="rounded-xl border border-slate-200 p-5">
+          <h3 className="font-semibold text-slate-800 mb-2">Monthly vs Previous</h3>
+          <p className="text-sm text-slate-600">Users: {data.monthly.current.users} vs {data.monthly.previous.users}</p>
+          <p className="text-sm text-slate-600">Donations (KES): {data.monthly.current.donationsAmount.toLocaleString()} vs {data.monthly.previous.donationsAmount.toLocaleString()}</p>
+          <p className="text-sm text-slate-600">Requests: {data.monthly.current.requests} vs {data.monthly.previous.requests}</p>
+          <p className="text-sm text-slate-600">Fulfilled: {data.monthly.current.fulfilled} vs {data.monthly.previous.fulfilled}</p>
         </div>
       </div>
     </div>

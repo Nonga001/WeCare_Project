@@ -39,4 +39,9 @@ export const getAidStats = async (token) => {
   return res.data;
 };
 
+export const getAdminReports = async (token) => {
+  const res = await axios.get(`${API_URL}/reports`, auth(token));
+  return res.data;
+};
+
 
