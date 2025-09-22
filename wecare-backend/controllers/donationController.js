@@ -190,6 +190,22 @@ export const getGlobalStats = async (req, res) => {
       AidRequest.countDocuments({ status: "disbursed", disbursedAt: { $gte: oneWeekAgo } })
     ]);
 
+    // Active users last 24 hours by role (approximation)
+    const since = new Date();
+    since.setDate(since.getDate() - 1);
+    const activeByRoleAgg = await User.aggregate([
+      { $match: { createdAt: { $gte: since } } },
+      { $group: { _id: "$role", count: { $sum: 1 } } }
+    ]);
+    const activeMap = new Map(activeByRoleAgg.map(a => [a._id, a.count]));
+    const activeByRole = {
+      student: activeMap.get("student") || 0,
+      admin: activeMap.get("admin") || 0,
+      donor: activeMap.get("donor") || 0,
+      superadmin: activeMap.get("superadmin") || 0,
+    };
+    const activeTotal = Object.values(activeByRole).reduce((a, b) => a + b, 0);
+
     res.json({
       totalStudents,
       totalAdmins,
@@ -203,7 +219,8 @@ export const getGlobalStats = async (req, res) => {
         donations: weeklyDonations,
         requests: weeklyRequests,
         fulfilled: weeklyFulfilled
-      }
+      },
+      activeUsers: { total: activeTotal, byRole: activeByRole }
     });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
@@ -328,6 +345,20 @@ export const getSuperAnalytics = async (req, res) => {
       }
     }));
 
+    // Essentials inventory (global)
+    const essentialsByItemTotal = await Donation.aggregate([
+      { $match: { type: "essentials" } },
+      { $unwind: { path: "$items", preserveNullAndEmptyArrays: true } },
+      { $group: { _id: "$items.name", total: { $sum: { $ifNull: ["$items.quantity", 0] } } } }
+    ]);
+    const essentialsByItemDisbursed = await Donation.aggregate([
+      { $match: { type: "essentials" } },
+      { $unwind: { path: "$disbursedItems", preserveNullAndEmptyArrays: true } },
+      { $group: { _id: "$disbursedItems.name", total: { $sum: { $ifNull: ["$disbursedItems.quantity", 0] } } } }
+    ]);
+    const disbMap = new Map(essentialsByItemDisbursed.map(e => [e._id, e.total]));
+    const essentialsInventory = essentialsByItemTotal.map(e => ({ name: e._id, available: Math.max(0, (e.total || 0) - (disbMap.get(e._id) || 0)) })).filter(e => e.name);
+
     res.json({
       totals: {
         users: totalUsers,
@@ -340,7 +371,8 @@ export const getSuperAnalytics = async (req, res) => {
       },
       balances: {
         financialAmount: financialBalance,
-        essentialsItems: essentialsBalanceItems
+        essentialsItems: essentialsBalanceItems,
+        essentialsInventory
       },
       weekly: { current: weeklyCurrent, previous: weeklyPrevious },
       monthly: { current: monthlyCurrent, previous: monthlyPrevious },

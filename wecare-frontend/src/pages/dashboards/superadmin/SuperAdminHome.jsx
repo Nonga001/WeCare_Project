@@ -142,6 +142,17 @@ const SuperAdminHome = () => {
               <span className="text-sm text-slate-600">Payments</span>
               <span className="text-xs text-green-600 font-medium">● Online</span>
             </div>
+            {stats.activeUsers && (
+              <div className="mt-3 rounded-lg border border-slate-200 p-3">
+                <p className="text-sm font-medium text-slate-800 mb-2">Active Users (last 24h): {stats.activeUsers.total}</p>
+                <div className="grid grid-cols-2 gap-2 text-xs text-slate-700">
+                  <div className="flex justify-between"><span>Admins</span><span className="font-semibold">{stats.activeUsers.byRole.admin}</span></div>
+                  <div className="flex justify-between"><span>Superadmins</span><span className="font-semibold">{stats.activeUsers.byRole.superadmin}</span></div>
+                  <div className="flex justify-between"><span>Students</span><span className="font-semibold">{stats.activeUsers.byRole.student}</span></div>
+                  <div className="flex justify-between"><span>Donors</span><span className="font-semibold">{stats.activeUsers.byRole.donor}</span></div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

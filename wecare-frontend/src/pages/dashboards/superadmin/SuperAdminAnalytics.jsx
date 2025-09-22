@@ -63,8 +63,18 @@ const SuperAdminAnalytics = () => {
         </div>
 
         <div className="mt-4 flex flex-wrap gap-3">
-          <button className="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-medium hover:bg-slate-800">Export CSV</button>
-          <button className="px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">Export PDF</button>
+          <button onClick={() => {
+            const rows = [
+              ["University","Verified Moms","Financial (KES)","Essentials Items"],
+              ...data.universityBreakdown.map(u => [u.university, u.verifiedMoms, u.donationsToUniversity.financialAmount, u.donationsToUniversity.essentialsItems])
+            ];
+            const csv = rows.map(r => r.map(x => `"${String(x).replace(/"/g,'""')}"`).join(",")).join("\n");
+            const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = 'university_breakdown.csv'; a.click(); URL.revokeObjectURL(url);
+          }} className="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-medium hover:bg-slate-800">Export CSV</button>
+          <button onClick={() => window.print()} className="px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">Export PDF</button>
         </div>
       </div>
 
@@ -73,6 +83,19 @@ const SuperAdminAnalytics = () => {
           <h3 className="font-semibold text-slate-800 mb-2">Balances</h3>
           <p className="text-sm text-slate-600">Financial balance: KES {data.balances.financialAmount.toLocaleString()}</p>
           <p className="text-sm text-slate-600">Essentials balance (items): {data.balances.essentialsItems.toLocaleString()}</p>
+          {data.balances.essentialsInventory && (
+            <div className="mt-3">
+              <h4 className="text-sm font-medium text-slate-700 mb-1">Essentials Inventory</h4>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {data.balances.essentialsInventory.map((it) => (
+                  <div key={it.name} className="border border-slate-200 rounded-lg px-3 py-2 text-sm flex justify-between">
+                    <span className="text-slate-700">{it.name}</span>
+                    <span className="text-slate-900 font-medium">{it.available}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
         <div className="rounded-xl border border-slate-200 p-5">
           <h3 className="font-semibold text-slate-800 mb-2">Monthly vs Previous</h3>

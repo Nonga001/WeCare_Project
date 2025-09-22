@@ -1,17 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
-import { disburseAid, setAidStatus, moveToWaiting, uniAidRequests } from "../../../services/aidService";
-import { getAvailableDonations, disburseWithMatch, getAvailableBalances } from "../../../services/disbursementService";
+import { disburseAid, setAidStatus, moveToWaiting, uniAidRequests, getAidStats } from "../../../services/aidService";
+import { getAvailableBalances } from "../../../services/disbursementService";
 
 const AdminAid = () => {
   const { user } = useAuth();
   const [requests, setRequests] = useState([]);
-  const [availableDonations, setAvailableDonations] = useState([]);
   const [balances, setBalances] = useState(null);
-  const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [error, setError] = useState("");
-  const [showAvailableDonations, setShowAvailableDonations] = useState(false);
+  const [stats, setStats] = useState(null);
 
   const load = async () => {
     try {
@@ -32,17 +30,10 @@ const AdminAid = () => {
       setRequests(normalized);
       const bal = await getAvailableBalances(user?.token);
       setBalances(bal);
+      const s = await getAidStats(user?.token);
+      setStats(s);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to load requests');
-    }
-  };
-
-  const loadAvailableDonations = async () => {
-    try {
-      const data = await getAvailableDonations(user?.token);
-      setAvailableDonations(data);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load available donations');
     }
   };
 
@@ -50,10 +41,9 @@ const AdminAid = () => {
 
   const filtered = useMemo(() => {
     return requests.filter(r => (
-      (typeFilter ? r.type === (typeFilter) : true) &&
-      (`${r.requester} ${r.detail}`.toLowerCase().includes(query.toLowerCase()))
+      (typeFilter ? r.type === (typeFilter) : true)
     ));
-  }, [requests, query, typeFilter]);
+  }, [requests, typeFilter]);
 
   const approve = async (id) => { 
     try {
@@ -135,22 +125,12 @@ const AdminAid = () => {
           </div>
         )}
         
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-3">
-          <input value={query} onChange={(e)=>setQuery(e.target.value)} placeholder="Search requester or detail" className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-300" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
           <select value={typeFilter} onChange={(e)=>setTypeFilter(e.target.value)} className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-300">
             <option value="">All Types</option>
             <option value="Financial">Financial</option>
             <option value="Essentials">Essentials</option>
           </select>
-          <button 
-            onClick={() => {
-              setShowAvailableDonations(!showAvailableDonations);
-              if (!showAvailableDonations) loadAvailableDonations();
-            }}
-            className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700"
-          >
-            {showAvailableDonations ? 'Hide' : 'Show'} Available Donations
-          </button>
           <div></div>
         </div>
         <div className="space-y-3">
@@ -202,93 +182,42 @@ const AdminAid = () => {
 
       <div className="rounded-xl border border-slate-200 p-5">
         <h3 className="font-semibold text-slate-800 mb-3">Distribution Tracker</h3>
-        <p className="text-sm text-slate-600">Monitor aid distribution progress.</p>
-      </div>
-
-      {/* Available Donations Section */}
-      {showAvailableDonations && (
-        <div className="rounded-xl border border-slate-200 p-5">
-          <h3 className="font-semibold text-slate-800 mb-4">Available Donations for Disbursement</h3>
-          <p className="text-sm text-slate-600 mb-4">
-            These are exact matches where donations can fulfill aid requests. Disbursement follows first-come-first-serve.
-          </p>
-
-          {/* Essentials Inventory Overview */}
-          {balances?.essentials?.inventory && (
-            <div className="mb-5">
-              <h4 className="font-medium text-slate-700 mb-2">Essentials Inventory</h4>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
-                {balances.essentials.inventory.map(item => (
-                  <div key={item.name} className="border border-slate-200 rounded-lg px-3 py-2 flex justify-between">
-                    <span className="text-slate-700">{item.name}</span>
-                    <span className="text-slate-900 font-medium">{item.available}</span>
-                  </div>
-                ))}
-              </div>
+        {!stats ? (
+          <p className="text-sm text-slate-600">Loading distribution stats...</p>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="rounded-lg border border-slate-200 p-4 text-center">
+              <p className="text-xs text-slate-500">Pending</p>
+              <p className="text-lg font-semibold text-slate-800">{stats.pending}</p>
             </div>
-          )}
-          
-          {availableDonations.length === 0 ? (
-            <p className="text-slate-500 text-center py-4">No available donations for disbursement at the moment.</p>
-          ) : (
-            <div className="space-y-4">
-              {availableDonations.map((match) => (
-                <div key={match.aidRequest._id} className="border border-slate-200 rounded-lg p-4">
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <h4 className="font-medium text-slate-800">{match.aidRequest.student?.name}</h4>
-                      <p className="text-sm text-slate-600">{match.aidRequest.type} • {match.aidRequest.reason}</p>
-                      <p className="text-xs text-slate-500">
-                        {match.aidRequest.type === 'financial' 
-                          ? `Amount: KES ${match.aidRequest.amount?.toLocaleString()}`
-                          : `Items: ${match.aidRequest.items?.map(i => `${i.name} x${i.quantity}`).join(', ')}`
-                        }
-                      </p>
-                    </div>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      match.aidRequest.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'
-                    }`}>
-                      {match.aidRequest.status}
-                    </span>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-slate-700">Available Donations:</p>
-                    {match.matches.map((donation, index) => (
-                      <div key={index} className="bg-slate-50 rounded-lg p-3">
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <p className="text-sm font-medium text-slate-800">
-                              {donation.donorName} {donation.organization && `(${donation.organization})`}
-                            </p>
-                            {donation.availableAmount && (
-                              <p className="text-xs text-slate-600">
-                                Available: KES {donation.availableAmount.toLocaleString()} | 
-                                Required: KES {donation.requiredAmount.toLocaleString()}
-                              </p>
-                            )}
-                            {donation.availableItems && (
-                              <p className="text-xs text-slate-600">
-                                Available: {Object.entries(donation.availableItems).map(([name, qty]) => `${name} x${qty}`).join(', ')}
-                              </p>
-                            )}
-                          </div>
-                          <button
-                            onClick={() => disburseWithExactMatch(match.aidRequest._id, donation.donationId)}
-                            className="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm hover:bg-emerald-700"
-                          >
-                            Disburse
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+            <div className="rounded-lg border border-slate-200 p-4 text-center">
+              <p className="text-xs text-slate-500">Approved</p>
+              <p className="text-lg font-semibold text-slate-800">{stats.approved}</p>
+            </div>
+            <div className="rounded-lg border border-slate-200 p-4 text-center">
+              <p className="text-xs text-slate-500">Waiting</p>
+              <p className="text-lg font-semibold text-slate-800">{stats.waiting}</p>
+            </div>
+            <div className="rounded-lg border border-slate-200 p-4 text-center">
+              <p className="text-xs text-slate-500">Disbursed</p>
+              <p className="text-lg font-semibold text-slate-800">{stats.disbursed}</p>
+            </div>
+          </div>
+        )}
+        {balances?.essentials?.inventory && (
+          <div className="mt-4">
+            <h4 className="font-medium text-slate-700 mb-2">Essentials Inventory</h4>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
+              {balances.essentials.inventory.map(item => (
+                <div key={item.name} className="border border-slate-200 rounded-lg px-3 py-2 flex justify-between">
+                  <span className="text-slate-700">{item.name}</span>
+                  <span className="text-slate-900 font-medium">{item.available}</span>
                 </div>
               ))}
             </div>
-          )}
-        </div>
-      )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

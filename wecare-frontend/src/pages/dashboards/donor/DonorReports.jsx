@@ -40,14 +40,25 @@ const DonorReports = () => {
         <Metric title="Mothers Supported" value={(stats?.mothersSupported || 0).toLocaleString()} />
         <Metric title="Financial Donated" value={`KES ${(stats?.financialDonated || 0).toLocaleString()}`} />
         <Metric title="Essentials Funded" value={`${(stats?.essentialsDonated || 0).toLocaleString()} items`} />
-        <Metric title="Events Sponsored" value={(stats?.eventsSponsored || 0)} />
+        {/* Events Sponsored removed for now */}
       </div>
 
       <div className="rounded-xl border border-slate-200 p-5">
         <h3 className="font-semibold text-slate-800 mb-3">Downloads</h3>
         <div className="flex flex-wrap gap-3">
-          <button className="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-medium hover:bg-slate-800">Export CSV</button>
-          <button className="px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">Export PDF</button>
+          <button onClick={() => {
+            const rows = [
+              ["Metric","Value"],
+              ["Mothers Supported", `${stats?.mothersSupported || 0}`],
+              ["Financial Donated (KES)", `${stats?.financialDonated || 0}`],
+              ["Essentials Funded (items)", `${stats?.essentialsDonated || 0}`]
+            ];
+            const csv = rows.map(r => r.join(",")).join("\n");
+            const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = 'donor_reports.csv'; a.click(); URL.revokeObjectURL(url);
+          }} className="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-medium hover:bg-slate-800">Export CSV</button>
+          <button onClick={() => window.print()} className="px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">Export PDF</button>
         </div>
       </div>
     </div>

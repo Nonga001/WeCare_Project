@@ -39,7 +39,12 @@ const BrowseRequests = () => {
     const params = new URLSearchParams();
     params.set("type", r.type);
     if (r.amount) params.set("amount", String(r.amount));
-    navigate(`/donor/donations?${params.toString()}`);
+    if (r.type === 'essentials' && r.items?.length) {
+      // Encode items as name:qty;name:qty
+      const itemsStr = r.items.map(i => `${encodeURIComponent(i.name)}:${i.quantity}`).join(";");
+      params.set("items", itemsStr);
+    }
+    navigate(`/dashboard/donor/donations?${params.toString()}`);
   };
 
   if (loading) {

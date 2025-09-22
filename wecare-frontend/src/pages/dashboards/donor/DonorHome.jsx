@@ -106,7 +106,7 @@ const DonorHome = () => {
         
         <Card title="Recent Activity">
           <p className="text-sm text-slate-600">View your donation history and track your impact.</p>
-          <a href="/donor/donations" className="mt-2 inline-block text-blue-600 text-sm hover:underline">View Donations →</a>
+          <a href="/dashboard/donor/donations" className="mt-2 inline-block text-blue-600 text-sm hover:underline">View Donations →</a>
         </Card>
       </div>
     </div>

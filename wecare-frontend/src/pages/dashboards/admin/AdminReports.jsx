@@ -54,8 +54,20 @@ const AdminReports = () => {
       <div className="rounded-xl border border-slate-200 p-5">
         <h3 className="font-semibold text-slate-800 mb-3">Downloads</h3>
         <div className="flex flex-wrap gap-3">
-          <button className="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-medium hover:bg-slate-800">Export CSV</button>
-          <button className="px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">Export PDF</button>
+          <button onClick={() => {
+            const rows = [
+              ["Metric","Current","Previous"],
+              ["Verified Moms", `${vm.currentTotal}`, `${vm.previousMonth}`],
+              ["Financial Aid (KES)", `${fa.currentMonth}`, `${fa.previousMonth}`],
+              ["Essentials Items", `${ed.currentMonthItems}`, `${ed.previousMonthItems}`],
+              ["Retention (%)", `${data.retention}`, ""]
+            ];
+            const csv = rows.map(r => r.join(",")).join("\n");
+            const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = 'admin_reports.csv'; a.click(); URL.revokeObjectURL(url);
+          }} className="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-medium hover:bg-slate-800">Export CSV</button>
+          <button onClick={() => window.print()} className="px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">Export PDF</button>
         </div>
       </div>
     </div>

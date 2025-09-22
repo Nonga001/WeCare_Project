@@ -26,11 +26,21 @@ const Donations = () => {
     const params = new URLSearchParams(location.search);
     const type = params.get("type");
     const amount = params.get("amount");
+    const items = params.get("items");
     setForm((prev) => ({
       ...prev,
       type: type || prev.type,
       amount: amount || prev.amount,
     }));
+    if (type === 'essentials' && items) {
+      const parsed = items.split(";").map(p => {
+        const [nameEnc, qtyStr] = p.split(":");
+        return { name: decodeURIComponent(nameEnc), quantity: qtyStr };
+      }).filter(x => x.name && x.quantity);
+      if (parsed.length) {
+        setForm((prev2) => ({ ...prev2, type: 'essentials', items: parsed }));
+      }
+    }
   }, [location.search]);
 
   useEffect(() => {
