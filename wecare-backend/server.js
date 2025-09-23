@@ -8,6 +8,7 @@ import notificationRoutes from "./routes/notifications.js";
 import aidRoutes from "./routes/aid.js";
 import donationRoutes from "./routes/donations.js";
 import disbursementRoutes from "./routes/disbursements.js";
+import groupRoutes from "./routes/groups.js";
 
 dotenv.config();
 connectDB();
@@ -24,6 +25,7 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/aid", aidRoutes);
 app.use("/api/donations", donationRoutes);
 app.use("/api/disbursements", disbursementRoutes);
+app.use("/api/groups", groupRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

@@ -1,23 +1,82 @@
+import { useEffect, useState } from "react";
+import { useAuth } from "../../../context/AuthContext";
+import { listGroups, joinGroup } from "../../../services/groupService";
+
 const StudentSupport = () => {
-  const groups = [
-    { id: 1, name: "Mom Scholars 2025", members: 148 },
-    { id: 2, name: "First-year Moms", members: 76 },
-  ];
+  const { user } = useAuth();
+  const [uniGroups, setUniGroups] = useState([]);
+  const [globalGroups, setGlobalGroups] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const load = async () => {
+    try {
+      setLoading(true);
+      const [ug, gg] = await Promise.all([
+        listGroups(user?.token, "uni"),
+        listGroups(user?.token, "global")
+      ]);
+      setUniGroups(ug);
+      setGlobalGroups(gg);
+    } catch (e) {
+      setError("Failed to load groups");
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { if (user?.token) load(); }, [user?.token]);
+
+  const onJoin = async (id, anonymous) => {
+    try {
+      await joinGroup(user?.token, id, anonymous);
+      await load();
+    } catch (e) {
+      setError(e.response?.data?.message || "Failed to join");
+    }
+  };
+
+  // removed request-join flow
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2 space-y-6">
         <div className="rounded-xl border border-slate-200 p-5">
           <h3 className="font-semibold text-slate-800 mb-3">Peer Groups</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {groups.map((g) => (
-              <div key={g.id} className="rounded-xl border border-slate-200 p-4 hover:shadow-md transition-shadow">
-                <p className="font-medium text-slate-800">{g.name}</p>
-                <p className="text-sm text-slate-600">Members: {g.members}</p>
-                <button className="mt-3 px-4 py-2 rounded-lg bg-violet-600 text-white text-sm hover:bg-violet-700">Join</button>
+          {error && <div className="mb-3 text-sm text-rose-600">{error}</div>}
+          {loading ? (
+            <p className="text-sm text-slate-500">Loading groups...</p>
+          ) : (
+            <>
+              <h4 className="text-slate-700 font-medium mb-2">Your University</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                {uniGroups.map((g) => (
+                  <div key={g._id} className="rounded-xl border border-slate-200 p-4 hover:shadow-md transition-shadow">
+                    <p className="font-medium text-slate-800">{g.name}</p>
+                    <p className="text-sm text-slate-600">Members: {g.membersCount}</p>
+                    <div className="mt-3 flex gap-2">
+                      <button onClick={()=>onJoin(g._id, false)} className="px-4 py-2 rounded-lg bg-violet-600 text-white text-sm hover:bg-violet-700">Join Publicly</button>
+                      <button onClick={()=>onJoin(g._id, true)} className="px-4 py-2 rounded-lg bg-slate-600 text-white text-sm hover:bg-slate-700">Join Anonymous</button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+              <h4 className="text-slate-700 font-medium mb-2">Global Groups</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {globalGroups.map((g) => (
+                  <div key={g._id} className="rounded-xl border border-slate-200 p-4 hover:shadow-md transition-shadow">
+                    <p className="font-medium text-slate-800">{g.name}</p>
+                    <p className="text-sm text-slate-600">Members: {g.membersCount}</p>
+                    <div className="mt-3 flex gap-2">
+                      <button onClick={()=>onJoin(g._id, false)} className="px-4 py-2 rounded-lg bg-violet-600 text-white text-sm hover:bg-violet-700">Join Publicly</button>
+                      <button onClick={()=>onJoin(g._id, true)} className="px-4 py-2 rounded-lg bg-slate-600 text-white text-sm hover:bg-slate-700">Join Anonymous</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
 
         <div className="rounded-xl border border-slate-200 p-5">

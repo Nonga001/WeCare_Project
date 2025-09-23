@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import { getDonorStats } from "../../../services/donationService";
 
@@ -14,6 +14,7 @@ const DonorReports = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const printRef = useRef(null);
 
   useEffect(() => {
     const load = async () => {
@@ -35,7 +36,7 @@ const DonorReports = () => {
   if (error) return <div className="py-8 text-center text-red-600">{error}</div>;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" ref={printRef}>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <Metric title="Mothers Supported" value={(stats?.mothersSupported || 0).toLocaleString()} />
         <Metric title="Financial Donated" value={`KES ${(stats?.financialDonated || 0).toLocaleString()}`} />
@@ -48,6 +49,10 @@ const DonorReports = () => {
         <div className="flex flex-wrap gap-3">
           <button onClick={() => {
             const rows = [
+              ["Reports"],
+              ["Donor", user?.name || ""],
+              ["Email", user?.email || ""],
+              [""],
               ["Metric","Value"],
               ["Mothers Supported", `${stats?.mothersSupported || 0}`],
               ["Financial Donated (KES)", `${stats?.financialDonated || 0}`],
@@ -58,7 +63,13 @@ const DonorReports = () => {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a'); a.href = url; a.download = 'donor_reports.csv'; a.click(); URL.revokeObjectURL(url);
           }} className="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-medium hover:bg-slate-800">Export CSV</button>
-          <button onClick={() => window.print()} className="px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">Export PDF</button>
+          <button onClick={() => {
+            const w = window.open('', '_blank');
+            if (!w) return;
+            const content = printRef.current?.innerHTML || '';
+            w.document.write(`<html><head><title>Donor Reports</title><style>body{font-family:sans-serif;padding:20px} button,nav,header,footer{display:none!important}</style></head><body><h2>Donor Reports</h2><p><strong>Donor:</strong> ${user?.name || ''}</p><p><strong>Email:</strong> ${user?.email || ''}</p>${content}</body></html>`);
+            w.document.close(); w.focus(); w.print(); w.close();
+          }} className="px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">Export PDF</button>
         </div>
       </div>
     </div>

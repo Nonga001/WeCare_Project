@@ -35,6 +35,7 @@ import AdminVerify from "../pages/dashboards/admin/AdminVerify";
 import AdminAid from "../pages/dashboards/admin/AdminAid";
 import AdminReports from "../pages/dashboards/admin/AdminReports";
 import AdminNotifications from "../pages/dashboards/admin/AdminNotifications";
+import AdminGroups from "../pages/dashboards/admin/AdminGroups";
 import StudentNotifications from "../pages/dashboards/student/StudentNotifications";
 import SuperAdminNotifications from "../pages/dashboards/superadmin/SuperAdminNotifications";
 
@@ -95,6 +96,7 @@ const AppRoutes = () => {
           <Route path="verify" element={<AdminVerify />} />
           <Route path="aid" element={<AdminAid />} />
           <Route path="reports" element={<AdminReports />} />
+          <Route path="groups" element={<AdminGroups />} />
           <Route path="notifications" element={<AdminNotifications />} />
         </Route>
         <Route

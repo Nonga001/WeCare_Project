@@ -255,20 +255,32 @@ export const getAidStats = async (req, res) => {
 // Admin: reports with month-over-month comparisons
 export const getAdminReports = async (req, res) => {
   try {
-    if (req.user.role !== "admin") return res.status(403).json({ message: "Only admins" });
-    const university = req.user.university;
+    if (!["admin", "superadmin"].includes(req.user.role)) {
+      return res.status(403).json({ message: "Only admins or superadmins" });
+    }
+    const university = req.user.role === "admin" ? req.user.university : (req.query.university || null);
 
     const now = new Date();
     const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
 
+    // If superadmin did not specify a university, return zeroed metrics but 200 OK so frontend can render
+    if (!university) {
+      return res.json({
+        verifiedMoms: { currentTotal: 0, currentMonth: 0, previousMonth: 0 },
+        financialAid: { currentMonth: 0, previousMonth: 0 },
+        essentialsDistributed: { currentMonthItems: 0, previousMonthItems: 0 },
+        retention: 0
+      });
+    }
+
     // Verified moms
-    const totalVerified = await User.countDocuments({ 
-      role: "student", 
-      university, 
-      isApproved: true, 
-      profileSubmitted: true, 
-      profileApproved: true 
+    const totalVerified = await User.countDocuments({
+      role: "student",
+      university,
+      isApproved: true,
+      profileSubmitted: true,
+      profileApproved: true
     });
 
     const verifiedThisMonth = await User.countDocuments({

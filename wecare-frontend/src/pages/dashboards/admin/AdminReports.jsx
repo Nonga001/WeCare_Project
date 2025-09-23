@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import { getAdminReports } from "../../../services/aidService";
 
@@ -15,6 +15,8 @@ const AdminReports = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  const printRef = useRef(null);
 
   useEffect(() => {
     const load = async () => {
@@ -35,20 +37,96 @@ const AdminReports = () => {
   if (loading) return <div className="py-8 text-center">Loading reports...</div>;
   if (error) return <div className="py-8 text-center text-red-600">{error}</div>;
 
-  const vm = data.verifiedMoms;
-  const fa = data.financialAid;
-  const ed = data.essentialsDistributed;
-  const vmTrend = `${vm.currentMonth - vm.previousMonth >= 0 ? '↑' : '↓'} ${Math.abs(vm.currentMonth - vm.previousMonth)}`;
-  const faTrend = `${fa.currentMonth - fa.previousMonth >= 0 ? '↑' : '↓'} ${Math.abs(fa.currentMonth - fa.previousMonth).toLocaleString()}`;
-  const edTrend = `${ed.currentMonthItems - ed.previousMonthItems >= 0 ? '↑' : '↓'} ${Math.abs(ed.currentMonthItems - ed.previousMonthItems).toLocaleString()} items`;
+  const vm = data?.verifiedMoms || { currentTotal: 0, currentMonth: 0, previousMonth: 0 };
+  const fa = data?.financialAid || { currentMonth: 0, previousMonth: 0 };
+  const ed = data?.essentialsDistributed || { currentMonthItems: 0, previousMonthItems: 0 };
+  const retention = typeof data?.retention === 'number' ? data.retention : 0;
+  const vmTrend = `${(vm.currentMonth || 0) - (vm.previousMonth || 0) >= 0 ? '↑' : '↓'} ${Math.abs((vm.currentMonth || 0) - (vm.previousMonth || 0))}`;
+  const faTrend = `${(fa.currentMonth || 0) - (fa.previousMonth || 0) >= 0 ? '↑' : '↓'} ${Math.abs((fa.currentMonth || 0) - (fa.previousMonth || 0)).toLocaleString()}`;
+  const edTrend = `${(ed.currentMonthItems || 0) - (ed.previousMonthItems || 0) >= 0 ? '↑' : '↓'} ${Math.abs((ed.currentMonthItems || 0) - (ed.previousMonthItems || 0)).toLocaleString()} items`;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" ref={printRef}>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <ReportCard title="Verified Moms" value={vm.currentTotal.toLocaleString()} trend={`${vmTrend} vs last month`} />
-        <ReportCard title="Financial Aid" value={`KES ${fa.currentMonth.toLocaleString()}`} trend={`${faTrend} vs last month`} />
-        <ReportCard title="Essentials Distributed" value={`${ed.currentMonthItems.toLocaleString()} items`} trend={`${edTrend} vs last month`} />
-        <ReportCard title="Retention Rate" value={`${data.retention}%`} trend="" />
+        <ReportCard title="Verified Moms" value={(vm.currentTotal || 0).toLocaleString()} trend={`${vmTrend} vs last month`} />
+        <ReportCard title="Financial Aid" value={`KES ${(fa.currentMonth || 0).toLocaleString()}`} trend={`${faTrend} vs last month`} />
+        <ReportCard title="Essentials Distributed" value={`${(ed.currentMonthItems || 0).toLocaleString()} items`} trend={`${edTrend} vs last month`} />
+        <ReportCard title="Retention Rate" value={`${retention}%`} trend="" />
+      </div>
+
+      <div className="rounded-xl border border-slate-200 p-5">
+        <h3 className="font-semibold text-slate-800 mb-3">Visualizations</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <p className="text-sm text-slate-600 mb-2">Verified Moms (Prev vs Current)</p>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="w-24 text-xs text-slate-500">Previous</span>
+                <div className="h-3 bg-slate-200 rounded w-full">
+                  <div className="h-3 bg-slate-500 rounded" style={{ width: `${Math.max(5, Math.min(100, ((vm.previousMonth || 0) / Math.max(1, vm.currentTotal || 1)) * 100))}%` }} />
+                </div>
+                <span className="w-16 text-right text-xs text-slate-600">{vm.previousMonth}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-24 text-xs text-slate-500">Current</span>
+                <div className="h-3 bg-slate-200 rounded w-full">
+                  <div className="h-3 bg-violet-600 rounded" style={{ width: `${Math.max(5, Math.min(100, ((vm.currentTotal || 0) / Math.max(1, vm.currentTotal || 1)) * 100))}%` }} />
+                </div>
+                <span className="w-16 text-right text-xs text-slate-600">{vm.currentTotal}</span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <p className="text-sm text-slate-600 mb-2">Financial Aid (KES)</p>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="w-24 text-xs text-slate-500">Previous</span>
+                <div className="h-3 bg-slate-200 rounded w-full">
+                  <div className="h-3 bg-slate-500 rounded" style={{ width: `${Math.max(5, Math.min(100, ((fa.previousMonth || 0) / Math.max(1, fa.currentMonth || 1)) * 100))}%` }} />
+                </div>
+                <span className="w-20 text-right text-xs text-slate-600">{fa.previousMonth.toLocaleString()}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-24 text-xs text-slate-500">Current</span>
+                <div className="h-3 bg-slate-200 rounded w-full">
+                  <div className="h-3 bg-emerald-600 rounded" style={{ width: `${Math.max(5, Math.min(100, ((fa.currentMonth || 0) / Math.max(1, fa.currentMonth || 1)) * 100))}%` }} />
+                </div>
+                <span className="w-20 text-right text-xs text-slate-600">{fa.currentMonth.toLocaleString()}</span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <p className="text-sm text-slate-600 mb-2">Essentials Items (Prev vs Current)</p>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="w-24 text-xs text-slate-500">Previous</span>
+                <div className="h-3 bg-slate-200 rounded w-full">
+                  <div className="h-3 bg-slate-500 rounded" style={{ width: `${Math.max(5, Math.min(100, ((ed.previousMonthItems || 0) / Math.max(1, ed.currentMonthItems || 1)) * 100))}%` }} />
+                </div>
+                <span className="w-16 text-right text-xs text-slate-600">{ed.previousMonthItems.toLocaleString()}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-24 text-xs text-slate-500">Current</span>
+                <div className="h-3 bg-slate-200 rounded w-full">
+                  <div className="h-3 bg-blue-600 rounded" style={{ width: `${Math.max(5, Math.min(100, ((ed.currentMonthItems || 0) / Math.max(1, ed.currentMonthItems || 1)) * 100))}%` }} />
+                </div>
+                <span className="w-16 text-right text-xs text-slate-600">{ed.currentMonthItems.toLocaleString()}</span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <p className="text-sm text-slate-600 mb-2">Retention</p>
+            <div className="flex items-center gap-2">
+              <div className="h-3 bg-slate-200 rounded w-full">
+                <div className="h-3 bg-amber-500 rounded" style={{ width: `${Math.max(5, Math.min(100, retention))}%` }} />
+              </div>
+              <span className="w-12 text-right text-xs text-slate-600">{retention}%</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="rounded-xl border border-slate-200 p-5">
@@ -56,6 +134,10 @@ const AdminReports = () => {
         <div className="flex flex-wrap gap-3">
           <button onClick={() => {
             const rows = [
+              ["Reports"],
+              ["Admin", user?.name || ""],
+              ["Institution", user?.university || ""],
+              [""],
               ["Metric","Current","Previous"],
               ["Verified Moms", `${vm.currentTotal}`, `${vm.previousMonth}`],
               ["Financial Aid (KES)", `${fa.currentMonth}`, `${fa.previousMonth}`],
@@ -67,7 +149,41 @@ const AdminReports = () => {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a'); a.href = url; a.download = 'admin_reports.csv'; a.click(); URL.revokeObjectURL(url);
           }} className="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-medium hover:bg-slate-800">Export CSV</button>
-          <button onClick={() => window.print()} className="px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">Export PDF</button>
+          <button onClick={() => {
+            const w = window.open('', '_blank');
+            if (!w) return;
+            const html = `
+              <html>
+                <head>
+                  <title>Admin Reports</title>
+                  <style>
+                    body{font-family:ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial;padding:24px;color:#0f172a}
+                    h2{margin:0 0 8px 0}
+                    .muted{color:#64748b;margin:0 0 16px 0}
+                    table{border-collapse:collapse;width:100%;margin-top:12px}
+                    th,td{border:1px solid #e2e8f0;padding:8px 10px;text-align:left;font-size:12px}
+                    th{background:#f8fafc}
+                  </style>
+                </head>
+                <body>
+                  <h2>Admin Reports</h2>
+                  <p class="muted"><strong>Admin:</strong> ${user?.name || ''} &nbsp; | &nbsp; <strong>Institution:</strong> ${user?.university || ''}</p>
+                  <table>
+                    <thead>
+                      <tr><th>Metric</th><th>Current</th><th>Previous</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr><td>Verified Moms</td><td>${vm.currentTotal || 0}</td><td>${vm.previousMonth || 0}</td></tr>
+                      <tr><td>Financial Aid (KES)</td><td>${fa.currentMonth || 0}</td><td>${fa.previousMonth || 0}</td></tr>
+                      <tr><td>Essentials Items</td><td>${ed.currentMonthItems || 0}</td><td>${ed.previousMonthItems || 0}</td></tr>
+                      <tr><td>Retention (%)</td><td>${retention}</td><td>-</td></tr>
+                    </tbody>
+                  </table>
+                </body>
+              </html>`;
+            w.document.write(html);
+            w.document.close(); w.focus(); w.print(); w.close();
+          }} className="px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">Export PDF</button>
         </div>
       </div>
     </div>
