@@ -27,6 +27,7 @@ const Donations = () => {
     const type = params.get("type");
     const amount = params.get("amount");
     const items = params.get("items");
+    const requestId = params.get("requestId");
     setForm((prev) => ({
       ...prev,
       type: type || prev.type,
@@ -40,6 +41,9 @@ const Donations = () => {
       if (parsed.length) {
         setForm((prev2) => ({ ...prev2, type: 'essentials', items: parsed }));
       }
+    }
+    if (requestId) {
+      setForm((prev3) => ({ ...prev3, requestId }));
     }
   }, [location.search]);
 
@@ -117,6 +121,20 @@ const Donations = () => {
         organization: "",
         notes: "" 
       });
+
+      // Hide donated request locally
+      if (form.requestId) {
+        try {
+          const raw = localStorage.getItem("hiddenAidRequests");
+          const arr = raw ? JSON.parse(raw) : [];
+          if (!arr.includes(form.requestId)) {
+            arr.push(form.requestId);
+            localStorage.setItem("hiddenAidRequests", JSON.stringify(arr));
+          }
+        } catch {
+          // ignore
+        }
+      }
 
       // Reload history
       const data = await getMyDonations(user?.token);

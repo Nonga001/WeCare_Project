@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
-import { listGroups, joinGroup } from "../../../services/groupService";
+import { listGroups, joinGroup, leaveGroup } from "../../../services/groupService";
 
 const StudentSupport = () => {
   const { user } = useAuth();
@@ -36,6 +36,14 @@ const StudentSupport = () => {
       setError(e.response?.data?.message || "Failed to join");
     }
   };
+  const onLeave = async (id) => {
+    try {
+      await leaveGroup(user?.token, id);
+      await load();
+    } catch (e) {
+      setError(e.response?.data?.message || "Failed to leave");
+    }
+  };
 
   // removed request-join flow
 
@@ -55,10 +63,16 @@ const StudentSupport = () => {
                   <div key={g._id} className="rounded-xl border border-slate-200 p-4 hover:shadow-md transition-shadow">
                     <p className="font-medium text-slate-800">{g.name}</p>
                     <p className="text-sm text-slate-600">Members: {g.membersCount}</p>
-                    <div className="mt-3 flex gap-2">
-                      <button onClick={()=>onJoin(g._id, false)} className="px-4 py-2 rounded-lg bg-violet-600 text-white text-sm hover:bg-violet-700">Join Publicly</button>
-                      <button onClick={()=>onJoin(g._id, true)} className="px-4 py-2 rounded-lg bg-slate-600 text-white text-sm hover:bg-slate-700">Join Anonymous</button>
-                    </div>
+                    {g.isMember ? (
+                      <div className="mt-3">
+                        <button onClick={()=>onLeave(g._id)} className="px-4 py-2 rounded-lg bg-rose-600 text-white text-sm hover:bg-rose-700">Leave Group</button>
+                      </div>
+                    ) : (
+                      <div className="mt-3 flex gap-2">
+                        <button onClick={()=>onJoin(g._id, false)} className="px-4 py-2 rounded-lg bg-violet-600 text-white text-sm hover:bg-violet-700">Join Publicly</button>
+                        <button onClick={()=>onJoin(g._id, true)} className="px-4 py-2 rounded-lg bg-slate-600 text-white text-sm hover:bg-slate-700">Join Anonymous</button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -68,10 +82,16 @@ const StudentSupport = () => {
                   <div key={g._id} className="rounded-xl border border-slate-200 p-4 hover:shadow-md transition-shadow">
                     <p className="font-medium text-slate-800">{g.name}</p>
                     <p className="text-sm text-slate-600">Members: {g.membersCount}</p>
-                    <div className="mt-3 flex gap-2">
-                      <button onClick={()=>onJoin(g._id, false)} className="px-4 py-2 rounded-lg bg-violet-600 text-white text-sm hover:bg-violet-700">Join Publicly</button>
-                      <button onClick={()=>onJoin(g._id, true)} className="px-4 py-2 rounded-lg bg-slate-600 text-white text-sm hover:bg-slate-700">Join Anonymous</button>
-                    </div>
+                    {g.isMember ? (
+                      <div className="mt-3">
+                        <button onClick={()=>onLeave(g._id)} className="px-4 py-2 rounded-lg bg-rose-600 text-white text-sm hover:bg-rose-700">Leave Group</button>
+                      </div>
+                    ) : (
+                      <div className="mt-3 flex gap-2">
+                        <button onClick={()=>onJoin(g._id, false)} className="px-4 py-2 rounded-lg bg-violet-600 text-white text-sm hover:bg-violet-700">Join Publicly</button>
+                        <button onClick={()=>onJoin(g._id, true)} className="px-4 py-2 rounded-lg bg-slate-600 text-white text-sm hover:bg-slate-700">Join Anonymous</button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

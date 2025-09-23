@@ -9,6 +9,14 @@ const BrowseRequests = () => {
   const [type, setType] = useState("");
   const [minAmount, setMinAmount] = useState("");
   const [data, setData] = useState([]);
+  const [hiddenIds, setHiddenIds] = useState(() => {
+    try {
+      const raw = localStorage.getItem("hiddenAidRequests");
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -33,11 +41,25 @@ const BrowseRequests = () => {
     if (user?.token) loadRequests();
   }, [user?.token, type, minAmount]);
 
-  const filtered = useMemo(() => data, [data]);
+  useEffect(() => {
+    const handleVisibility = () => {
+      try {
+        const raw = localStorage.getItem("hiddenAidRequests");
+        setHiddenIds(raw ? JSON.parse(raw) : []);
+      } catch {
+        // noop
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, []);
+
+  const filtered = useMemo(() => data.filter(r => !hiddenIds.includes(r._id)), [data, hiddenIds]);
 
   const donate = (r) => {
     const params = new URLSearchParams();
     params.set("type", r.type);
+    params.set("requestId", r._id);
     if (r.amount) params.set("amount", String(r.amount));
     if (r.type === 'essentials' && r.items?.length) {
       // Encode items as name:qty;name:qty

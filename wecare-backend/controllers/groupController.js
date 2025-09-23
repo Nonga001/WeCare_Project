@@ -25,6 +25,7 @@ export const listGroups = async (req, res) => {
       isGlobal: g.isGlobal,
       university: g.university,
       membersCount: g.members.length,
+      isMember: g.members.some(m => String(m.user) === String(req.user._id))
     }));
     res.json(data);
   } catch (err) {

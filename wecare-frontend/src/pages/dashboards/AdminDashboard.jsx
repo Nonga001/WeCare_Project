@@ -40,6 +40,13 @@ const AdminDashboard = () => {
           Aid Management
         </NavLink>
         <NavLink 
+          to="/dashboard/admin/groups" 
+          onClick={(e) => { if (!isApproved) e.preventDefault(); }}
+          className={({isActive})=>`px-4 py-2 rounded-xl text-sm font-medium ${isActive?"bg-slate-900 text-white":`${!isApproved ? "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed" : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-50"}`}`}
+        >
+          Groups
+        </NavLink>
+        <NavLink 
           to="/dashboard/admin/reports" 
           onClick={(e) => { if (!isApproved) e.preventDefault(); }}
           className={({isActive})=>`px-4 py-2 rounded-xl text-sm font-medium ${isActive?"bg-slate-900 text-white":`${!isApproved ? "bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed" : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-50"}`}`}

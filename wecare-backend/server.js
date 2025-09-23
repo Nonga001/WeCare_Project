@@ -9,6 +9,8 @@ import aidRoutes from "./routes/aid.js";
 import donationRoutes from "./routes/donations.js";
 import disbursementRoutes from "./routes/disbursements.js";
 import groupRoutes from "./routes/groups.js";
+import Group from "./models/Group.js";
+import User from "./models/User.js";
 
 dotenv.config();
 connectDB();
@@ -28,4 +30,23 @@ app.use("/api/disbursements", disbursementRoutes);
 app.use("/api/groups", groupRoutes);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+app.listen(PORT, async () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+  try {
+    // Ensure a single global group exists for all students
+    let global = await Group.findOne({ isGlobal: true, name: "All Universities Students" });
+    if (!global) {
+      // Make all university admins moderators of this global group
+      const admins = await User.find({ role: "admin" }).select("_id");
+      global = await Group.create({
+        name: "All Universities Students",
+        isGlobal: true,
+        createdBy: admins[0]?._id || (await User.findOne({ role: "superadmin" }))?._id,
+        moderators: admins.map(a => a._id)
+      });
+      console.log("✅ Created global group: All Universities Students");
+    }
+  } catch (e) {
+    console.error("Failed to ensure global group:", e?.message || e);
+  }
+});
