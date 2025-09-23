@@ -98,42 +98,42 @@ const AdminGroups = () => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2 space-y-6">
-        <div className="rounded-xl border border-slate-200 p-5">
-          <h3 className="font-semibold text-slate-800 mb-3">Create Group</h3>
+        <div className="card p-5">
+          <h3 className="mb-3">Create Group</h3>
           <div className="flex flex-wrap gap-2 items-center">
-            <input value={newName} onChange={(e)=>setNewName(e.target.value)} placeholder="Group name" className="px-3 py-2 border rounded-lg text-sm" />
-            <select value={newScope} onChange={(e)=>setNewScope(e.target.value)} className="px-3 py-2 border rounded-lg text-sm">
+            <input value={newName} onChange={(e)=>setNewName(e.target.value)} placeholder="Group name" className="input max-w-sm" />
+            <select value={newScope} onChange={(e)=>setNewScope(e.target.value)} className="input max-w-[200px]">
               <option value="uni">University</option>
             </select>
-            <button disabled={creating} onClick={onCreate} className="px-4 py-2 rounded-lg bg-slate-900 text-white text-sm hover:bg-slate-800 disabled:opacity-60">{creating?"Creating...":"Create"}</button>
+            <button disabled={creating} onClick={onCreate} className="btn btn-primary">{creating?"Creating...":"Create"}</button>
           </div>
           
         </div>
 
-        <div className="rounded-xl border border-slate-200 p-5">
-          <h3 className="font-semibold text-slate-800 mb-3">Your University Groups</h3>
+        <div className="card p-5">
+          <h3 className="mb-3">Your University Groups</h3>
           {loading ? <p className="text-sm text-slate-500">Loading...</p> : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {uniGroups.map((g)=> (
-                <div key={g._id} className="rounded-xl border border-slate-200 p-4 hover:shadow-md transition-shadow">
+                <div key={g._id} className="card p-4 hover:shadow-lg transition-shadow">
                   <p className="font-medium text-slate-800">{g.name}</p>
                   <p className="text-sm text-slate-600">Members: {g.membersCount}</p>
-                  <button onClick={()=>openDetails(g._id)} className="mt-3 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700">Manage</button>
+                  <button onClick={()=>openDetails(g._id)} className="mt-3 btn btn-primary">Manage</button>
                 </div>
               ))}
             </div>
           )}
         </div>
 
-        <div className="rounded-xl border border-slate-200 p-5">
-          <h3 className="font-semibold text-slate-800 mb-3">Global Groups</h3>
+        <div className="card p-5">
+          <h3 className="mb-3">Global Groups</h3>
           {loading ? <p className="text-sm text-slate-500">Loading...</p> : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {globalGroups.map((g)=> (
-                <div key={g._id} className="rounded-xl border border-slate-200 p-4 hover:shadow-md transition-shadow">
+                <div key={g._id} className="card p-4 hover:shadow-lg transition-shadow">
                   <p className="font-medium text-slate-800">{g.name}</p>
                   <p className="text-sm text-slate-600">Members: {g.membersCount}</p>
-                  <button onClick={()=>openDetails(g._id)} className="mt-3 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700">Manage</button>
+                  <button onClick={()=>openDetails(g._id)} className="mt-3 btn btn-primary">Manage</button>
                 </div>
               ))}
             </div>
@@ -142,7 +142,7 @@ const AdminGroups = () => {
       </div>
 
       <div className="space-y-4">
-        <div className="rounded-xl border border-slate-200 p-5">
+        <div className="card p-5">
           <h4 className="font-semibold text-slate-800 mb-2">Group Details</h4>
           {error && <p className="text-sm text-rose-600 mb-2">{error}</p>}
           {!selected ? (
@@ -153,8 +153,8 @@ const AdminGroups = () => {
               <p className="text-xs text-slate-600 mb-2">{selected.isGlobal ? 'Global' : `University: ${selected.university || '-'}`}</p>
               {!selected.isGlobal && (
                 <div className="flex gap-2 mb-3">
-                  <button onClick={onRename} className="px-3 py-1.5 rounded-lg bg-slate-700 text-white text-xs">Rename</button>
-                  <button onClick={onDelete} className="px-3 py-1.5 rounded-lg bg-rose-600 text-white text-xs">Delete</button>
+                  <button onClick={onRename} className="btn btn-ghost border text-xs">Rename</button>
+                  <button onClick={onDelete} className="btn btn-secondary text-xs">Delete</button>
                 </div>
               )}
               <div>
@@ -166,7 +166,7 @@ const AdminGroups = () => {
                         <p className="text-sm text-slate-800">{m.name}</p>
                         {m.isAnonymous && <p className="text-[11px] text-slate-500">Anonymous{m.alias?` • ${m.alias}`:''}</p>}
                       </div>
-                      <button onClick={()=>onRemoveMember(m.user)} className="px-3 py-1.5 rounded-lg bg-slate-200 text-xs hover:bg-slate-300">Remove</button>
+                      <button onClick={()=>onRemoveMember(m.user)} className="btn btn-ghost text-xs">Remove</button>
                     </div>
                   ))}
                 </div>
@@ -196,8 +196,8 @@ const AdminGroups = () => {
                     )}
                   </div>
                   <div className="p-3 bg-slate-50 flex gap-2">
-                    <input value={messageText} onChange={(e)=>setMessageText(e.target.value)} placeholder="Write a message..." className="flex-1 px-3 py-2 rounded-lg border text-sm" />
-                    <button onClick={async()=>{ if(!messageText.trim())return; try{ await postMessage(user?.token, selected._id, messageText.trim()); setMessageText(""); const d=await getGroup(user?.token, selected._id); setSelected(d);}catch(e){alert('Failed to send');}}} className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm">Send</button>
+                    <input value={messageText} onChange={(e)=>setMessageText(e.target.value)} placeholder="Write a message..." className="input flex-1" />
+                    <button onClick={async()=>{ if(!messageText.trim())return; try{ await postMessage(user?.token, selected._id, messageText.trim()); setMessageText(""); const d=await getGroup(user?.token, selected._id); setSelected(d);}catch(e){alert('Failed to send');}}} className="btn btn-primary">Send</button>
                   </div>
                 </div>
               </div>

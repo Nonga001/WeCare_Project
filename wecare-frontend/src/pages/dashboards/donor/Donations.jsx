@@ -151,44 +151,36 @@ const Donations = () => {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2 space-y-6">
         {error && (
-          <div className="rounded-xl border border-red-200 bg-red-50 p-4">
-            <p className="text-red-600 text-sm">{error}</p>
+          <div className="alert alert-error">
+            <p>{error}</p>
           </div>
         )}
         
         {success && (
-          <div className="rounded-xl border border-green-200 bg-green-50 p-4">
-            <p className="text-green-600 text-sm">{success}</p>
+          <div className="alert alert-success">
+            <p>{success}</p>
           </div>
         )}
 
-        <div className="rounded-xl border border-slate-200 p-5">
-          <h3 className="font-semibold text-slate-800 mb-4">Make a Donation</h3>
+        <div className="card p-5">
+          <h3 className="mb-4">Make a Donation</h3>
           
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Donation Type */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Donation Type</label>
+              <label className="label">Donation Type</label>
               <div className="flex gap-3">
                 <button
                   type="button"
                   onClick={() => setForm({ ...form, type: "financial" })}
-                  className={`px-4 py-2 rounded-xl text-sm font-medium ${
-                    form.type === "financial" 
-                      ? "bg-blue-600 text-white" 
-                      : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-50"
-                  }`}
+                  className={`btn ${form.type === "financial" ? 'btn-primary' : 'btn-ghost border'}`}
                 >
                   Financial
                 </button>
                 <button
                   type="button"
                   onClick={() => setForm({ ...form, type: "essentials" })}
-                  className={`px-4 py-2 rounded-xl text-sm font-medium ${
-                    form.type === "essentials" 
-                      ? "bg-blue-600 text-white" 
-                      : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-50"
-                  }`}
+                  className={`btn ${form.type === "essentials" ? 'btn-primary' : 'btn-ghost border'}`}
                 >
                   Essentials
                 </button>
@@ -198,14 +190,14 @@ const Donations = () => {
             {/* Financial Donation */}
             {form.type === "financial" && (
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Amount (KES)</label>
+                <label className="label">Amount (KES)</label>
                 <input
                   type="number"
                   name="amount"
                   value={form.amount}
                   onChange={handle}
                   placeholder="Enter amount"
-                  className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300"
+                  className="input"
                   required
                 />
               </div>
@@ -214,13 +206,13 @@ const Donations = () => {
             {/* Essentials Donation */}
             {form.type === "essentials" && (
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Essential Items</label>
+                <label className="label">Essential Items</label>
                 {form.items.map((item, index) => (
                   <div key={index} className="flex gap-3 mb-3">
                     <select
                       value={item.name}
                       onChange={(e) => updateItem(index, "name", e.target.value)}
-                      className="flex-1 px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300"
+                      className="input flex-1"
                       required
                     >
                       <option value="">Select item</option>
@@ -233,14 +225,14 @@ const Donations = () => {
                       placeholder="Qty"
                       value={item.quantity}
                       onChange={(e) => updateItem(index, "quantity", e.target.value)}
-                      className="w-24 px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300"
+                      className="input w-24"
                       required
                     />
                     {form.items.length > 1 && (
                       <button
                         type="button"
                         onClick={() => removeItem(index)}
-                        className="px-3 py-3 bg-red-100 text-red-600 rounded-xl hover:bg-red-200"
+                        className="btn btn-ghost text-rose-600 hover:text-rose-700"
                       >
                         ✕
                       </button>
@@ -250,7 +242,7 @@ const Donations = () => {
                 <button
                   type="button"
                   onClick={addItem}
-                  className="text-blue-600 text-sm hover:underline"
+                  className="btn btn-ghost text-brand-600"
                 >
                   + Add another item
                 </button>
@@ -259,38 +251,26 @@ const Donations = () => {
 
             {/* Payment Method */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Payment Method</label>
+              <label className="label">Payment Method</label>
               <div className="grid grid-cols-3 gap-3">
                 <button
                   type="button"
                   onClick={() => setForm({ ...form, paymentMethod: "mpesa" })}
-                  className={`px-4 py-3 rounded-xl text-sm font-medium ${
-                    form.paymentMethod === "mpesa" 
-                      ? "bg-emerald-600 text-white" 
-                      : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-50"
-                  }`}
+                  className={`btn ${form.paymentMethod === 'mpesa' ? 'btn-primary' : 'btn-ghost border'}`}
                 >
                   M-Pesa
                 </button>
                 <button
                   type="button"
                   onClick={() => setForm({ ...form, paymentMethod: "bank_transfer" })}
-                  className={`px-4 py-3 rounded-xl text-sm font-medium ${
-                    form.paymentMethod === "bank_transfer" 
-                      ? "bg-blue-600 text-white" 
-                      : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-50"
-                  }`}
+                  className={`btn ${form.paymentMethod === 'bank_transfer' ? 'btn-primary' : 'btn-ghost border'}`}
                 >
                   Bank Transfer
                 </button>
                 <button
                   type="button"
                   onClick={() => setForm({ ...form, paymentMethod: "card" })}
-                  className={`px-4 py-3 rounded-xl text-sm font-medium ${
-                    form.paymentMethod === "card" 
-                      ? "bg-violet-600 text-white" 
-                      : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-50"
-                  }`}
+                  className={`btn ${form.paymentMethod === 'card' ? 'btn-primary' : 'btn-ghost border'}`}
                 >
                   Card
                 </button>
@@ -299,34 +279,34 @@ const Donations = () => {
 
             {/* Organization (optional) */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Organization (Optional)</label>
+              <label className="label">Organization (Optional)</label>
               <input
                 type="text"
                 name="organization"
                 value={form.organization}
                 onChange={handle}
                 placeholder="Your organization name"
-                className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300"
+                className="input"
               />
             </div>
 
             {/* Notes */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Notes (Optional)</label>
+              <label className="label">Notes (Optional)</label>
               <textarea
                 name="notes"
                 value={form.notes}
                 onChange={handle}
                 placeholder="Any additional notes..."
                 rows={3}
-                className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300"
+                className="input"
               />
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full px-6 py-3 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn btn-primary w-full"
             >
               {loading ? "Processing..." : "Donate Now"}
             </button>
@@ -335,14 +315,14 @@ const Donations = () => {
       </div>
 
       <div className="space-y-4">
-        <div className="rounded-xl border border-slate-200 p-5">
+        <div className="card p-5">
           <h4 className="font-semibold text-slate-800 mb-3">Donation History</h4>
           <div className="space-y-3">
             {history.length === 0 ? (
               <p className="text-sm text-slate-500">No donations yet.</p>
             ) : (
               history.map((donation) => (
-                <div key={donation._id} className="rounded-lg border border-slate-200 p-3">
+                <div key={donation._id} className="card p-3">
                   <p className="text-slate-700 text-sm">
                     <span className="font-medium">{donation.type}:</span> {
                       donation.type === 'financial' 

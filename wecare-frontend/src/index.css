@@ -6,7 +6,7 @@
 /* Global base styles override */
 @layer base {
   html, body, #root {
-    @apply h-full min-h-full bg-white text-slate-800 font-sans antialiased;
+    @apply h-full min-h-full bg-white text-slate-800 font-sans antialiased transition-colors duration-300 ease-out;
   }
   h1 { @apply text-3xl sm:text-4xl font-extrabold tracking-tight; }
   h2 { @apply text-2xl sm:text-3xl font-bold tracking-tight; }
@@ -23,13 +23,28 @@
   .btn-secondary { @apply bg-slate-900 text-white hover:bg-slate-800 focus:ring-slate-900; }
   .btn-ghost { @apply bg-transparent text-slate-700 hover:bg-slate-100; }
   .card { @apply rounded-2xl border border-slate-200 bg-white shadow-soft; }
-  .input { @apply w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-200; }
+  .input { @apply w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-200; }
   .label { @apply block text-sm font-medium text-slate-700 mb-2; }
   .alert { @apply rounded-xl border px-4 py-3 text-sm; }
   .alert-error { @apply border-rose-200 bg-rose-50 text-rose-700; }
   .alert-success { @apply border-emerald-200 bg-emerald-50 text-emerald-700; }
   .alert-warn { @apply border-amber-200 bg-amber-50 text-amber-800; }
 }
+
+/* Theme overrides */
+.dark, .dark body {
+  background-color: rgb(2,6,23); /* slate-950 */
+  color: rgb(226,232,240); /* slate-200 */
+}
+.dark .btn-secondary { @apply bg-slate-800 hover:bg-slate-700 focus:ring-slate-700; }
+.dark .btn-ghost { @apply text-slate-200 hover:bg-slate-800/50; }
+.dark .card { @apply border-slate-800 bg-slate-900; }
+.dark .input { @apply border-slate-700 bg-slate-900 text-slate-100 placeholder-slate-400 focus:ring-brand-400; }
+.dark .label { @apply text-slate-300; }
+.dark .alert { @apply border-opacity-30; }
+.dark .alert-error { @apply border-rose-800 bg-rose-950/40 text-rose-300; }
+.dark .alert-success { @apply border-emerald-800 bg-emerald-950/40 text-emerald-300; }
+.dark .alert-warn { @apply border-amber-800 bg-amber-950/40 text-amber-300; }
 
 /* Custom utilities */
 @layer utilities {

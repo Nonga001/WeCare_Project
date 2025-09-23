@@ -80,7 +80,7 @@ const BrowseRequests = () => {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <select value={type} onChange={(e)=>setType(e.target.value)} className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-300">
+        <select value={type} onChange={(e)=>setType(e.target.value)} className="input">
           <option value="">All Types</option>
           <option value="financial">Financial</option>
           <option value="essentials">Essentials</option>
@@ -95,7 +95,7 @@ const BrowseRequests = () => {
           </div>
         ) : (
           filtered.map((r) => (
-            <div key={r._id} className="rounded-xl border border-slate-200 p-5">
+            <div key={r._id} className="card p-5">
               <div className="flex justify-between items-start mb-2">
                 <p className="font-semibold text-slate-800">{`Person ${r.student?._id?.slice(-4) || 'X'}`}</p>
                 <span className="text-xs text-slate-500">{r.student?.university || 'Unknown University'}</span>
@@ -113,10 +113,7 @@ const BrowseRequests = () => {
                 Requested: {new Date(r.createdAt).toLocaleDateString()}
               </p>
               <div className="mt-3">
-                <button 
-                  onClick={()=>donate(r)} 
-                  className="px-5 py-2.5 rounded-xl bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700"
-                >
+                <button onClick={()=>donate(r)} className="btn btn-primary">
                   Donate
                 </button>
               </div>
