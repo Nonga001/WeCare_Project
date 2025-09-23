@@ -46,4 +46,14 @@ export const deleteGroup = async (token, groupId) => {
   return res.data;
 };
 
+export const postMessage = async (token, groupId, text) => {
+  const res = await axios.post(`${API_URL}/${groupId}/messages`, { text }, auth(token));
+  return res.data;
+};
+
+export const deleteMessage = async (token, groupId, messageId) => {
+  const res = await axios.delete(`${API_URL}/${groupId}/messages/${messageId}`, auth(token));
+  return res.data;
+};
+
 // removed private-group join-requests APIs

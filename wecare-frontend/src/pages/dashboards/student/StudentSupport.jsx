@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
-import { listGroups, joinGroup, leaveGroup } from "../../../services/groupService";
+import { listGroups, joinGroup, leaveGroup, getGroup, postMessage, deleteMessage } from "../../../services/groupService";
 
 const StudentSupport = () => {
   const { user } = useAuth();
@@ -8,6 +8,9 @@ const StudentSupport = () => {
   const [globalGroups, setGlobalGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [openGroup, setOpenGroup] = useState(null);
+  const [openGroupId, setOpenGroupId] = useState(null);
+  const [text, setText] = useState("");
 
   const load = async () => {
     try {
@@ -32,6 +35,10 @@ const StudentSupport = () => {
     try {
       await joinGroup(user?.token, id, anonymous);
       await load();
+      if (openGroupId === id) {
+        const d = await getGroup(user?.token, id);
+        setOpenGroup(d);
+      }
     } catch (e) {
       setError(e.response?.data?.message || "Failed to join");
     }
@@ -40,8 +47,22 @@ const StudentSupport = () => {
     try {
       await leaveGroup(user?.token, id);
       await load();
+      if (openGroupId === id) {
+        const d = await getGroup(user?.token, id);
+        setOpenGroup(d);
+      }
     } catch (e) {
       setError(e.response?.data?.message || "Failed to leave");
+    }
+  };
+
+  const openMessages = async (id) => {
+    try {
+      setOpenGroupId(id);
+      const d = await getGroup(user?.token, id);
+      setOpenGroup(d);
+    } catch (e) {
+      setError("Failed to open group");
     }
   };
 
@@ -65,7 +86,10 @@ const StudentSupport = () => {
                     <p className="text-sm text-slate-600">Members: {g.membersCount}</p>
                     {g.isMember ? (
                       <div className="mt-3">
-                        <button onClick={()=>onLeave(g._id)} className="px-4 py-2 rounded-lg bg-rose-600 text-white text-sm hover:bg-rose-700">Leave Group</button>
+                        <div className="flex gap-2">
+                          <button onClick={()=>openMessages(g._id)} className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700">Open</button>
+                          <button onClick={()=>onLeave(g._id)} className="px-4 py-2 rounded-lg bg-rose-600 text-white text-sm hover:bg-rose-700">Leave</button>
+                        </div>
                       </div>
                     ) : (
                       <div className="mt-3 flex gap-2">
@@ -84,7 +108,10 @@ const StudentSupport = () => {
                     <p className="text-sm text-slate-600">Members: {g.membersCount}</p>
                     {g.isMember ? (
                       <div className="mt-3">
-                        <button onClick={()=>onLeave(g._id)} className="px-4 py-2 rounded-lg bg-rose-600 text-white text-sm hover:bg-rose-700">Leave Group</button>
+                        <div className="flex gap-2">
+                          <button onClick={()=>openMessages(g._id)} className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700">Open</button>
+                          <button onClick={()=>onLeave(g._id)} className="px-4 py-2 rounded-lg bg-rose-600 text-white text-sm hover:bg-rose-700">Leave</button>
+                        </div>
                       </div>
                     ) : (
                       <div className="mt-3 flex gap-2">
@@ -111,9 +138,41 @@ const StudentSupport = () => {
 
       <div className="space-y-4">
         <div className="rounded-xl border border-slate-200 p-5">
-          <h4 className="font-semibold text-slate-800 mb-2">AI Assistant</h4>
-          <p className="text-slate-600 text-sm">Get maternal and academic guidance.</p>
-          <button className="mt-3 px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">Open Assistant</button>
+          <h4 className="font-semibold text-slate-800 mb-2">Group Chat</h4>
+          {!openGroup ? (
+            <p className="text-sm text-slate-600">Open a group to view and send messages.</p>
+          ) : (
+            <div>
+              <p className="font-medium text-slate-800">{openGroup.name}</p>
+              <p className="text-xs text-slate-600 mb-2">{openGroup.isGlobal ? 'Global' : `University: ${openGroup.university || '-'}`}</p>
+              <div className="border rounded-xl overflow-hidden">
+                <div className="max-h-72 overflow-auto p-3 space-y-2 bg-white">
+                  {openGroup.messages?.length ? openGroup.messages.map(msg => {
+                    const mine = msg.sender === user?._id;
+                    return (
+                      <div key={msg._id} className={`flex ${mine? 'justify-end' : 'justify-start'}`}>
+                        <div className={`max-w-[80%] rounded-2xl px-3 py-2 ${mine? 'bg-blue-600 text-white rounded-br-sm' : 'bg-slate-100 text-slate-800 rounded-bl-sm'}`}>
+                          <p className="text-[11px] opacity-80 mb-0.5">{msg.senderName || 'Member'} • {new Date(msg.createdAt).toLocaleTimeString()}</p>
+                          <p className="text-sm leading-relaxed">{msg.text}</p>
+                          {mine && (
+                            <div className="text-[10px] mt-1 flex justify-end opacity-70">
+                              <button onClick={async()=>{ try { await deleteMessage(user?.token, openGroup._id, msg._id); const d = await getGroup(user?.token, openGroup._id); setOpenGroup(d);} catch(e){ alert('Failed to delete'); } }} className={`hover:underline ${mine? 'text-white' : 'text-slate-600'}`}>Delete</button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  }) : (
+                    <div className="p-2 text-sm text-slate-500">No messages yet.</div>
+                  )}
+                </div>
+                <div className="p-3 bg-slate-50 flex gap-2">
+                  <input value={text} onChange={(e)=>setText(e.target.value)} placeholder="Write a message..." className="flex-1 px-3 py-2 rounded-lg border text-sm" />
+                  <button onClick={async()=>{ if(!text.trim()) return; try{ await postMessage(user?.token, openGroup._id, text.trim()); setText(""); const d = await getGroup(user?.token, openGroup._id); setOpenGroup(d);} catch(e){ alert('Failed to send'); } }} className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm">Send</button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <a href="#emergency" className="block text-center rounded-xl bg-rose-600 text-white font-semibold py-3 shadow hover:bg-rose-700">

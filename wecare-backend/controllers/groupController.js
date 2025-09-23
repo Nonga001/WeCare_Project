@@ -4,7 +4,8 @@ import User from "../models/User.js";
 const canModerate = (user, group) => {
   if (!user || !group) return false;
   if (user.role === "superadmin") return true;
-  if (user.role === "admin" && !group.isGlobal && group.university === user.university) return true;
+  // Admin can moderate: their university groups; and for global group only member management, enforced in handlers
+  if (user.role === "admin" && (!group.isGlobal && group.university === user.university)) return true;
   if (group.moderators?.some(m => String(m) === String(user._id))) return true;
   return false;
 };
@@ -36,7 +37,7 @@ export const listGroups = async (req, res) => {
 export const getGroup = async (req, res) => {
   try {
     const { id } = req.params;
-    const group = await Group.findById(id).populate("members.user", "name email role university");
+    const group = await Group.findById(id).populate("members.user", "name email role university").populate("messages.sender", "name role university");
     if (!group) return res.status(404).json({ message: "Group not found" });
     res.json({
       _id: group._id,
@@ -52,6 +53,18 @@ export const getGroup = async (req, res) => {
         alias: m.alias,
         joinedAt: m.joinedAt,
       })),
+      messages: (group.messages || []).map(msg => {
+        const senderId = msg.sender?._id || msg.sender;
+        const membership = group.members.find(m => String(m.user?._id || m.user) === String(senderId));
+        const senderName = membership?.isAnonymous ? (membership.alias || "Anonymous") : (msg.sender?.name || "");
+        return {
+          _id: msg._id,
+          sender: senderId,
+          senderName,
+          text: msg.text,
+          createdAt: msg.createdAt,
+        };
+      }),
       createdAt: group.createdAt,
       updatedAt: group.updatedAt,
     });
@@ -65,12 +78,12 @@ export const createGroup = async (req, res) => {
     if (!["admin", "superadmin"].includes(req.user.role)) {
       return res.status(403).json({ message: "Only admins or superadmins can create groups" });
     }
-    const { name, isGlobal } = req.body;
+    const { name } = req.body;
     if (!name || name.trim() === "") return res.status(400).json({ message: "Name required" });
     const group = await Group.create({
       name: name.trim(),
-      isGlobal: Boolean(isGlobal),
-      university: isGlobal ? undefined : req.user.university,
+      isGlobal: false,
+      university: req.user.university,
       createdBy: req.user._id,
       moderators: req.user.role === "admin" ? [req.user._id] : []
     });
@@ -119,6 +132,7 @@ export const renameGroup = async (req, res) => {
     const { id } = req.params; const { name } = req.body;
     const group = await Group.findById(id);
     if (!group) return res.status(404).json({ message: "Group not found" });
+    if (group.isGlobal) return res.status(403).json({ message: "Global group name cannot be changed" });
     if (!canModerate(req.user, group)) return res.status(403).json({ message: "Not allowed" });
     if (!name || name.trim() === "") return res.status(400).json({ message: "Name required" });
     group.name = name.trim();
@@ -148,6 +162,7 @@ export const deleteGroup = async (req, res) => {
     const { id } = req.params;
     const group = await Group.findById(id);
     if (!group) return res.status(404).json({ message: "Group not found" });
+    if (group.isGlobal) return res.status(403).json({ message: "Global group cannot be deleted" });
     // Admin can delete only their university groups they created; superadmin can delete global
     if (req.user.role === "admin") {
       if (group.isGlobal || group.university !== req.user.university || String(group.createdBy) !== String(req.user._id)) {
@@ -157,6 +172,49 @@ export const deleteGroup = async (req, res) => {
       return res.status(403).json({ message: "Not allowed" });
     }
     await group.deleteOne();
+    res.json({ message: "Deleted" });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+export const postMessage = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { text } = req.body;
+    if (!text || text.trim() === "") return res.status(400).json({ message: "Message text required" });
+    const group = await Group.findById(id);
+    if (!group) return res.status(404).json({ message: "Group not found" });
+    // Must be member or moderator to post
+    const isMember = group.members.some(m => String(m.user) === String(req.user._id));
+    const isMod = canModerate(req.user, group) || group.moderators?.some(m => String(m) === String(req.user._id));
+    if (!isMember && !isMod) return res.status(403).json({ message: "Join or moderate the group to post messages" });
+    group.messages.push({ sender: req.user._id, text: text.trim() });
+    await group.save();
+    res.status(201).json({ message: "Posted" });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+export const deleteMessage = async (req, res) => {
+  try {
+    const { id, messageId } = req.params;
+    const group = await Group.findById(id);
+    if (!group) return res.status(404).json({ message: "Group not found" });
+    const msg = group.messages.id(messageId);
+    if (!msg) return res.status(404).json({ message: "Message not found" });
+    // Allow sender to delete, or moderators to manage
+    const isSender = String(msg.sender) === String(req.user._id);
+    const isModerator = canModerate(req.user, group) || group.moderators?.some(m => String(m) === String(req.user._id));
+    // In global group, only sender can delete (admins cannot delete messages)
+    if (group.isGlobal) {
+      if (!isSender) return res.status(403).json({ message: "Only the sender can delete this message" });
+    } else {
+      if (!isSender && !isModerator) return res.status(403).json({ message: "Not allowed" });
+    }
+    msg.deleteOne();
+    await group.save();
     res.json({ message: "Deleted" });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
-import { listGroups, createGroup, renameGroup, deleteGroup, getGroup, removeMember } from "../../../services/groupService";
+import { listGroups, createGroup, renameGroup, deleteGroup, getGroup, removeMember, postMessage, deleteMessage } from "../../../services/groupService";
 
 const AdminGroups = () => {
   const { user } = useAuth();
@@ -13,6 +13,7 @@ const AdminGroups = () => {
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
   const [newScope, setNewScope] = useState("uni");
+  const [messageText, setMessageText] = useState("");
   // removed private group UI
 
   const load = async () => {
@@ -40,7 +41,7 @@ const AdminGroups = () => {
     if (!newName.trim()) return;
     try {
       setCreating(true);
-      await createGroup(user?.token, { name: newName.trim(), isGlobal: newScope === "global" });
+      await createGroup(user?.token, { name: newName.trim() });
       setNewName(""); setNewScope("uni");
       await load();
     } catch (e) {
@@ -103,7 +104,6 @@ const AdminGroups = () => {
             <input value={newName} onChange={(e)=>setNewName(e.target.value)} placeholder="Group name" className="px-3 py-2 border rounded-lg text-sm" />
             <select value={newScope} onChange={(e)=>setNewScope(e.target.value)} className="px-3 py-2 border rounded-lg text-sm">
               <option value="uni">University</option>
-              <option value="global">Global</option>
             </select>
             <button disabled={creating} onClick={onCreate} className="px-4 py-2 rounded-lg bg-slate-900 text-white text-sm hover:bg-slate-800 disabled:opacity-60">{creating?"Creating...":"Create"}</button>
           </div>
@@ -151,10 +151,12 @@ const AdminGroups = () => {
             <div>
               <p className="font-medium text-slate-800">{selected.name}</p>
               <p className="text-xs text-slate-600 mb-2">{selected.isGlobal ? 'Global' : `University: ${selected.university || '-'}`}</p>
-              <div className="flex gap-2 mb-3">
-                <button onClick={onRename} className="px-3 py-1.5 rounded-lg bg-slate-700 text-white text-xs">Rename</button>
-                <button onClick={onDelete} className="px-3 py-1.5 rounded-lg bg-rose-600 text-white text-xs">Delete</button>
-              </div>
+              {!selected.isGlobal && (
+                <div className="flex gap-2 mb-3">
+                  <button onClick={onRename} className="px-3 py-1.5 rounded-lg bg-slate-700 text-white text-xs">Rename</button>
+                  <button onClick={onDelete} className="px-3 py-1.5 rounded-lg bg-rose-600 text-white text-xs">Delete</button>
+                </div>
+              )}
               <div>
                 <p className="font-medium text-slate-800 mb-2 text-sm">Members</p>
                 <div className="space-y-2 max-h-72 overflow-auto pr-1">
@@ -167,6 +169,36 @@ const AdminGroups = () => {
                       <button onClick={()=>onRemoveMember(m.user)} className="px-3 py-1.5 rounded-lg bg-slate-200 text-xs hover:bg-slate-300">Remove</button>
                     </div>
                   ))}
+                </div>
+              </div>
+              <div className="mt-5">
+                <p className="font-medium text-slate-800 mb-2 text-sm">Messages</p>
+                <div className="border rounded-xl overflow-hidden">
+                  <div className="max-h-64 overflow-auto p-3 space-y-2 bg-white">
+                    {selected.messages?.length ? selected.messages.map(msg => {
+                      const mine = msg.sender === user?._id;
+                      return (
+                        <div key={msg._id} className={`flex ${mine? 'justify-end' : 'justify-start'}`}>
+                          <div className={`max-w-[80%] rounded-2xl px-3 py-2 ${mine? 'bg-blue-600 text-white rounded-br-sm' : 'bg-slate-100 text-slate-800 rounded-bl-sm'}`}>
+                            <p className="text-[11px] opacity-80 mb-0.5">{msg.senderName || 'Member'} • {new Date(msg.createdAt).toLocaleTimeString()}</p>
+                            <p className="text-sm leading-relaxed">{msg.text}</p>
+                            <div className="text-[10px] mt-1 flex justify-between items-center opacity-70">
+                              <span></span>
+                              {(mine || !selected.isGlobal) && (
+                                <button onClick={async()=>{ try{ await deleteMessage(user?.token, selected._id, msg._id); const d=await getGroup(user?.token, selected._id); setSelected(d);}catch(e){alert('Failed to delete');}}} className={`hover:underline ${mine? 'text-white' : 'text-slate-600'}`}>Delete</button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }) : (
+                      <div className="p-2 text-sm text-slate-500">No messages yet.</div>
+                    )}
+                  </div>
+                  <div className="p-3 bg-slate-50 flex gap-2">
+                    <input value={messageText} onChange={(e)=>setMessageText(e.target.value)} placeholder="Write a message..." className="flex-1 px-3 py-2 rounded-lg border text-sm" />
+                    <button onClick={async()=>{ if(!messageText.trim())return; try{ await postMessage(user?.token, selected._id, messageText.trim()); setMessageText(""); const d=await getGroup(user?.token, selected._id); setSelected(d);}catch(e){alert('Failed to send');}}} className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm">Send</button>
+                  </div>
                 </div>
               </div>
             </div>
