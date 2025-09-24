@@ -29,6 +29,7 @@ import DonorProfile from "../pages/dashboards/donor/DonorProfile";
 import Donations from "../pages/dashboards/donor/Donations";
 import DonorReports from "../pages/dashboards/donor/DonorReports";
 import BrowseRequests from "../pages/dashboards/donor/BrowseRequests";
+import DonorNotifications from "../pages/dashboards/donor/DonorNotifications";
 import AdminHome from "../pages/dashboards/admin/AdminHome";
 import AdminProfile from "../pages/dashboards/admin/AdminProfile";
 import AdminVerify from "../pages/dashboards/admin/AdminVerify";
@@ -82,6 +83,7 @@ const AppRoutes = () => {
           <Route path="donations" element={<Donations />} />
           <Route path="reports" element={<DonorReports />} />
           <Route path="browse" element={<BrowseRequests />} />
+          <Route path="notifications" element={<DonorNotifications />} />
         </Route>
         <Route
           path="/dashboard/admin"

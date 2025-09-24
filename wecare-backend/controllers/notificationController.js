@@ -12,19 +12,60 @@ export const getNotifications = async (req, res) => {
     if (role === "admin") roleWideTypes.push("all_admins");
     if (role === "donor") roleWideTypes.push("all_donors");
 
-    const notifications = await Notification.find({
-      $or: [
-        { recipients: userId },
-        { recipientType: "everyone", sender: { $ne: userId } },
-        { recipientType: { $in: roleWideTypes }, sender: { $ne: userId } },
-        { recipientType: "university_students", university: req.user.university, sender: { $ne: userId } }
-      ],
-      isDeleted: { $not: { $elemMatch: { user: userId } } }
-    })
-    .populate("sender", "name email role")
-    .sort({ createdAt: -1 })
-    .limit(50);
+    const isValidObjectId = typeof userId === 'string' && /^[a-fA-F0-9]{24}$/.test(userId);
 
+    let baseQuery;
+    if (isValidObjectId) {
+      baseQuery = {
+        $or: [
+          { recipients: userId },
+          { recipientType: "everyone", sender: { $ne: userId } },
+          { recipientType: { $in: roleWideTypes }, sender: { $ne: userId } },
+          { recipientType: "university_students", university: req.user.university, sender: { $ne: userId } }
+        ],
+        isDeleted: { $not: { $elemMatch: { user: userId } } }
+      };
+    } else {
+      baseQuery = {
+        $or: [
+          { recipientType: "everyone" },
+          { recipientType: { $in: roleWideTypes } },
+          { recipientType: "university_students", university: req.user.university }
+        ]
+      };
+    }
+
+    // New users only see notifications created after their account was created
+    if (req.user.createdAt) {
+      baseQuery.createdAt = { $gte: req.user.createdAt };
+    }
+
+    const notifications = await Notification.find(baseQuery)
+      .populate("sender", "name email role")
+      .populate("recipients", "name email role")
+      .sort({ createdAt: -1 })
+      .limit(50);
+
+    res.json(notifications);
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+// Get notifications sent by current user
+export const getSentNotifications = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const isValidObjectId = typeof userId === 'string' && /^[a-fA-F0-9]{24}$/.test(userId);
+    let query;
+    if (isValidObjectId) {
+      query = { sender: userId };
+    } else {
+      query = { senderRole: req.user.role };
+      if (req.user.name) query.senderName = req.user.name;
+    }
+    const notifications = await Notification.find(query)
+      .sort({ createdAt: -1 })
+      .limit(100);
     res.json(notifications);
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
@@ -52,27 +93,31 @@ export const sendNotification = async (req, res) => {
     switch (recipientType) {
       case "everyone":
         if (senderRole !== "superadmin") return res.status(403).json({ message: "Only superadmin can notify everyone" });
-        recipients = await User.find({}).select("_id");
+        // For broadcasts we don't need to expand recipients; rely on recipientType in queries
+        recipients = [];
         break;
       case "all_students":
         if (senderRole !== "superadmin") return res.status(403).json({ message: "Only superadmin can notify all students" });
-        recipients = await User.find({ role: "student" }).select("_id");
+        recipients = [];
         break;
       case "all_donors":
         if (senderRole !== "superadmin") return res.status(403).json({ message: "Only superadmin can notify all donors" });
-        recipients = await User.find({ role: "donor" }).select("_id");
+        recipients = [];
         break;
       case "all_admins":
         if (senderRole !== "superadmin" && senderRole !== "donor") return res.status(403).json({ message: "Only superadmin/donor can notify all admins" });
-        recipients = await User.find({ role: "admin" }).select("_id");
+        recipients = [];
         break;
       case "university_students":
         if (senderRole !== "admin") return res.status(403).json({ message: "Only admin can notify their university students" });
-        if (!university) {
-          return res.status(400).json({ message: "University required for university_students type" });
+        {
+          const adminUniversity = req.user.university || university;
+          if (!adminUniversity) {
+            return res.status(400).json({ message: "Admin does not have a university set" });
+          }
+          recipients = [];
+          notificationUniversity = adminUniversity;
         }
-        recipients = await User.find({ role: "student", university }).select("_id");
-        notificationUniversity = university;
         break;
       case "single_student":
         if (senderRole !== "admin") return res.status(403).json({ message: "Only admin can notify a single student" });
@@ -108,16 +153,23 @@ export const sendNotification = async (req, res) => {
         return res.status(400).json({ message: "Invalid recipient type" });
     }
 
-    const notification = new Notification({
-      title,
-      message,
-      sender: req.user._id,
-      recipients: recipients.map(r => r._id ?? r),
+    const doc = {
+      title: String(title).trim(),
+      message: String(message).trim(),
       recipientType,
-      university: notificationUniversity
-    });
+      university: notificationUniversity || undefined,
+    };
+    if (req.user && req.user._id && /^[a-fA-F0-9]{24}$/.test(String(req.user._id))) {
+      doc.sender = req.user._id;
+    } else {
+      doc.senderRole = req.user?.role;
+      doc.senderName = req.user?.name;
+    }
+    if (recipients && recipients.length > 0) {
+      doc.recipients = recipients.map(r => r._id ?? r);
+    }
 
-    await notification.save();
+    const notification = await Notification.create(doc);
     res.status(201).json({ message: "Notification sent successfully", notification });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
@@ -159,20 +211,14 @@ export const deleteNotification = async (req, res) => {
       return res.status(404).json({ message: "Notification not found" });
     }
 
-    // Check if user is sender (can delete) or recipient (can hide)
-    const isSender = notification.sender.toString() === userId.toString();
-    const isRecipient = notification.recipients.some(r => r.toString() === userId.toString());
-
-    if (!isSender && !isRecipient) {
-      return res.status(403).json({ message: "Not authorized to delete this notification" });
-    }
-
+    // If the current user is the sender, delete globally; otherwise hide for this user
+    const isSender = (notification.sender?.toString?.() || "") === (userId?.toString?.() || "");
     if (isSender) {
       // Sender can delete the notification completely
       await notification.deleteOne();
       res.json({ message: "Notification deleted" });
     } else {
-      // Recipient can only hide it from their view
+      // Any viewer can hide it from their view (even for broadcast notifications)
       notification.isDeleted.push({ user: userId });
       await notification.save();
       res.json({ message: "Notification hidden" });
@@ -199,7 +245,7 @@ export const editNotification = async (req, res) => {
     }
 
     // Only sender can edit
-    if (notification.sender.toString() !== userId.toString()) {
+    if ((notification.sender?.toString?.() || "") !== (userId?.toString?.() || "")) {
       return res.status(403).json({ message: "Only sender can edit notification" });
     }
 

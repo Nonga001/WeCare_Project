@@ -11,6 +11,11 @@ export const getNotifications = async (token) => {
   return res.data;
 };
 
+export const getSentNotifications = async (token) => {
+  const res = await axios.get(`${API_URL}/sent`, getAuthHeaders(token));
+  return res.data;
+};
+
 export const sendNotification = async (token, notificationData) => {
   const res = await axios.post(`${API_URL}/send`, notificationData, getAuthHeaders(token));
   return res.data;

@@ -7,7 +7,8 @@ import {
   editNotification,
   getStudentsForNotification,
   getAdminsForNotification,
-  getDonorsForNotification 
+  getDonorsForNotification, 
+  getSentNotifications
 } from "../controllers/notificationController.js";
 import { protect } from "../middleware/authMiddleware.js";
 
@@ -18,6 +19,9 @@ router.use(protect);
 
 // Get notifications for current user
 router.get("/", getNotifications);
+
+// Get notifications sent by current user
+router.get("/sent", getSentNotifications);
 
 // Send notification (admin/superadmin only)
 router.post("/send", sendNotification);
