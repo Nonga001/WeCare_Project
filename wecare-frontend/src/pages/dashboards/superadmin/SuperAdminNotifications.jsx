@@ -10,6 +10,8 @@ import {
   getSentNotifications
 } from "../../../services/notificationService";
 import { getHiddenIds, hideNotificationId, unhideNotificationId, isHiddenId } from "../../../utils/notificationPrefs";
+import { useSocket } from "../../../context/SocketContext";
+import { markAsRead } from "../../../services/notificationService";
 
 const SuperAdminNotifications = () => {
   const { user } = useAuth();
@@ -23,6 +25,7 @@ const SuperAdminNotifications = () => {
   const [showSendForm, setShowSendForm] = useState(false);
   const [editingNotification, setEditingNotification] = useState(null);
   const [hiddenIds, setHiddenIds] = useState([]);
+  const socketRef = useSocket();
   
   const [sendForm, setSendForm] = useState({
     title: "",
@@ -68,6 +71,36 @@ const SuperAdminNotifications = () => {
     }
   }, [user?.token]);
 
+  useEffect(() => {
+    const s = socketRef?.current;
+    if (!s) return;
+    const onNew = (n) => {
+      setNotifications(prev => [n, ...prev]);
+      // If current user is sender, also update sent
+      const uid = user?._id || user?.id;
+      const sentByUser = (n.sender && (n.sender._id === uid)) || (!!n.senderRole && n.senderRole === user?.role && (!!n.senderName ? n.senderName === user?.name : true));
+      if (sentByUser) setSent(prev => [n, ...prev]);
+    };
+    const onUpdate = (n) => {
+      setNotifications(prev => prev.map(x => x._id === n._id ? n : x));
+      setSent(prev => prev.map(x => x._id === n._id ? n : x));
+    };
+    const onDelete = ({ notificationId }) => {
+      setNotifications(prev => prev.filter(x => x._id !== notificationId));
+      setSent(prev => prev.filter(x => x._id !== notificationId));
+    };
+    s.on("notification:new", onNew);
+    s.on("notification:update", onUpdate);
+    s.on("notification:delete", onDelete);
+    return () => {
+      try {
+        s.off("notification:new", onNew);
+        s.off("notification:update", onUpdate);
+        s.off("notification:delete", onDelete);
+      } catch {}
+    };
+  }, [socketRef?.current, user?._id, user?.id, user?.role, user?.name]);
+
   const handleSendNotification = async (e) => {
     e.preventDefault();
     try {
@@ -112,6 +145,16 @@ const SuperAdminNotifications = () => {
     setHiddenIds(getHiddenIds(user));
   };
 
+  const handleMarkAsRead = async (notificationId) => {
+    try {
+      await markAsRead(user?.token, notificationId);
+      setNotifications(prev => prev.map(n => n._id === notificationId 
+        ? { ...n, isRead: [...(n.isRead || []), { user: user?._id, readAt: new Date().toISOString() }] }
+        : n
+      ));
+    } catch {}
+  };
+
   const handleEditNotification = async (e) => {
     e.preventDefault();
     try {
@@ -151,6 +194,13 @@ const SuperAdminNotifications = () => {
       (n.sender && (n.sender._id === uid)) ||
       (!!n.senderRole && n.senderRole === user?.role && (!!n.senderName ? n.senderName === user?.name : true))
     );
+  };
+
+  const isRead = (notification) => {
+    const uid = user?._id || user?.id;
+    return (notification.isRead || []).some(read => (
+      read.user === uid || read.user?._id === uid || String(read.user) === String(uid)
+    ));
   };
 
   if (loading) {
@@ -268,7 +318,7 @@ const SuperAdminNotifications = () => {
         ) : (
           <div className="space-y-4">
             {notifications.filter(n => !isHiddenId(user, n._id)).map((notification) => (
-              <div key={notification._id} className="border border-slate-200 rounded-lg p-4">
+              <div key={notification._id} onClick={() => { if (!isRead(notification)) handleMarkAsRead(notification._id); }} className={`border rounded-lg p-4 ${isRead(notification) ? "border-slate-200 bg-slate-50" : "border-blue-200 bg-blue-50"}`}>
                 {editingNotification?._id === notification._id ? (
                   <form onSubmit={handleEditNotification} className="space-y-3">
                     <input
@@ -301,6 +351,14 @@ const SuperAdminNotifications = () => {
                         </div>
                       </div>
                       <div className="flex gap-2">
+                        {!((notification.isRead || []).some(r => (r.user === (user?._id||user?.id)) || (r.user?._id === (user?._id||user?.id)) || (String(r.user)===String(user?._id||user?.id)))) && (
+                          <button
+                            onClick={() => handleMarkAsRead(notification._id)}
+                            className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
+                          >
+                            Mark as Read
+                          </button>
+                        )}
                         <button
                           onClick={() => setEditingNotification(notification)}
                           className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"

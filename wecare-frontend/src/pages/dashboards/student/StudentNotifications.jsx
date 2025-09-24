@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import { getNotifications, markAsRead } from "../../../services/notificationService";
 import { getHiddenIds, hideNotificationId, unhideNotificationId, isHiddenId } from "../../../utils/notificationPrefs";
+import { useSocket } from "../../../context/SocketContext";
 
 const StudentNotifications = () => {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [hiddenIds, setHiddenIds] = useState([]);
+  const socketRef = useSocket();
   const [error, setError] = useState("");
 
   const fetchNotifications = async () => {
@@ -28,6 +30,30 @@ const StudentNotifications = () => {
       fetchNotifications();
     }
   }, [user?.token]);
+
+  useEffect(() => {
+    const s = socketRef?.current;
+    if (!s) return;
+    const onNew = (n) => {
+      setNotifications(prev => [n, ...prev]);
+    };
+    const onUpdate = (n) => {
+      setNotifications(prev => prev.map(x => x._id === n._id ? n : x));
+    };
+    const onDelete = ({ notificationId }) => {
+      setNotifications(prev => prev.filter(x => x._id !== notificationId));
+    };
+    s.on("notification:new", onNew);
+    s.on("notification:update", onUpdate);
+    s.on("notification:delete", onDelete);
+    return () => {
+      try {
+        s.off("notification:new", onNew);
+        s.off("notification:update", onUpdate);
+        s.off("notification:delete", onDelete);
+      } catch {}
+    };
+  }, [socketRef?.current]);
 
   const handleMarkAsRead = async (notificationId) => {
     try {
@@ -104,7 +130,15 @@ const StudentNotifications = () => {
                       <span>{formatDate(notification.createdAt)}</span>
                     </div>
                   </div>
-                  <div className="flex gap-2 ml-4">
+                    <div className="flex gap-2 ml-4">
+                      {!isRead(notification) && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleMarkAsRead(notification._id); }}
+                          className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
+                        >
+                          Mark as Read
+                        </button>
+                      )}
                     <button
                       onClick={(e) => { e.stopPropagation(); handleHide(notification._id); }}
                       className="px-3 py-1 bg-slate-600 text-white rounded hover:bg-slate-700 text-sm"

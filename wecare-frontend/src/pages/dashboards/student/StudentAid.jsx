@@ -104,7 +104,12 @@ const StudentAid = () => {
               type="number"
               placeholder="Amount (KES)" 
               value={financial.amount} 
-              onChange={(e)=>setFinancial({...financial,amount:e.target.value})} 
+              min="1"
+              onChange={(e)=>{
+                const val = e.target.value;
+                if (Number(val) < 0) return; // prevent negative entry
+                setFinancial({...financial,amount:val})
+              }} 
               className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300" 
             />
             <input 
@@ -142,7 +147,12 @@ const StudentAid = () => {
               type="number"
               placeholder="Quantity" 
               value={essential.quantity} 
-              onChange={(e)=>setEssential({...essential,quantity:e.target.value})} 
+              min="1"
+              onChange={(e)=>{
+                const val = e.target.value;
+                if (Number(val) < 0) return; // prevent negative entry
+                setEssential({...essential,quantity:val})
+              }} 
               className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300" 
             />
           </div>

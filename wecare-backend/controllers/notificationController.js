@@ -1,5 +1,6 @@
 import Notification from "../models/Notification.js";
 import User from "../models/User.js";
+import { io } from "../server.js";
 
 // Get notifications for a user
 export const getNotifications = async (req, res) => {
@@ -170,7 +171,12 @@ export const sendNotification = async (req, res) => {
     }
 
     const notification = await Notification.create(doc);
-    res.status(201).json({ message: "Notification sent successfully", notification });
+    // Populate minimal fields for broadcast
+    const populated = await Notification.findById(notification._id)
+      .populate("sender", "name email role")
+      .populate("recipients", "name email role");
+    io.emit("notification:new", populated);
+    res.status(201).json({ message: "Notification sent successfully", notification: populated });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
   }
@@ -194,6 +200,7 @@ export const markAsRead = async (req, res) => {
       await notification.save();
     }
 
+    io.emit("notification:read", { notificationId, userId });
     res.json({ message: "Notification marked as read" });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
@@ -215,12 +222,15 @@ export const deleteNotification = async (req, res) => {
     const isSender = (notification.sender?.toString?.() || "") === (userId?.toString?.() || "");
     if (isSender) {
       // Sender can delete the notification completely
+      const id = notification._id.toString();
       await notification.deleteOne();
+      io.emit("notification:delete", { notificationId: id });
       res.json({ message: "Notification deleted" });
     } else {
       // Any viewer can hide it from their view (even for broadcast notifications)
       notification.isDeleted.push({ user: userId });
       await notification.save();
+      io.emit("notification:hide", { notificationId, userId });
       res.json({ message: "Notification hidden" });
     }
   } catch (err) {
@@ -252,8 +262,11 @@ export const editNotification = async (req, res) => {
     notification.title = title;
     notification.message = message;
     await notification.save();
-
-    res.json({ message: "Notification updated", notification });
+    const populated = await Notification.findById(notificationId)
+      .populate("sender", "name email role")
+      .populate("recipients", "name email role");
+    io.emit("notification:update", populated);
+    res.json({ message: "Notification updated", notification: populated });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
   }

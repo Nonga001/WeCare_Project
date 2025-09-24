@@ -30,7 +30,23 @@ app.use("/api/disbursements", disbursementRoutes);
 app.use("/api/groups", groupRoutes);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, async () => {
+// Create HTTP server and Socket.IO
+import http from "http";
+import { Server as SocketIOServer } from "socket.io";
+const httpServer = http.createServer(app);
+export const io = new SocketIOServer(httpServer, {
+  cors: {
+    origin: ["http://localhost:5173", "http://localhost:5174", "http://127.0.0.1:5173"],
+    credentials: true
+  }
+});
+
+io.on("connection", (socket) => {
+  // Optionally join by role or user id if sent in handshake query later
+  // socket.join(`user:${userId}`) or socket.join(`role:${role}`)
+});
+
+httpServer.listen(PORT, async () => {
   console.log(`🚀 Server running on port ${PORT}`);
   try {
     // Ensure a single global group exists for all students

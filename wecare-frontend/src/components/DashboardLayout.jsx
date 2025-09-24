@@ -3,6 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getNotifications } from "../services/notificationService";
+import { useSocket } from "../context/SocketContext";
 
 const DashboardLayout = ({ title, children }) => {
   const { logout, user } = useAuth();
@@ -10,6 +11,7 @@ const DashboardLayout = ({ title, children }) => {
 
   const [isDark, setIsDark] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const socketRef = useSocket();
   useEffect(() => {
     try {
       const saved = localStorage.getItem("theme:dark");
@@ -37,6 +39,38 @@ const DashboardLayout = ({ title, children }) => {
     intervalId = setInterval(loadUnread, 60000);
     return () => intervalId && clearInterval(intervalId);
   }, [user?.token, user?._id, user?.id]);
+
+  // Live update unread counter on socket events
+  useEffect(() => {
+    const s = socketRef?.current;
+    if (!s) return;
+    const refresh = async () => {
+      try {
+        if (!user?.token) return;
+        const list = await getNotifications(user.token);
+        const uid = user?._id || user?.id;
+        const count = Array.isArray(list)
+          ? list.filter(n => !n.isRead?.some(r => (r.user === uid) || (r.user?._id === uid) || (String(r.user) === String(uid)))).length
+          : 0;
+        setUnreadCount(count);
+      } catch {}
+    };
+    s.on("notification:new", refresh);
+    s.on("notification:update", refresh);
+    s.on("notification:delete", refresh);
+    s.on("notification:read", ({ userId }) => {
+      const uid = user?._id || user?.id;
+      if ((String(userId) === String(uid))) refresh();
+    });
+    return () => {
+      try {
+        s.off("notification:new", refresh);
+        s.off("notification:update", refresh);
+        s.off("notification:delete", refresh);
+        s.off("notification:read", refresh);
+      } catch {}
+    };
+  }, [socketRef?.current, user?.token, user?._id, user?.id]);
   const toggleTheme = () => {
     const next = !isDark;
     setIsDark(next);
