@@ -198,6 +198,7 @@ const Donations = () => {
                   onChange={handle}
                   placeholder="Enter amount"
                   className="input"
+                  min={1}
                   required
                 />
               </div>
@@ -226,6 +227,7 @@ const Donations = () => {
                       value={item.quantity}
                       onChange={(e) => updateItem(index, "quantity", e.target.value)}
                       className="input w-24"
+                      min={1}
                       required
                     />
                     {form.items.length > 1 && (
