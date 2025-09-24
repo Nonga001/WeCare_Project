@@ -1,11 +1,15 @@
 // src/components/DashboardLayout.jsx
 import { useAuth } from "../context/AuthContext";
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { getNotifications } from "../services/notificationService";
 
 const DashboardLayout = ({ title, children }) => {
   const { logout, user } = useAuth();
+  const navigate = useNavigate();
 
   const [isDark, setIsDark] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   useEffect(() => {
     try {
       const saved = localStorage.getItem("theme:dark");
@@ -15,6 +19,24 @@ const DashboardLayout = ({ title, children }) => {
       document.documentElement.classList.toggle('dark', enabled);
     } catch {}
   }, []);
+
+  useEffect(() => {
+    let intervalId;
+    const loadUnread = async () => {
+      try {
+        if (!user?.token) return;
+        const list = await getNotifications(user.token);
+        const userId = user?._id || user?.id;
+        const count = Array.isArray(list)
+          ? list.filter(n => !n.isRead?.some(r => (r.user === userId) || (r.user?._id === userId) || (String(r.user) === String(userId)))).length
+          : 0;
+        setUnreadCount(count);
+      } catch {}
+    };
+    loadUnread();
+    intervalId = setInterval(loadUnread, 60000);
+    return () => intervalId && clearInterval(intervalId);
+  }, [user?.token, user?._id, user?.id]);
   const toggleTheme = () => {
     const next = !isDark;
     setIsDark(next);
@@ -28,9 +50,29 @@ const DashboardLayout = ({ title, children }) => {
         <div className="w-full h-full flex flex-col justify-center">
           <div className="flex items-center justify-between gap-3">
             <h1 className="text-base sm:text-lg lg:text-xl font-extrabold tracking-tight text-slate-800 dark:text-slate-100">{title}</h1>
-            <button onClick={toggleTheme} className="btn btn-ghost">
-              {isDark ? 'Light Mode' : 'Dark Mode'}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  const role = user?.role;
+                  if (role === 'student') navigate('/dashboard/student/notifications');
+                  else if (role === 'donor') navigate('/dashboard/donor');
+                  else if (role === 'admin') navigate('/dashboard/admin/notifications');
+                  else if (role === 'superadmin') navigate('/dashboard/superadmin/notifications');
+                }}
+                className="btn btn-ghost relative"
+                title="Notifications"
+              >
+                <span>🔔</span>
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 inline-flex items-center justify-center rounded-full bg-rose-600 text-white text-xs">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </button>
+              <button onClick={toggleTheme} className="btn btn-ghost">
+                {isDark ? 'Light Mode' : 'Dark Mode'}
+              </button>
+            </div>
           </div>
           <div className="mt-0.5">
             <p className="text-slate-600 text-[12px] sm:text-[13px] dark:text-slate-300">
