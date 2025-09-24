@@ -12,6 +12,7 @@ import {
 import { getHiddenIds, hideNotificationId, unhideNotificationId, isHiddenId } from "../../../utils/notificationPrefs";
 import { useSocket } from "../../../context/SocketContext";
 import { markAsRead } from "../../../services/notificationService";
+import { hideNotificationServer, unhideNotificationServer, getHiddenNotifications } from "../../../services/notificationService";
 
 const SuperAdminNotifications = () => {
   const { user } = useAuth();
@@ -25,7 +26,10 @@ const SuperAdminNotifications = () => {
   const [showSendForm, setShowSendForm] = useState(false);
   const [editingNotification, setEditingNotification] = useState(null);
   const [hiddenIds, setHiddenIds] = useState([]);
-  const socketRef = useSocket();
+  const [hiddenList, setHiddenList] = useState([]);
+  const { socketRef } = useSocket();
+  const [before, setBefore] = useState(null);
+  const [hasMore, setHasMore] = useState(true);
   
   const [sendForm, setSendForm] = useState({
     title: "",
@@ -44,6 +48,18 @@ const SuperAdminNotifications = () => {
       setNotifications(inbox);
       setSent(sentData);
       setHiddenIds(getHiddenIds(user));
+      try { setHiddenList(await getHiddenNotifications(user?.token)); } catch {}
+      setBefore(inbox.length > 0 ? inbox[inbox.length - 1]._id : null);
+      setHasMore((inbox || []).length >= 50);
+  const loadMore = async () => {
+    try {
+      if (!hasMore || !before) return;
+      const next = await getNotifications(user?.token, { before, limit: 50 });
+      setNotifications(prev => [...prev, ...next]);
+      setBefore(next.length > 0 ? next[next.length - 1]._id : before);
+      setHasMore((next || []).length >= 50);
+    } catch {}
+  };
     } catch (err) {
       setError(err.response?.data?.message || "Failed to load notifications");
     } finally {
@@ -134,15 +150,19 @@ const SuperAdminNotifications = () => {
     }
   };
 
-  const handleHide = (id) => {
+  const handleHide = async (id) => {
+    try { await hideNotificationServer(user?.token, id); } catch {}
     hideNotificationId(user, id);
     setHiddenIds(getHiddenIds(user));
     setNotifications(prev => prev.filter(n => String(n._id) !== String(id)));
+    try { setHiddenList(await getHiddenNotifications(user?.token)); } catch {}
   };
 
-  const handleUnhide = (id) => {
+  const handleUnhide = async (id) => {
+    try { await unhideNotificationServer(user?.token, id); } catch {}
     unhideNotificationId(user, id);
     setHiddenIds(getHiddenIds(user));
+    try { setHiddenList(await getHiddenNotifications(user?.token)); } catch {}
   };
 
   const handleMarkAsRead = async (notificationId) => {
@@ -383,6 +403,11 @@ const SuperAdminNotifications = () => {
                 )}
               </div>
             ))}
+            <div className="mt-3 text-center">
+              {hasMore && (
+                <button onClick={loadMore} className="px-3 py-1 text-sm text-blue-600 hover:underline">Load older</button>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -412,11 +437,11 @@ const SuperAdminNotifications = () => {
       {/* Hidden */}
       <div className="rounded-xl border border-slate-200 p-6">
         <h3 className="text-lg font-semibold text-slate-800 mb-4">Hidden</h3>
-        {hiddenIds.length === 0 ? (
+        {(hiddenList || []).length === 0 ? (
           <p className="text-slate-500">No hidden notifications.</p>
         ) : (
           <div className="space-y-4">
-            {notifications.filter(n => isHiddenId(user, n._id)).map((n) => (
+            {hiddenList.map((n) => (
               <div key={n._id} className="border border-slate-200 rounded-lg p-4 bg-slate-50">
                 <div className="flex justify-between items-start">
                   <div>

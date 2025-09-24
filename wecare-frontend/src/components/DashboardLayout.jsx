@@ -1,8 +1,8 @@
 // src/components/DashboardLayout.jsx
 import { useAuth } from "../context/AuthContext";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getNotifications } from "../services/notificationService";
+import { getNotifications, getUnreadCount, markAsRead } from "../services/notificationService";
 import { useSocket } from "../context/SocketContext";
 
 const DashboardLayout = ({ title, children }) => {
@@ -11,7 +11,10 @@ const DashboardLayout = ({ title, children }) => {
 
   const [isDark, setIsDark] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  const socketRef = useSocket();
+  const { socketRef, status: socketStatus } = useSocket();
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [dropdownItems, setDropdownItems] = useState([]);
+  const latestBefore = useRef(null);
   useEffect(() => {
     try {
       const saved = localStorage.getItem("theme:dark");
@@ -27,12 +30,8 @@ const DashboardLayout = ({ title, children }) => {
     const loadUnread = async () => {
       try {
         if (!user?.token) return;
-        const list = await getNotifications(user.token);
-        const userId = user?._id || user?.id;
-        const count = Array.isArray(list)
-          ? list.filter(n => !n.isRead?.some(r => (r.user === userId) || (r.user?._id === userId) || (String(r.user) === String(userId)))).length
-          : 0;
-        setUnreadCount(count);
+        const count = await getUnreadCount(user.token);
+        setUnreadCount(Number(count) || 0);
       } catch {}
     };
     loadUnread();
@@ -40,19 +39,17 @@ const DashboardLayout = ({ title, children }) => {
     return () => intervalId && clearInterval(intervalId);
   }, [user?.token, user?._id, user?.id]);
 
-  // Live update unread counter on socket events
+  // Live update unread counter and dropdown on socket events
   useEffect(() => {
     const s = socketRef?.current;
     if (!s) return;
     const refresh = async () => {
       try {
         if (!user?.token) return;
-        const list = await getNotifications(user.token);
-        const uid = user?._id || user?.id;
-        const count = Array.isArray(list)
-          ? list.filter(n => !n.isRead?.some(r => (r.user === uid) || (r.user?._id === uid) || (String(r.user) === String(uid)))).length
-          : 0;
-        setUnreadCount(count);
+        const count = await getUnreadCount(user.token);
+        setUnreadCount(Number(count) || 0);
+        const latest = await getNotifications(user.token, { limit: 5 });
+        setDropdownItems(latest);
       } catch {}
     };
     s.on("notification:new", refresh);
@@ -71,6 +68,31 @@ const DashboardLayout = ({ title, children }) => {
       } catch {}
     };
   }, [socketRef?.current, user?.token, user?._id, user?.id]);
+
+  useEffect(() => {
+    const loadLatest = async () => {
+      try {
+        if (!user?.token) return;
+        const latest = await getNotifications(user.token, { limit: 5 });
+        setDropdownItems(latest);
+      } catch {}
+    };
+    loadLatest();
+  }, [user?.token]);
+
+  const markAllAsRead = async () => {
+    try {
+      const uid = user?._id || user?.id;
+      const toMark = dropdownItems.filter(n => !(n.isRead || []).some(r => (r.user === uid) || (r.user?._id === uid) || (String(r.user) === String(uid))));
+      for (const n of toMark) {
+        await markAsRead(user?.token, n._id);
+      }
+      const latest = await getNotifications(user?.token, { limit: 5 });
+      setDropdownItems(latest);
+      const count = await getUnreadCount(user?.token);
+      setUnreadCount(Number(count) || 0);
+    } catch {}
+  };
   const toggleTheme = () => {
     const next = !isDark;
     setIsDark(next);
@@ -85,24 +107,68 @@ const DashboardLayout = ({ title, children }) => {
           <div className="flex items-center justify-between gap-3">
             <h1 className="text-base sm:text-lg lg:text-xl font-extrabold tracking-tight text-slate-800 dark:text-slate-100">{title}</h1>
             <div className="flex items-center gap-2">
+              <div className="relative">
               <button
-                onClick={() => {
-                  const role = user?.role;
-                  if (role === 'student') navigate('/dashboard/student/notifications');
-                  else if (role === 'donor') navigate('/dashboard/donor');
-                  else if (role === 'admin') navigate('/dashboard/admin/notifications');
-                  else if (role === 'superadmin') navigate('/dashboard/superadmin/notifications');
-                }}
+                onClick={() => setShowDropdown(!showDropdown)}
                 className="btn btn-ghost relative"
                 title="Notifications"
               >
-                <span>🔔</span>
+                <span className="relative inline-flex items-center">
+                  <span>🔔</span>
+                  <span className={`ml-1 w-2 h-2 rounded-full ${socketStatus === 'connected' ? 'bg-emerald-500' : socketStatus === 'reconnecting' ? 'bg-yellow-500' : 'bg-slate-400'}`}></span>
+                </span>
                 {unreadCount > 0 && (
                   <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 inline-flex items-center justify-center rounded-full bg-rose-600 text-white text-xs">
                     {unreadCount > 99 ? '99+' : unreadCount}
                   </span>
                 )}
               </button>
+              {showDropdown && (
+                <div className="absolute right-0 mt-2 w-80 rounded-xl border border-slate-200 bg-white shadow-lg z-50">
+                  <div className="p-3 border-b border-slate-100 flex items-center justify-between">
+                    <span className="text-sm font-semibold text-slate-700">Notifications</span>
+                    <button onClick={markAllAsRead} className="text-xs text-blue-600 hover:underline">Mark all as read</button>
+                  </div>
+                  <div className="max-h-80 overflow-auto">
+                    {dropdownItems.length === 0 ? (
+                      <div className="p-4 text-sm text-slate-500">No recent notifications</div>
+                    ) : (
+                      dropdownItems.map((n) => (
+                        <button key={n._id} onClick={() => {
+                          const role = user?.role;
+                          if (role === 'student') navigate('/dashboard/student/notifications');
+                          else if (role === 'donor') navigate('/dashboard/donor');
+                          else if (role === 'admin') navigate('/dashboard/admin/notifications');
+                          else if (role === 'superadmin') navigate('/dashboard/superadmin/notifications');
+                          setShowDropdown(false);
+                        }} className="w-full text-left p-3 hover:bg-slate-50">
+                          <div className="flex items-start gap-2">
+                            {!((n.isRead||[]).some(r => (r.user === (user?._id||user?.id)) || (r.user?._id === (user?._id||user?.id)) || (String(r.user)===String(user?._id||user?.id)))) && (
+                              <span className="mt-1 inline-block w-2 h-2 rounded-full bg-blue-600"></span>
+                            )}
+                            <div className="flex-1">
+                              <div className="text-sm font-medium text-slate-800 truncate">{n.title}</div>
+                              <div className="text-xs text-slate-600 truncate">{n.message}</div>
+                              <div className="text-[11px] text-slate-400">{new Date(n.createdAt).toLocaleString()}</div>
+                            </div>
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                  <div className="p-2 border-t border-slate-100 text-right">
+                    <button onClick={() => {
+                      const role = user?.role;
+                      if (role === 'student') navigate('/dashboard/student/notifications');
+                      else if (role === 'donor') navigate('/dashboard/donor');
+                      else if (role === 'admin') navigate('/dashboard/admin/notifications');
+                      else if (role === 'superadmin') navigate('/dashboard/superadmin/notifications');
+                      setShowDropdown(false);
+                    }} className="text-sm text-blue-600 hover:underline">View all</button>
+                  </div>
+                </div>
+              )}
+              </div>
               <button onClick={toggleTheme} className="btn btn-ghost">
                 {isDark ? 'Light Mode' : 'Dark Mode'}
               </button>

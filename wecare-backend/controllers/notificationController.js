@@ -41,11 +41,14 @@ export const getNotifications = async (req, res) => {
       baseQuery.createdAt = { $gte: req.user.createdAt };
     }
 
-    const notifications = await Notification.find(baseQuery)
+    const { before, limit } = req.query;
+    const pageLimit = Math.min(Number(limit) || 50, 100);
+    const cursorFilter = before ? { _id: { $lt: before } } : {};
+    const notifications = await Notification.find({ ...baseQuery, ...cursorFilter })
       .populate("sender", "name email role")
       .populate("recipients", "name email role")
       .sort({ createdAt: -1 })
-      .limit(50);
+      .limit(pageLimit);
 
     res.json(notifications);
   } catch (err) {
@@ -64,10 +67,38 @@ export const getSentNotifications = async (req, res) => {
       query = { senderRole: req.user.role };
       if (req.user.name) query.senderName = req.user.name;
     }
-    const notifications = await Notification.find(query)
+    const { before, limit } = req.query;
+    const pageLimit = Math.min(Number(limit) || 100, 100);
+    const cursorFilter = before ? { _id: { $lt: before } } : {};
+    const notifications = await Notification.find({ ...query, ...cursorFilter })
       .sort({ createdAt: -1 })
-      .limit(100);
+      .limit(pageLimit);
     res.json(notifications);
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+export const getUnreadCount = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const role = req.user.role;
+    const roleWideTypes = [];
+    if (role === "student") roleWideTypes.push("all_students");
+    if (role === "admin") roleWideTypes.push("all_admins");
+    if (role === "donor") roleWideTypes.push("all_donors");
+    const query = {
+      $or: [
+        { recipients: userId },
+        { recipientType: "everyone", sender: { $ne: userId } },
+        { recipientType: { $in: roleWideTypes }, sender: { $ne: userId } },
+        { recipientType: "university_students", university: req.user.university, sender: { $ne: userId } }
+      ],
+      isDeleted: { $not: { $elemMatch: { user: userId } } },
+      isRead: { $not: { $elemMatch: { user: userId } } }
+    };
+    const count = await Notification.countDocuments(query);
+    res.json({ count });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
   }
@@ -175,7 +206,20 @@ export const sendNotification = async (req, res) => {
     const populated = await Notification.findById(notification._id)
       .populate("sender", "name email role")
       .populate("recipients", "name email role");
-    io.emit("notification:new", populated);
+    // Targeted emit by audience
+    const rooms = new Set();
+    if (populated.recipients && populated.recipients.length > 0) {
+      populated.recipients.forEach(r => rooms.add(`user:${r._id}`));
+    } else {
+      if (populated.recipientType === "everyone") {
+        ["student","admin","donor","superadmin"].forEach(role => rooms.add(`role:${role}`));
+      } else if (populated.recipientType === "all_students") rooms.add(`role:student`);
+      else if (populated.recipientType === "all_admins") rooms.add(`role:admin`);
+      else if (populated.recipientType === "all_donors") rooms.add(`role:donor`);
+      else if (populated.recipientType === "university_students") rooms.add(`role:student`);
+      else if (populated.recipientType === "superadmin") rooms.add(`role:superadmin`);
+    }
+    rooms.forEach(room => io.to(room).emit("notification:new", populated));
     res.status(201).json({ message: "Notification sent successfully", notification: populated });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
@@ -200,7 +244,7 @@ export const markAsRead = async (req, res) => {
       await notification.save();
     }
 
-    io.emit("notification:read", { notificationId, userId });
+    io.to(`user:${userId}`).emit("notification:read", { notificationId, userId });
     res.json({ message: "Notification marked as read" });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
@@ -224,15 +268,59 @@ export const deleteNotification = async (req, res) => {
       // Sender can delete the notification completely
       const id = notification._id.toString();
       await notification.deleteOne();
-      io.emit("notification:delete", { notificationId: id });
+      io.to(`user:${userId}`).emit("notification:delete", { notificationId: id });
       res.json({ message: "Notification deleted" });
     } else {
       // Any viewer can hide it from their view (even for broadcast notifications)
       notification.isDeleted.push({ user: userId });
       await notification.save();
-      io.emit("notification:hide", { notificationId, userId });
+      io.to(`user:${userId}`).emit("notification:hide", { notificationId, userId });
       res.json({ message: "Notification hidden" });
     }
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+// Persist hide/unhide server-side
+export const hideNotification = async (req, res) => {
+  try {
+    const { notificationId } = req.params;
+    const userId = req.user._id;
+    const notification = await Notification.findById(notificationId);
+    if (!notification) return res.status(404).json({ message: "Notification not found" });
+    const exists = notification.isDeleted.some(d => String(d.user) === String(userId));
+    if (!exists) notification.isDeleted.push({ user: userId });
+    await notification.save();
+    io.to(`user:${userId}`).emit("notification:hide", { notificationId, userId });
+    res.json({ message: "Notification hidden" });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+export const unhideNotification = async (req, res) => {
+  try {
+    const { notificationId } = req.params;
+    const userId = req.user._id;
+    const notification = await Notification.findById(notificationId);
+    if (!notification) return res.status(404).json({ message: "Notification not found" });
+    notification.isDeleted = (notification.isDeleted || []).filter(d => String(d.user) !== String(userId));
+    await notification.save();
+    io.to(`user:${userId}`).emit("notification:unhide", { notificationId, userId });
+    res.json({ message: "Notification unhidden" });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+export const getHiddenNotifications = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const list = await Notification.find({ isDeleted: { $elemMatch: { user: userId } } })
+      .sort({ createdAt: -1 })
+      .limit(100);
+    res.json(list);
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
   }
@@ -265,7 +353,19 @@ export const editNotification = async (req, res) => {
     const populated = await Notification.findById(notificationId)
       .populate("sender", "name email role")
       .populate("recipients", "name email role");
-    io.emit("notification:update", populated);
+    const rooms2 = new Set();
+    if (populated.recipients && populated.recipients.length > 0) {
+      populated.recipients.forEach(r => rooms2.add(`user:${r._id}`));
+    } else {
+      if (populated.recipientType === "everyone") {
+        ["student","admin","donor","superadmin"].forEach(role => rooms2.add(`role:${role}`));
+      } else if (populated.recipientType === "all_students") rooms2.add(`role:student`);
+      else if (populated.recipientType === "all_admins") rooms2.add(`role:admin`);
+      else if (populated.recipientType === "all_donors") rooms2.add(`role:donor`);
+      else if (populated.recipientType === "university_students") rooms2.add(`role:student`);
+      else if (populated.recipientType === "superadmin") rooms2.add(`role:superadmin`);
+    }
+    rooms2.forEach(room => io.to(room).emit("notification:update", populated));
     res.json({ message: "Notification updated", notification: populated });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });

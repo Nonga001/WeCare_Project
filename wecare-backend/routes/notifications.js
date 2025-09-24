@@ -8,7 +8,11 @@ import {
   getStudentsForNotification,
   getAdminsForNotification,
   getDonorsForNotification, 
-  getSentNotifications
+  getSentNotifications,
+  getUnreadCount,
+  hideNotification,
+  unhideNotification,
+  getHiddenNotifications
 } from "../controllers/notificationController.js";
 import { protect } from "../middleware/authMiddleware.js";
 
@@ -22,6 +26,7 @@ router.get("/", getNotifications);
 
 // Get notifications sent by current user
 router.get("/sent", getSentNotifications);
+router.get("/unread-count", getUnreadCount);
 
 // Send notification (admin/superadmin only)
 router.post("/send", sendNotification);
@@ -37,6 +42,9 @@ router.get("/donors", getDonorsForNotification);
 
 // Mark notification as read
 router.patch("/:notificationId/read", markAsRead);
+router.post("/:notificationId/hide", hideNotification);
+router.delete("/:notificationId/hide", unhideNotification);
+router.get("/hidden", getHiddenNotifications);
 
 // Delete notification
 router.delete("/:notificationId", deleteNotification);

@@ -42,8 +42,22 @@ export const io = new SocketIOServer(httpServer, {
 });
 
 io.on("connection", (socket) => {
-  // Optionally join by role or user id if sent in handshake query later
-  // socket.join(`user:${userId}`) or socket.join(`role:${role}`)
+  // Authenticate via token and join rooms
+  try {
+    const token = socket.handshake?.auth?.token;
+    if (!token) return socket.disconnect(true);
+    // Lazily import to avoid circular
+    import("./middleware/authMiddleware.js").then(({ verifySocketToken }) => {
+      const payload = verifySocketToken(token);
+      if (!payload) return socket.disconnect(true);
+      const userId = payload.id;
+      const role = payload.role;
+      if (userId) socket.join(`user:${userId}`);
+      if (role) socket.join(`role:${role}`);
+    }).catch(() => socket.disconnect(true));
+  } catch {
+    socket.disconnect(true);
+  }
 });
 
 httpServer.listen(PORT, async () => {

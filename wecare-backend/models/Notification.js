@@ -44,3 +44,10 @@ const notificationSchema = new mongoose.Schema(
 );
 
 export default mongoose.model("Notification", notificationSchema);
+
+// Indexes for performance
+notificationSchema.index({ createdAt: -1 });
+notificationSchema.index({ sender: 1, createdAt: -1 });
+notificationSchema.index({ recipientType: 1, createdAt: -1 });
+notificationSchema.index({ university: 1, createdAt: -1 });
+notificationSchema.index({ recipients: 1, createdAt: -1 });

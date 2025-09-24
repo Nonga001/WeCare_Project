@@ -38,3 +38,12 @@ export const requireApproved = (req, res, next) => {
   }
   return next();
 };
+
+export const verifySocketToken = (token) => {
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    return { id: decoded.id, role: decoded.role };
+  } catch {
+    return null;
+  }
+};

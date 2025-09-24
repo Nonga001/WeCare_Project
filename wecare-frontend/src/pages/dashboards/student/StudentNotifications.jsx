@@ -3,21 +3,37 @@ import { useAuth } from "../../../context/AuthContext";
 import { getNotifications, markAsRead } from "../../../services/notificationService";
 import { getHiddenIds, hideNotificationId, unhideNotificationId, isHiddenId } from "../../../utils/notificationPrefs";
 import { useSocket } from "../../../context/SocketContext";
+import { hideNotificationServer, unhideNotificationServer, getHiddenNotifications } from "../../../services/notificationService";
 
 const StudentNotifications = () => {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [hiddenIds, setHiddenIds] = useState([]);
-  const socketRef = useSocket();
+  const [hiddenList, setHiddenList] = useState([]);
+  const { socketRef } = useSocket();
+  const [before, setBefore] = useState(null);
+  const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState("");
 
   const fetchNotifications = async () => {
     try {
       setLoading(true);
-      const data = await getNotifications(user?.token);
+      const data = await getNotifications(user?.token, { limit: 20 });
       setNotifications(data);
       setHiddenIds(getHiddenIds(user));
+      try { setHiddenList(await getHiddenNotifications(user?.token)); } catch {}
+      setBefore(data.length > 0 ? data[data.length - 1]._id : null);
+      setHasMore((data || []).length >= 20);
+  const loadMore = async () => {
+    try {
+      if (!hasMore || !before) return;
+      const data = await getNotifications(user?.token, { before, limit: 20 });
+      setNotifications(prev => [...prev, ...data]);
+      setBefore(data.length > 0 ? data[data.length - 1]._id : before);
+      setHasMore((data || []).length >= 20);
+    } catch {}
+  };
     } catch (err) {
       setError(err.response?.data?.message || "Failed to load notifications");
     } finally {
@@ -69,15 +85,19 @@ const StudentNotifications = () => {
     }
   };
 
-  const handleHide = (notificationId) => {
+  const handleHide = async (notificationId) => {
+    try { await hideNotificationServer(user?.token, notificationId); } catch {}
     hideNotificationId(user, notificationId);
     setHiddenIds(getHiddenIds(user));
     setNotifications(prev => prev.filter(n => String(n._id) !== String(notificationId)));
+    try { setHiddenList(await getHiddenNotifications(user?.token)); } catch {}
   };
 
-  const handleUnhide = (notificationId) => {
+  const handleUnhide = async (notificationId) => {
+    try { await unhideNotificationServer(user?.token, notificationId); } catch {}
     unhideNotificationId(user, notificationId);
     setHiddenIds(getHiddenIds(user));
+    try { setHiddenList(await getHiddenNotifications(user?.token)); } catch {}
   };
 
   const formatDate = (dateString) => {
@@ -149,6 +169,11 @@ const StudentNotifications = () => {
                 </div>
               </div>
             ))}
+            <div className="mt-3 text-center">
+              {hasMore && (
+                <button onClick={loadMore} className="px-3 py-1 text-sm text-blue-600 hover:underline">Load older</button>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -156,11 +181,11 @@ const StudentNotifications = () => {
       {/* Hidden */}
       <div className="rounded-xl border border-slate-200 p-6">
         <h3 className="text-lg font-semibold text-slate-800 mb-4">Hidden</h3>
-        {hiddenIds.length === 0 ? (
+        {(hiddenList || []).length === 0 ? (
           <p className="text-slate-500">No hidden notifications.</p>
         ) : (
           <div className="space-y-3">
-            {notifications.filter(n => isHiddenId(user, n._id)).map((n) => (
+            {hiddenList.map((n) => (
               <div key={n._id} className="border rounded-lg p-4 bg-slate-50">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
