@@ -122,19 +122,7 @@ const Donations = () => {
         notes: "" 
       });
 
-      // Hide donated request locally
-      if (form.requestId) {
-        try {
-          const raw = localStorage.getItem("hiddenAidRequests");
-          const arr = raw ? JSON.parse(raw) : [];
-          if (!arr.includes(form.requestId)) {
-            arr.push(form.requestId);
-            localStorage.setItem("hiddenAidRequests", JSON.stringify(arr));
-          }
-        } catch {
-          // ignore
-        }
-      }
+      // Removed local hidden fallback for donated request; rely on server state
 
       // Reload history
       const data = await getMyDonations(user?.token);

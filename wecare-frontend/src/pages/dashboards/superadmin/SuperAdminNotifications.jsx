@@ -9,7 +9,7 @@ import {
   getDonorsForNotification,
   getSentNotifications
 } from "../../../services/notificationService";
-import { getHiddenIds, hideNotificationId, unhideNotificationId, isHiddenId } from "../../../utils/notificationPrefs";
+// Removed localStorage fallback for hidden notifications
 import { useSocket } from "../../../context/SocketContext";
 import { markAsRead } from "../../../services/notificationService";
 import { hideNotificationServer, unhideNotificationServer, getHiddenNotifications } from "../../../services/notificationService";
@@ -25,7 +25,6 @@ const SuperAdminNotifications = () => {
   const [success, setSuccess] = useState("");
   const [showSendForm, setShowSendForm] = useState(false);
   const [editingNotification, setEditingNotification] = useState(null);
-  const [hiddenIds, setHiddenIds] = useState([]);
   const [hiddenList, setHiddenList] = useState([]);
   const { socketRef } = useSocket();
   const [before, setBefore] = useState(null);
@@ -47,7 +46,6 @@ const SuperAdminNotifications = () => {
       ]);
       setNotifications(inbox);
       setSent(sentData);
-      setHiddenIds(getHiddenIds(user));
       try { setHiddenList(await getHiddenNotifications(user?.token)); } catch {}
       setBefore(inbox.length > 0 ? inbox[inbox.length - 1]._id : null);
       setHasMore((inbox || []).length >= 50);
@@ -152,16 +150,12 @@ const SuperAdminNotifications = () => {
 
   const handleHide = async (id) => {
     try { await hideNotificationServer(user?.token, id); } catch {}
-    hideNotificationId(user, id);
-    setHiddenIds(getHiddenIds(user));
     setNotifications(prev => prev.filter(n => String(n._id) !== String(id)));
     try { setHiddenList(await getHiddenNotifications(user?.token)); } catch {}
   };
 
   const handleUnhide = async (id) => {
     try { await unhideNotificationServer(user?.token, id); } catch {}
-    unhideNotificationId(user, id);
-    setHiddenIds(getHiddenIds(user));
     try { setHiddenList(await getHiddenNotifications(user?.token)); } catch {}
   };
 
@@ -333,11 +327,11 @@ const SuperAdminNotifications = () => {
       <div className="rounded-xl border border-slate-200 p-6">
         <h3 className="text-lg font-semibold text-slate-800 mb-4">System Notifications</h3>
         
-        {notifications.filter(n => !isHiddenId(user, n._id)).length === 0 ? (
+        {notifications.length === 0 ? (
           <p className="text-slate-500 text-center py-8">No notifications sent yet.</p>
         ) : (
           <div className="space-y-4">
-            {notifications.filter(n => !isHiddenId(user, n._id)).map((notification) => (
+            {notifications.map((notification) => (
               <div key={notification._id} onClick={() => { if (!isRead(notification)) handleMarkAsRead(notification._id); }} className={`border rounded-lg p-4 ${isRead(notification) ? "border-slate-200 bg-slate-50" : "border-blue-200 bg-blue-50"}`}>
                 {editingNotification?._id === notification._id ? (
                   <form onSubmit={handleEditNotification} className="space-y-3">

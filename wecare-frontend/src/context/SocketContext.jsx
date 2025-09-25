@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import { io as clientIO } from "socket.io-client";
 import { useAuth } from "./AuthContext";
 
@@ -24,9 +25,18 @@ export const SocketProvider = ({ children }) => {
       reconnectionDelayMax: 5000,
     });
     socketRef.current = s;
-    s.on("connect", () => setStatus("connected"));
-    s.on("disconnect", () => setStatus("disconnected"));
-    s.on("reconnect_attempt", () => setStatus("reconnecting"));
+    s.on("connect", () => {
+      setStatus("connected");
+      toast.success("Connected to realtime updates");
+    });
+    s.on("disconnect", (reason) => {
+      setStatus("disconnected");
+      toast.error(reason === "io client disconnect" ? "Disconnected" : "Connection lost. Reconnecting...");
+    });
+    s.on("reconnect_attempt", () => {
+      setStatus("reconnecting");
+      toast.info("Reconnecting...");
+    });
     return () => {
       try { s.close(); } catch {}
       socketRef.current = null;

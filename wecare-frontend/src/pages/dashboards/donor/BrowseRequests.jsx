@@ -9,14 +9,6 @@ const BrowseRequests = () => {
   const [type, setType] = useState("");
   const [minAmount, setMinAmount] = useState("");
   const [data, setData] = useState([]);
-  const [hiddenIds, setHiddenIds] = useState(() => {
-    try {
-      const raw = localStorage.getItem("hiddenAidRequests");
-      return raw ? JSON.parse(raw) : [];
-    } catch {
-      return [];
-    }
-  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -41,20 +33,7 @@ const BrowseRequests = () => {
     if (user?.token) loadRequests();
   }, [user?.token, type, minAmount]);
 
-  useEffect(() => {
-    const handleVisibility = () => {
-      try {
-        const raw = localStorage.getItem("hiddenAidRequests");
-        setHiddenIds(raw ? JSON.parse(raw) : []);
-      } catch {
-        // noop
-      }
-    };
-    document.addEventListener("visibilitychange", handleVisibility);
-    return () => document.removeEventListener("visibilitychange", handleVisibility);
-  }, []);
-
-  const filtered = useMemo(() => data.filter(r => !hiddenIds.includes(r._id)), [data, hiddenIds]);
+  const filtered = useMemo(() => data, [data]);
 
   const donate = (r) => {
     const params = new URLSearchParams();

@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { Toaster } from 'sonner'
 import AppRoutes from "./routes/AppRoutes";
 import { AuthProvider } from "./context/AuthContext";
 import { SocketProvider } from "./context/SocketContext";
@@ -17,6 +18,7 @@ function App() {
     <AuthProvider>
       <SocketProvider>
         <AppRoutes />
+        <Toaster richColors position="top-right" />
       </SocketProvider>
     </AuthProvider>
   );

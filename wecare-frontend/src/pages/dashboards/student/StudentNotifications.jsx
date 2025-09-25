@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import { getNotifications, markAsRead } from "../../../services/notificationService";
-import { getHiddenIds, hideNotificationId, unhideNotificationId, isHiddenId } from "../../../utils/notificationPrefs";
+// Removed localStorage fallback for hidden notifications
 import { useSocket } from "../../../context/SocketContext";
 import { hideNotificationServer, unhideNotificationServer, getHiddenNotifications } from "../../../services/notificationService";
 
@@ -9,7 +9,6 @@ const StudentNotifications = () => {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [hiddenIds, setHiddenIds] = useState([]);
   const [hiddenList, setHiddenList] = useState([]);
   const { socketRef } = useSocket();
   const [before, setBefore] = useState(null);
@@ -21,7 +20,6 @@ const StudentNotifications = () => {
       setLoading(true);
       const data = await getNotifications(user?.token, { limit: 20 });
       setNotifications(data);
-      setHiddenIds(getHiddenIds(user));
       try { setHiddenList(await getHiddenNotifications(user?.token)); } catch {}
       setBefore(data.length > 0 ? data[data.length - 1]._id : null);
       setHasMore((data || []).length >= 20);
@@ -87,16 +85,12 @@ const StudentNotifications = () => {
 
   const handleHide = async (notificationId) => {
     try { await hideNotificationServer(user?.token, notificationId); } catch {}
-    hideNotificationId(user, notificationId);
-    setHiddenIds(getHiddenIds(user));
     setNotifications(prev => prev.filter(n => String(n._id) !== String(notificationId)));
     try { setHiddenList(await getHiddenNotifications(user?.token)); } catch {}
   };
 
   const handleUnhide = async (notificationId) => {
     try { await unhideNotificationServer(user?.token, notificationId); } catch {}
-    unhideNotificationId(user, notificationId);
-    setHiddenIds(getHiddenIds(user));
     try { setHiddenList(await getHiddenNotifications(user?.token)); } catch {}
   };
 
@@ -122,11 +116,11 @@ const StudentNotifications = () => {
       <div className="rounded-xl border border-slate-200 p-6">
         <h3 className="text-lg font-semibold text-slate-800 mb-4">Recent Notifications</h3>
         
-        {notifications.filter(n => !isHiddenId(user, n._id)).length === 0 ? (
+        {notifications.length === 0 ? (
           <p className="text-slate-500 text-center py-8">No notifications yet.</p>
         ) : (
           <div className="space-y-3">
-            {notifications.filter(n => !isHiddenId(user, n._id)).map((notification) => (
+            {notifications.map((notification) => (
               <div 
                 key={notification._id} 
                 onClick={() => { if (!isRead(notification)) handleMarkAsRead(notification._id); }}
