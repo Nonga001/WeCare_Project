@@ -4,7 +4,7 @@ import { NavLink, Outlet } from "react-router-dom";
 const SuperAdminDashboard = () => {
   return (
     <DashboardLayout title="Super Admin Dashboard 🛡️">
-      <nav className="mb-6 flex flex-wrap gap-2">
+      <nav className="mb-6 flex flex-wrap justify-end lg:justify-center gap-2">
         <NavLink to="/dashboard/superadmin" end className={({isActive})=>`px-4 py-2 rounded-xl text-sm font-medium ${isActive?"bg-slate-900 text-white":"bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"}`}>Home</NavLink>
         <NavLink to="/dashboard/superadmin/profile" className={({isActive})=>`px-4 py-2 rounded-xl text-sm font-medium ${isActive?"bg-slate-900 text-white":"bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"}`}>Profile</NavLink>
         <NavLink to="/dashboard/superadmin/users" className={({isActive})=>`px-4 py-2 rounded-xl text-sm font-medium ${isActive?"bg-slate-900 text-white":"bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"}`}>User Management</NavLink>

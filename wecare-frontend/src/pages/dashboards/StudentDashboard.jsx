@@ -10,7 +10,7 @@ const StudentDashboard = () => {
   return (
     <DashboardLayout title="Student Dashboard 🎓">
       <div className="w-full">
-        <nav className="flex flex-wrap gap-2 sm:gap-3 mb-6">
+        <nav className="flex flex-wrap justify-end lg:justify-center gap-2 sm:gap-3 mb-6">
           <NavLink
             to="/dashboard/student"
             end

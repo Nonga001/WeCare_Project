@@ -9,7 +9,7 @@ const AdminDashboard = () => {
 
   return (
     <DashboardLayout title="Admin Dashboard 🔑">
-      <nav className="mb-6 flex flex-wrap gap-2">
+      <nav className="mb-6 flex flex-wrap justify-end lg:justify-center gap-2">
         <NavLink 
           to="/dashboard/admin" 
           end 

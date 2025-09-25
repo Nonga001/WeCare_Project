@@ -28,7 +28,7 @@ const LoginStudent = () => {
   const [showPassword, setShowPassword] = useState(false);
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gradient-to-r from-green-100 via-lime-50 to-teal-50 px-4">
+    <div className="flex justify-end sm:justify-center items-center h-screen overflow-hidden bg-gradient-to-r from-green-100 via-lime-50 to-teal-50 px-4">
       <form
         onSubmit={handleSubmit}
         className="w-full max-w-md p-8 bg-white rounded-2xl shadow-xl border border-gray-200"
@@ -88,6 +88,10 @@ const LoginStudent = () => {
         <button className="w-full py-3 bg-gradient-to-r from-green-500 to-lime-600 text-white font-semibold rounded-xl shadow-md hover:from-green-600 hover:to-lime-700 transition">
           Login
         </button>
+
+        <p className="mt-3 text-center text-green-600 text-sm">
+          <a href="#" className="hover:underline">Forgot password?</a>
+        </p>
 
         <p className="mt-5 text-center text-gray-600 text-sm">
           Don’t have an account?{" "}

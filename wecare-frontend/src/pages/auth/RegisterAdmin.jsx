@@ -6,6 +6,7 @@ const RegisterAdmin = () => {
   const [form, setForm] = useState({
     name: "",
     university: "",
+    phone: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -15,8 +16,15 @@ const RegisterAdmin = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigate = useNavigate();
 
-  const handleChange = (e) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    if (name === "phone") {
+      const digitsOnly = value.replace(/\\D/g, "").slice(0, 10);
+      setForm({ ...form, [name]: digitsOnly });
+      return;
+    }
+    setForm({ ...form, [name]: value });
+  };
 
   const universities = useMemo(
     () => [
@@ -42,6 +50,10 @@ const RegisterAdmin = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (form.phone.length !== 10) {
+      setError("Phone number must be exactly 10 digits");
+      return;
+    }
     if (!isPasswordStrong) {
       setError(
         "Password must be at least 8 chars with uppercase, lowercase, number, and special character"
@@ -56,6 +68,7 @@ const RegisterAdmin = () => {
       await register("admin", {
         name: form.name,
         university: form.university,
+        phone: form.phone,
         email: form.email,
         password: form.password,
       });
@@ -91,6 +104,23 @@ const RegisterAdmin = () => {
             value={form.name}
             onChange={handleChange}
             className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent transition"
+            required
+          />
+        </div>
+
+        <div className="mb-3">
+          <label htmlFor="phone" className="block mb-1 text-sm font-medium text-gray-700">Phone Number</label>
+          <input
+            id="phone"
+            type="tel"
+            name="phone"
+            placeholder="Format: 07... / 01..."
+            value={form.phone}
+            onChange={handleChange}
+            className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent transition"
+            inputMode="numeric"
+            maxLength={10}
+            pattern="^[0-9]{10}$"
             required
           />
         </div>

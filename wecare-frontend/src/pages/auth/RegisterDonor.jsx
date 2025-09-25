@@ -16,8 +16,15 @@ const RegisterDonor = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigate = useNavigate();
 
-  const handleChange = (e) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    if (name === "phone") {
+      const digitsOnly = value.replace(/\D/g, "").slice(0, 10);
+      setForm({ ...form, [name]: digitsOnly });
+      return;
+    }
+    setForm({ ...form, [name]: value });
+  };
 
   const passwordChecks = useMemo(() => {
     const lengthOk = form.password.length >= 8;
@@ -32,6 +39,10 @@ const RegisterDonor = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (form.phone.length !== 10) {
+      setError("Phone number must be exactly 10 digits");
+      return;
+    }
     if (!isPasswordStrong) {
       setError(
         "Password must be at least 8 chars with uppercase, lowercase, number, and special character"
@@ -108,10 +119,13 @@ const RegisterDonor = () => {
             id="phone"
             type="tel"
             name="phone"
-            placeholder="Phone Number"
+            placeholder="Format: 07... / 01..."
             value={form.phone}
             onChange={handleChange}
             className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition"
+            inputMode="numeric"
+            maxLength={10}
+            pattern="^[0-9]{10}$"
             required
           />
         </div>
