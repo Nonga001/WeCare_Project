@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
-import { updateStudentProfile, submitProfileForApproval, getProfileCompletion } from "../../../services/userService";
+import { updateStudentProfile, submitProfileForApproval, getProfileCompletion, changePassword as changePasswordApi } from "../../../services/userService";
 
 const ProgressBar = ({ value = 0 }) => (
   <div className="w-full h-2.5 bg-slate-200 rounded-full">
@@ -27,6 +27,8 @@ const StudentProfile = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [userProfile, setUserProfile] = useState(null);
+  const [pwd, setPwd] = useState({ currentPassword: "", newPassword: "", confirmNewPassword: "" });
+  const [showPwd, setShowPwd] = useState({ current:false, next:false, confirm:false });
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -63,6 +65,38 @@ const StudentProfile = () => {
       setForm((prev) => ({ ...prev, [name]: files[0].name }));
     } else {
       setForm((prev) => ({ ...prev, [name]: value }));
+    }
+  };
+
+  const passwordStrong = () => {
+    const p = pwd.newPassword || "";
+    return p.length >= 8 && /[A-Z]/.test(p) && /[a-z]/.test(p) && /[0-9]/.test(p) && /[^A-Za-z0-9]/.test(p);
+  };
+
+  const handlePasswordChange = async () => {
+    if (!pwd.currentPassword) {
+      setError("Enter your current password");
+      return;
+    }
+    if (!passwordStrong()) {
+      setError("Password must be 8+ chars with A-Z, a-z, 0-9, special");
+      return;
+    }
+    if (pwd.newPassword !== pwd.confirmNewPassword) {
+      setError("New passwords do not match");
+      return;
+    }
+    try {
+      setLoading(true);
+      setError("");
+      await changePasswordApi(user?.token, { currentPassword: pwd.currentPassword, newPassword: pwd.newPassword });
+      setSuccess("Password updated successfully");
+      setPwd({ currentPassword: "", newPassword: "", confirmNewPassword: "" });
+      setTimeout(()=>setSuccess(""), 5000);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to update password");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -326,6 +360,32 @@ const StudentProfile = () => {
              completion.profileSubmitted && completion.profileApproved ? "✅ Profile Approved - Awaiting Final Verification" :
              "❌ Not submitted"}
           </p>
+        </div>
+        <div className="rounded-xl border border-slate-200 p-5">
+          <h4 className="font-semibold text-slate-800 mb-3">Security</h4>
+          <div className="grid grid-cols-1 gap-3">
+            <div className="relative">
+              <input type="password" placeholder="Current Password" value={pwd.currentPassword} onChange={(e)=>setPwd({...pwd, currentPassword:e.target.value})} className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300" />
+            </div>
+            <div className="relative">
+              <input type={showPwd.next?"text":"password"} placeholder="New Password" value={pwd.newPassword} onChange={(e)=>setPwd({...pwd, newPassword:e.target.value})} className="w-full px-4 py-3 pr-12 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300" />
+              <button type="button" onClick={()=>setShowPwd(s=>({...s, next:!s.next}))} className="absolute inset-y-0 right-0 px-3 text-slate-500">{showPwd.next?"🙈":"👁️"}</button>
+            </div>
+            <div className="relative">
+              <input type={showPwd.confirm?"text":"password"} placeholder="Confirm New Password" value={pwd.confirmNewPassword} onChange={(e)=>setPwd({...pwd, confirmNewPassword:e.target.value})} className="w-full px-4 py-3 pr-12 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300" />
+              <button type="button" onClick={()=>setShowPwd(s=>({...s, confirm:!s.confirm}))} className="absolute inset-y-0 right-0 px-3 text-slate-500">{showPwd.confirm?"🙈":"👁️"}</button>
+            </div>
+          </div>
+          <ul className="mt-2 text-xs text-slate-600 space-y-1">
+            <li className={pwd.newPassword.length>=8?"text-emerald-600":"text-slate-500"}>• At least 8 characters</li>
+            <li className={/[A-Z]/.test(pwd.newPassword)?"text-emerald-600":"text-slate-500"}>• Uppercase letter</li>
+            <li className={/[a-z]/.test(pwd.newPassword)?"text-emerald-600":"text-slate-500"}>• Lowercase letter</li>
+            <li className={/[0-9]/.test(pwd.newPassword)?"text-emerald-600":"text-slate-500"}>• Number</li>
+            <li className={/[^A-Za-z0-9]/.test(pwd.newPassword)?"text-emerald-600":"text-slate-500"}>• Special character</li>
+          </ul>
+          <div className="mt-3">
+            <button type="button" onClick={handlePasswordChange} disabled={loading} className="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-medium hover:bg-slate-800 disabled:opacity-50">Update Password</button>
+          </div>
         </div>
       </div>
     </div>

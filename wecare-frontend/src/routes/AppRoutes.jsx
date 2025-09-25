@@ -7,6 +7,7 @@ import RegisterStudent from "../pages/auth/RegisterStudent";
 import RegisterDonor from "../pages/auth/RegisterDonor";
 import RegisterAdmin from "../pages/auth/RegisterAdmin";
 import LoginAdmin from "../pages/auth/LoginAdmin";
+import LoginSuperAdmin from "../pages/auth/LoginSuperAdmin";
 import LoginDonor from "../pages/auth/LoginDonor";
 import LoginStudent from "../pages/auth/LoginStudent";
 
@@ -49,6 +50,7 @@ const AppRoutes = () => {
         <Route path="/login/student" element={<LoginStudent />} />
         <Route path="/login/donor" element={<LoginDonor />} />
         <Route path="/login/admin" element={<LoginAdmin />} />
+        <Route path="/login/superadmin" element={<LoginSuperAdmin />} />
         <Route path="/pending-approval" element={<PendingApproval />} />
 
         <Route path="/register/student" element={<RegisterStudent />} />
@@ -59,7 +61,7 @@ const AppRoutes = () => {
         <Route
           path="/dashboard/student"
           element={
-            <ProtectedRoute allowedRoles={["student", "superadmin"]}>
+            <ProtectedRoute allowedRoles={["student"]}>
               <StudentDashboard />
             </ProtectedRoute>
           }
@@ -73,7 +75,7 @@ const AppRoutes = () => {
         <Route
           path="/dashboard/donor"
           element={
-            <ProtectedRoute allowedRoles={["donor", "superadmin"]}>
+            <ProtectedRoute allowedRoles={["donor"]}>
               <DonorDashboard />
             </ProtectedRoute>
           }
@@ -88,7 +90,7 @@ const AppRoutes = () => {
         <Route
           path="/dashboard/admin"
           element={
-            <ProtectedRoute allowedRoles={["admin", "superadmin"]}>
+            <ProtectedRoute allowedRoles={["admin"]}>
               <AdminDashboard />
             </ProtectedRoute>
           }

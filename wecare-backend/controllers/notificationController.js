@@ -263,16 +263,35 @@ export const deleteNotification = async (req, res) => {
     }
 
     // If the current user is the sender, delete globally; otherwise hide for this user
-    const isSender = (notification.sender?.toString?.() || "") === (userId?.toString?.() || "");
-    if (isSender) {
+    const isSenderByObjectId = (notification.sender?.toString?.() || "") === (userId?.toString?.() || "");
+    const isSenderByRoleName = (!notification.sender && (
+      (notification.senderRole === req.user.role) && (!notification.senderName || notification.senderName === req.user.name)
+    ));
+
+    if (isSenderByObjectId || isSenderByRoleName) {
       // Sender can delete the notification completely
       const id = notification._id.toString();
       await notification.deleteOne();
-      io.to(`user:${userId}`).emit("notification:delete", { notificationId: id });
+      // Broadcast delete to the same audience logic used elsewhere
+      const rooms = new Set();
+      if (notification.recipients && notification.recipients.length > 0) {
+        notification.recipients.forEach(r => rooms.add(`user:${r.toString()}`));
+      } else {
+        if (notification.recipientType === "everyone") {
+          ["student","admin","donor","superadmin"].forEach(role => rooms.add(`role:${role}`));
+        } else if (notification.recipientType === "all_students") rooms.add(`role:student`);
+        else if (notification.recipientType === "all_admins") rooms.add(`role:admin`);
+        else if (notification.recipientType === "all_donors") rooms.add(`role:donor`);
+        else if (notification.recipientType === "university_students") rooms.add(`role:student`);
+        else if (notification.recipientType === "superadmin") rooms.add(`role:superadmin`);
+      }
+      rooms.forEach(room => io.to(room).emit("notification:delete", { notificationId: id }));
       res.json({ message: "Notification deleted" });
     } else {
       // Any viewer can hide it from their view (even for broadcast notifications)
-      notification.isDeleted.push({ user: userId });
+      notification.isDeleted = notification.isDeleted || [];
+      const exists = notification.isDeleted.some(d => String(d.user) === String(userId));
+      if (!exists) notification.isDeleted.push({ user: userId });
       await notification.save();
       io.to(`user:${userId}`).emit("notification:hide", { notificationId, userId });
       res.json({ message: "Notification hidden" });

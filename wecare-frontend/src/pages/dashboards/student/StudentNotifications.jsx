@@ -23,6 +23,13 @@ const StudentNotifications = () => {
       try { setHiddenList(await getHiddenNotifications(user?.token)); } catch {}
       setBefore(data.length > 0 ? data[data.length - 1]._id : null);
       setHasMore((data || []).length >= 20);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to load notifications");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const loadMore = async () => {
     try {
       if (!hasMore || !before) return;
@@ -32,11 +39,17 @@ const StudentNotifications = () => {
       setHasMore((data || []).length >= 20);
     } catch {}
   };
-    } catch (err) {
-      setError(err.response?.data?.message || "Failed to load notifications");
-    } finally {
-      setLoading(false);
-    }
+
+  const markAllAsReadNow = async () => {
+    try {
+      const uid = user?._id || user?.id;
+      const unread = notifications.filter(n => !((n.isRead || []).some(r => (r.user === uid) || (r.user?._id === uid) || (String(r.user) === String(uid)))));
+      for (const n of unread) {
+        await markAsRead(user?.token, n._id);
+      }
+      // Optimistically update list
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: [...(n.isRead || []), { user: uid, readAt: new Date().toISOString() }] })));
+    } catch {}
   };
 
   useEffect(() => {
@@ -114,7 +127,10 @@ const StudentNotifications = () => {
       {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">{error}</div>}
       
       <div className="rounded-xl border border-slate-200 p-6">
-        <h3 className="text-lg font-semibold text-slate-800 mb-4">Recent Notifications</h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-slate-800">Recent Notifications</h3>
+          <button onClick={markAllAsReadNow} className="text-sm text-blue-600 hover:underline">Mark all as read</button>
+        </div>
         
         {notifications.length === 0 ? (
           <p className="text-slate-500 text-center py-8">No notifications yet.</p>

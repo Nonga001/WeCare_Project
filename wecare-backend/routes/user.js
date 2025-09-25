@@ -1,10 +1,12 @@
 import express from "express";
-import { getProfile, approveAdmin, approveStudent, listUsers, setSuspended, listStudentsForAdmin, rejectStudent, getAdminStats, updateStudentProfile, submitProfileForApproval, getProfileCompletion } from "../controllers/userController.js";
+import { getProfile, approveAdmin, approveStudent, listUsers, setSuspended, listStudentsForAdmin, rejectStudent, getAdminStats, updateStudentProfile, submitProfileForApproval, getProfileCompletion, updateAdminProfile, changePassword } from "../controllers/userController.js";
 import { protect } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
 router.get("/profile", protect, getProfile);
+router.patch("/profile/admin", protect, updateAdminProfile);
+router.post("/password/change", protect, changePassword);
 
 // Approvals
 router.post("/approve/admin/:adminId", protect, approveAdmin);

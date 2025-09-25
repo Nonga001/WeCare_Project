@@ -203,7 +203,9 @@ export const login = async (req, res) => {
       });
     }
 
-    // Generate JWT
+    // Update lastActive and generate JWT
+    user.lastActive = new Date();
+    await user.save();
     const token = generateToken(user);
 
     res.json({

@@ -16,11 +16,14 @@ const LoginAdmin = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Force role to admin unless default superadmin credentials are used (backend handles it)
       const data = await loginService({ ...form, role: "admin" });
+      const returnedRole = data?.user?.role;
+      if (returnedRole !== "admin") {
+        setError(returnedRole === "superadmin" ? "Use /login/superadmin to sign in as Super Admin" : "This login is for Admin accounts only");
+        return;
+      }
       login(data);
-      const role = data?.user?.role || "admin";
-      navigate(`/dashboard/${role}`);
+      navigate("/dashboard/admin");
     } catch (err) {
       setError(err.response?.data?.message || "Login failed");
     }

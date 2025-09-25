@@ -4,6 +4,7 @@ const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
     university: { type: String }, // for students/admins
+    department: { type: String, enum: ["welfare", "gender", "health"], default: undefined }, // for admins
     organization: { type: String }, // for donors
     phone: { type: String },
     email: { type: String, required: true, unique: true },
@@ -27,6 +28,8 @@ const userSchema = new mongoose.Schema(
     profileSubmittedAt: { type: Date },
     profileApproved: { type: Boolean, default: false }, // Admin approves the submitted profile
     profileApprovedAt: { type: Date },
+    // Activity tracking
+    lastActive: { type: Date, default: Date.now },
   },
   { timestamps: true }
 );

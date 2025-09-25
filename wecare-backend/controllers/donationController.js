@@ -190,11 +190,11 @@ export const getGlobalStats = async (req, res) => {
       AidRequest.countDocuments({ status: "disbursed", disbursedAt: { $gte: oneWeekAgo } })
     ]);
 
-    // Active users last 24 hours by role (approximation)
+    // Active users last 24 hours by role (tracked via lastActive)
     const since = new Date();
     since.setDate(since.getDate() - 1);
     const activeByRoleAgg = await User.aggregate([
-      { $match: { createdAt: { $gte: since } } },
+      { $match: { lastActive: { $gte: since } } },
       { $group: { _id: "$role", count: { $sum: 1 } } }
     ]);
     const activeMap = new Map(activeByRoleAgg.map(a => [a._id, a.count]));

@@ -1,4 +1,5 @@
 import User from "../models/User.js";
+import bcrypt from "bcryptjs";
 
 // Example user profile route
 export const getProfile = async (req, res) => {
@@ -6,6 +7,53 @@ export const getProfile = async (req, res) => {
     res.json(req.user);
   } catch (err) {
     res.status(500).json({ message: "Something went wrong" });
+  }
+};
+
+// Update admin details (department only)
+export const updateAdminProfile = async (req, res) => {
+  try {
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ message: "Only admins can update their profile" });
+    }
+    const { department } = req.body;
+    if (!department || !["welfare", "gender", "health"].includes(department)) {
+      return res.status(400).json({ message: "Department must be one of welfare, gender, or health" });
+    }
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    user.department = department;
+    await user.save();
+    res.json({ message: "Department updated", user });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+// Change password (all roles)
+export const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: "Current and new password are required" });
+    }
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+    const match = await bcrypt.compare(currentPassword, user.password);
+    if (!match) return res.status(400).json({ message: "Current password is incorrect" });
+    const lengthOk = newPassword.length >= 8;
+    const upperOk = /[A-Z]/.test(newPassword);
+    const lowerOk = /[a-z]/.test(newPassword);
+    const numberOk = /[0-9]/.test(newPassword);
+    const specialOk = /[^A-Za-z0-9]/.test(newPassword);
+    if (!(lengthOk && upperOk && lowerOk && numberOk && specialOk)) {
+      return res.status(400).json({ message: "Password must be at least 8 chars and include uppercase, lowercase, number, and special character" });
+    }
+    user.password = await bcrypt.hash(newPassword, 10);
+    await user.save();
+    res.json({ message: "Password updated successfully" });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 };
 

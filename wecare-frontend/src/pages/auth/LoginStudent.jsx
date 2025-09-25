@@ -17,9 +17,13 @@ const LoginStudent = () => {
     e.preventDefault();
     try {
       const data = await loginService({ ...form, role: "student" });
+      const returnedRole = data?.user?.role;
+      if (returnedRole !== "student") {
+        setError(returnedRole === "superadmin" ? "Use /login/superadmin to sign in as Super Admin" : "This login is for Student accounts only");
+        return;
+      }
       login(data);
-      const role = data?.user?.role || "student";
-      navigate(`/dashboard/${role}`);
+      navigate("/dashboard/student");
     } catch (err) {
       setError(err.response?.data?.message || "Login failed");
     }

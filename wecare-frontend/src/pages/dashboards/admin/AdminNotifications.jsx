@@ -49,6 +49,13 @@ const AdminNotifications = () => {
       try { setHiddenList(await getHiddenNotifications(user?.token)); } catch {}
       setBefore(notificationsData.length > 0 ? notificationsData[notificationsData.length - 1]._id : null);
       setHasMore((notificationsData || []).length >= 50);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to load data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const loadMore = async () => {
     try {
       if (!hasMore || !before) return;
@@ -58,11 +65,16 @@ const AdminNotifications = () => {
       setHasMore((next || []).length >= 50);
     } catch {}
   };
-    } catch (err) {
-      setError(err.response?.data?.message || "Failed to load data");
-    } finally {
-      setLoading(false);
-    }
+
+  const markAllAsReadNow = async () => {
+    try {
+      const uid = user?._id || user?.id;
+      const unread = notifications.filter(n => !((n.isRead || []).some(r => (r.user === uid) || (r.user?._id === uid) || (String(r.user) === String(uid)))));
+      for (const n of unread) {
+        await markAsRead(user?.token, n._id);
+      }
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: [...(n.isRead || []), { user: uid, readAt: new Date().toISOString() }] })));
+    } catch {}
   };
 
   useEffect(() => {
@@ -289,7 +301,10 @@ const AdminNotifications = () => {
 
       {/* Notifications List */}
       <div className="rounded-xl border border-slate-200 p-6">
-        <h3 className="text-lg font-semibold text-slate-800 mb-4">Recent Notifications</h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-slate-800">Recent Notifications</h3>
+          <button onClick={markAllAsReadNow} className="text-sm text-blue-600 hover:underline">Mark all as read</button>
+        </div>
         
         {notifications.length === 0 ? (
           <p className="text-slate-500 text-center py-8">No notifications sent yet.</p>

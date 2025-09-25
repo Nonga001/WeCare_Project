@@ -17,9 +17,13 @@ const LoginDonor = () => {
     e.preventDefault();
     try {
       const data = await loginService({ ...form, role: "donor" });
+      const returnedRole = data?.user?.role;
+      if (returnedRole !== "donor") {
+        setError(returnedRole === "superadmin" ? "Use /login/superadmin to sign in as Super Admin" : "This login is for Donor accounts only");
+        return;
+      }
       login(data);
-      const role = data?.user?.role || "donor";
-      navigate(`/dashboard/${role}`);
+      navigate("/dashboard/donor");
     } catch (err) {
       setError(err.response?.data?.message || "Login failed");
     }

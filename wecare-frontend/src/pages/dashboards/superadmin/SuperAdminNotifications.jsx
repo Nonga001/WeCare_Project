@@ -29,6 +29,8 @@ const SuperAdminNotifications = () => {
   const { socketRef } = useSocket();
   const [before, setBefore] = useState(null);
   const [hasMore, setHasMore] = useState(true);
+  const [sentBefore, setSentBefore] = useState(null);
+  const [sentHasMore, setSentHasMore] = useState(true);
   
   const [sendForm, setSendForm] = useState({
     title: "",
@@ -49,6 +51,15 @@ const SuperAdminNotifications = () => {
       try { setHiddenList(await getHiddenNotifications(user?.token)); } catch {}
       setBefore(inbox.length > 0 ? inbox[inbox.length - 1]._id : null);
       setHasMore((inbox || []).length >= 50);
+      setSentBefore(sentData.length > 0 ? sentData[sentData.length - 1]._id : null);
+      setSentHasMore((sentData || []).length >= 50);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to load notifications");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const loadMore = async () => {
     try {
       if (!hasMore || !before) return;
@@ -58,11 +69,26 @@ const SuperAdminNotifications = () => {
       setHasMore((next || []).length >= 50);
     } catch {}
   };
-    } catch (err) {
-      setError(err.response?.data?.message || "Failed to load notifications");
-    } finally {
-      setLoading(false);
-    }
+
+  const loadMoreSent = async () => {
+    try {
+      if (!sentHasMore || !sentBefore) return;
+      const next = await getSentNotifications(user?.token, { before: sentBefore, limit: 50 });
+      setSent(prev => [...prev, ...next]);
+      setSentBefore(next.length > 0 ? next[next.length - 1]._id : sentBefore);
+      setSentHasMore((next || []).length >= 50);
+    } catch {}
+  };
+
+  const markAllAsReadNow = async () => {
+    try {
+      const uid = user?._id || user?.id;
+      const unread = notifications.filter(n => !((n.isRead || []).some(r => (r.user === uid) || (r.user?._id === uid) || (String(r.user) === String(uid)))));
+      for (const n of unread) {
+        await markAsRead(user?.token, n._id);
+      }
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: [...(n.isRead || []), { user: uid, readAt: new Date().toISOString() }] })));
+    } catch {}
   };
 
   const fetchTargets = async () => {
@@ -323,15 +349,17 @@ const SuperAdminNotifications = () => {
         )}
       </div>
 
-      {/* Notifications List */}
+      {/* Notifications List - show only items sent by current super admin */}
       <div className="rounded-xl border border-slate-200 p-6">
-        <h3 className="text-lg font-semibold text-slate-800 mb-4">System Notifications</h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-slate-800">System Notifications</h3>
+        </div>
         
-        {notifications.length === 0 ? (
+        {sent.filter(isSender).length === 0 ? (
           <p className="text-slate-500 text-center py-8">No notifications sent yet.</p>
         ) : (
           <div className="space-y-4">
-            {notifications.map((notification) => (
+            {sent.filter(isSender).map((notification) => (
               <div key={notification._id} onClick={() => { if (!isRead(notification)) handleMarkAsRead(notification._id); }} className={`border rounded-lg p-4 ${isRead(notification) ? "border-slate-200 bg-slate-50" : "border-blue-200 bg-blue-50"}`}>
                 {editingNotification?._id === notification._id ? (
                   <form onSubmit={handleEditNotification} className="space-y-3">
@@ -365,32 +393,22 @@ const SuperAdminNotifications = () => {
                         </div>
                       </div>
                       <div className="flex gap-2">
-                        {!((notification.isRead || []).some(r => (r.user === (user?._id||user?.id)) || (r.user?._id === (user?._id||user?.id)) || (String(r.user)===String(user?._id||user?.id)))) && (
-                          <button
-                            onClick={() => handleMarkAsRead(notification._id)}
-                            className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
-                          >
-                            Mark as Read
-                          </button>
+                        {isSender(notification) && (
+                          <>
+                            <button
+                              onClick={() => setEditingNotification(notification)}
+                              className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteNotification(notification._id)}
+                              className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                            >
+                              Delete
+                            </button>
+                          </>
                         )}
-                        <button
-                          onClick={() => setEditingNotification(notification)}
-                          className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDeleteNotification(notification._id)}
-                          className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
-                        >
-                          Delete
-                        </button>
-                        <button
-                          onClick={() => handleHide(notification._id)}
-                          className="px-3 py-1 bg-slate-600 text-white rounded hover:bg-slate-700"
-                        >
-                          Hide
-                        </button>
                       </div>
                     </div>
                   </>
@@ -398,32 +416,10 @@ const SuperAdminNotifications = () => {
               </div>
             ))}
             <div className="mt-3 text-center">
-              {hasMore && (
-                <button onClick={loadMore} className="px-3 py-1 text-sm text-blue-600 hover:underline">Load older</button>
+              {sentHasMore && (
+                <button onClick={loadMoreSent} className="px-3 py-1 text-sm text-blue-600 hover:underline">Load older</button>
               )}
             </div>
-          </div>
-        )}
-      </div>
-
-      {/* Sent by You */}
-      <div className="rounded-xl border border-slate-200 p-6">
-        <h3 className="text-lg font-semibold text-slate-800 mb-4">Sent by You</h3>
-        {sent.filter(isSender).length === 0 ? (
-          <p className="text-slate-500 text-center py-8">You haven't sent any notifications.</p>
-        ) : (
-          <div className="space-y-4">
-            {sent.filter(isSender).map((n) => (
-              <div key={n._id} className="border border-slate-200 rounded-lg p-4">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h4 className="font-medium text-slate-800">{n.title}</h4>
-                    <p className="text-slate-600 mt-1">{n.message}</p>
-                    <p className="text-xs text-slate-500 mt-1">{new Date(n.createdAt).toLocaleString()}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
           </div>
         )}
       </div>

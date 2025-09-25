@@ -1,7 +1,7 @@
 // src/components/DashboardLayout.jsx
 import { useAuth } from "../context/AuthContext";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { getNotifications, getUnreadCount, markAsRead } from "../services/notificationService";
 import { useSocket } from "../context/SocketContext";
 
@@ -12,7 +12,9 @@ const DashboardLayout = ({ title, children }) => {
   const [isDark, setIsDark] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const { socketRef, status: socketStatus } = useSocket();
+  const location = useLocation();
   const [showDropdown, setShowDropdown] = useState(false);
+  const bellRef = useRef(null);
   const [dropdownItems, setDropdownItems] = useState([]);
   const latestBefore = useRef(null);
   useEffect(() => {
@@ -39,6 +41,38 @@ const DashboardLayout = ({ title, children }) => {
     return () => intervalId && clearInterval(intervalId);
   }, [user?.token, user?._id, user?.id]);
 
+  // Refresh unread count on route changes and when window regains focus/visibility
+  useEffect(() => {
+    const refresh = async () => {
+      try {
+        if (!user?.token) return;
+        const count = await getUnreadCount(user.token);
+        setUnreadCount(Number(count) || 0);
+      } catch {}
+    };
+    refresh();
+  }, [location.pathname, user?.token]);
+
+  useEffect(() => {
+    const onFocusOrVisible = async () => {
+      try {
+        if (!user?.token) return;
+        const count = await getUnreadCount(user.token);
+        setUnreadCount(Number(count) || 0);
+        if (showDropdown) {
+          const latest = await getNotifications(user.token, { limit: 5 });
+          setDropdownItems(latest);
+        }
+      } catch {}
+    };
+    window.addEventListener('focus', onFocusOrVisible);
+    document.addEventListener('visibilitychange', onFocusOrVisible);
+    return () => {
+      window.removeEventListener('focus', onFocusOrVisible);
+      document.removeEventListener('visibilitychange', onFocusOrVisible);
+    };
+  }, [user?.token, showDropdown]);
+
   // Live update unread counter and dropdown on socket events
   useEffect(() => {
     const s = socketRef?.current;
@@ -52,19 +86,30 @@ const DashboardLayout = ({ title, children }) => {
         setDropdownItems(latest);
       } catch {}
     };
-    s.on("notification:new", refresh);
+    // Optimistic updates for immediate UI response
+    const onNew = (n) => {
+      setUnreadCount((c) => (Number(c) || 0) + 1);
+      setDropdownItems((items) => [n, ...items].slice(0, 5));
+      // Background sync
+      refresh();
+    };
+    const onRead = ({ userId }) => {
+      const uid = user?._id || user?.id;
+      if ((String(userId) === String(uid))) {
+        setUnreadCount((c) => Math.max(0, (Number(c) || 0) - 1));
+        refresh();
+      }
+    };
+    s.on("notification:new", onNew);
     s.on("notification:update", refresh);
     s.on("notification:delete", refresh);
-    s.on("notification:read", ({ userId }) => {
-      const uid = user?._id || user?.id;
-      if ((String(userId) === String(uid))) refresh();
-    });
+    s.on("notification:read", onRead);
     return () => {
       try {
-        s.off("notification:new", refresh);
+        s.off("notification:new", onNew);
         s.off("notification:update", refresh);
         s.off("notification:delete", refresh);
-        s.off("notification:read", refresh);
+        s.off("notification:read", onRead);
       } catch {}
     };
   }, [socketRef?.current, user?.token, user?._id, user?.id]);
@@ -80,15 +125,42 @@ const DashboardLayout = ({ title, children }) => {
     loadLatest();
   }, [user?.token]);
 
+  // Close dropdown on outside click or Escape key
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (!showDropdown) return;
+      const el = bellRef.current;
+      if (el && !el.contains(e.target)) setShowDropdown(false);
+    };
+    const handleKeyDown = (e) => {
+      if (!showDropdown) return;
+      if (e.key === 'Escape') setShowDropdown(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside, { passive: true });
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showDropdown]);
+
   const markAllAsRead = async () => {
     try {
       const uid = user?._id || user?.id;
       const toMark = dropdownItems.filter(n => !(n.isRead || []).some(r => (r.user === uid) || (r.user?._id === uid) || (String(r.user) === String(uid))));
+      // Optimistically reset unread counter and clear dropdown
+      if (toMark.length > 0) {
+        setUnreadCount(0);
+        setDropdownItems([]);
+      }
       for (const n of toMark) {
         await markAsRead(user?.token, n._id);
       }
       const latest = await getNotifications(user?.token, { limit: 5 });
-      setDropdownItems(latest);
+      // If backend still returns items, keep UI decision: show empty after mark-all
+      setDropdownItems([]);
       const count = await getUnreadCount(user?.token);
       setUnreadCount(Number(count) || 0);
     } catch {}
@@ -107,7 +179,7 @@ const DashboardLayout = ({ title, children }) => {
           <div className="flex items-center justify-between gap-3">
             <h1 className="text-base sm:text-lg lg:text-xl font-extrabold tracking-tight text-slate-800 dark:text-slate-100">{title}</h1>
             <div className="flex items-center gap-2">
-              <div className="relative">
+              <div className="relative" ref={bellRef}>
               <button
                 onClick={() => setShowDropdown(!showDropdown)}
                 className="btn btn-ghost relative"
