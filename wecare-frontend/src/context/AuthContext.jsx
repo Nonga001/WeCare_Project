@@ -9,19 +9,59 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   const login = (data) => {
-    // Expecting backend shape: { token, user: { id, name, email, role } }
-    if (data && data.user && data.token) {
-      const normalized = { ...data.user, token: data.token };
+    // Expecting backend shape: { token, user: { id, name, email, role }, authMethod }
+    if (data && data.user) {
+      const normalized = { 
+        ...data.user, 
+        token: data.token,
+        authMethod: data.authMethod || 'legacy'
+      };
       setUser(normalized);
-      try { localStorage.setItem("wecare:user", JSON.stringify(normalized)); } catch {}
+      
+      // Only store in localStorage as fallback for legacy compatibility
+      // Secure authentication now uses httpOnly cookies
+      if (data.authMethod !== 'secure_cookies') {
+        try { 
+          localStorage.setItem("wecare:user", JSON.stringify(normalized)); 
+        } catch (e) {
+          console.warn('LocalStorage not available:', e.message);
+        }
+      } else {
+        // For secure cookie auth, only store user info (no token)
+        const userInfo = { ...normalized };
+        delete userInfo.token; // Don't store token in localStorage for security
+        try {
+          localStorage.setItem("wecare:user", JSON.stringify(userInfo));
+        } catch (e) {
+          console.warn('LocalStorage not available:', e.message);
+        }
+      }
     } else {
       setUser(data);
-      try { localStorage.setItem("wecare:user", JSON.stringify(data)); } catch {}
     }
   };
-  const logout = () => {
-    setUser(null);
-    try { localStorage.removeItem("wecare:user"); } catch {}
+  
+  const logout = async () => {
+    try {
+      // Call backend logout to clear httpOnly cookies
+      const response = await fetch('http://localhost:5000/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include', // Include cookies
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        console.warn('Logout request failed, clearing local session anyway');
+      }
+    } catch (error) {
+      console.warn('Logout error:', error.message);
+    } finally {
+      // Always clear local state
+      setUser(null);
+      try { localStorage.removeItem("wecare:user"); } catch {}
+    }
   };
 
   useEffect(() => {

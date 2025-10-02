@@ -5,6 +5,7 @@ import {
   getMyDonations,
   getGlobalAidRequests,
   getDonorStats,
+  getDonorReports,
   getAllDonations,
   getGlobalStats,
   getSuperAnalytics
@@ -19,6 +20,7 @@ router.post("/", createDonation);
 router.get("/mine", getMyDonations);
 router.get("/global-requests", getGlobalAidRequests);
 router.get("/stats", getDonorStats);
+router.get("/reports", getDonorReports);
 
 // Super admin routes
 router.get("/all", getAllDonations);

@@ -382,3 +382,50 @@ export const getSuperAnalytics = async (req, res) => {
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };
+
+// Donor: get donation reports
+export const getDonorReports = async (req, res) => {
+  try {
+    if (req.user.role !== "donor") {
+      return res.status(403).json({ message: "Only donors can view their reports" });
+    }
+
+    const { startDate, endDate, type } = req.query;
+    
+    // Build query
+    const query = { donor: req.user._id };
+    
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) query.createdAt.$gte = new Date(startDate);
+      if (endDate) query.createdAt.$lte = new Date(endDate);
+    }
+    
+    if (type) {
+      query.type = type;
+    }
+
+    const donations = await Donation.find(query).sort({ createdAt: -1 });
+    
+    // Calculate summary stats
+    const totalDonations = donations.length;
+    const totalFinancial = donations
+      .filter(d => d.type === "financial")
+      .reduce((sum, d) => sum + (d.amount || 0), 0);
+    const totalEssentials = donations
+      .filter(d => d.type === "essentials")
+      .reduce((sum, d) => sum + d.items.length, 0);
+    
+    res.json({
+      donations,
+      summary: {
+        totalDonations,
+        totalFinancialAmount: totalFinancial,
+        totalEssentialsItems: totalEssentials,
+        averageDonation: totalDonations > 0 ? totalFinancial / totalDonations : 0
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};

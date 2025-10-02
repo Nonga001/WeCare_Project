@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import { getSuperAnalytics } from "../../../services/donationService";
+import { securePrint, secureCSVExport } from "../../../utils/securityUtils";
 
 const Tile = ({ title, value, sub }) => (
   <div className="rounded-xl border border-slate-200 p-5">
@@ -73,18 +74,19 @@ const SuperAdminAnalytics = () => {
               ["University","Verified Moms","Financial (KES)","Essentials Items"],
               ...data.universityBreakdown.map(u => [u.university, u.verifiedMoms, u.donationsToUniversity.financialAmount, u.donationsToUniversity.essentialsItems])
             ];
-            const csv = rows.map(r => r.map(x => `"${String(x).replace(/"/g,'""')}"`).join(",")).join("\n");
-            const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = 'university_breakdown.csv'; a.click(); URL.revokeObjectURL(url);
+            secureCSVExport(rows, 'university_breakdown.csv');
           }} className="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-medium hover:bg-slate-800">Export CSV</button>
           <button onClick={() => {
-            const w = window.open('', '_blank');
-            if (!w) return;
-            const content = printRef.current?.innerHTML || '';
-            w.document.write(`<html><head><title>Super Admin Analytics</title><style>body{font-family:sans-serif;padding:20px} button,nav,header,footer{display:none!important}</style></head><body><h2>Super Admin Analytics</h2><p><strong>User:</strong> ${user?.name || ''}</p><p><strong>Role:</strong> ${user?.role || ''}</p>${content}</body></html>`);
-            w.document.close(); w.focus(); w.print(); w.close();
+            securePrint({
+              title: 'Super Admin Analytics',
+              userName: user?.name,
+              userRole: user?.role,
+              contentRef: printRef,
+              additionalInfo: [
+                { label: 'Generated Date', value: new Date().toLocaleDateString() },
+                { label: 'Report Type', value: 'University Analytics' }
+              ]
+            });
           }} className="px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">Export PDF</button>
         </div>
       </div>

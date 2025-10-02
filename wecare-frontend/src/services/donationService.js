@@ -42,3 +42,13 @@ export const getSuperAnalytics = async (token) => {
   const res = await axios.get(`${API_URL}/super-analytics`, auth(token));
   return res.data;
 };
+
+export const getDonorReports = async (token, filters = {}) => {
+  const params = new URLSearchParams();
+  if (filters.startDate) params.append('startDate', filters.startDate);
+  if (filters.endDate) params.append('endDate', filters.endDate);
+  if (filters.type) params.append('type', filters.type);
+  
+  const res = await axios.get(`${API_URL}/reports?${params}`, auth(token));
+  return res.data;
+};

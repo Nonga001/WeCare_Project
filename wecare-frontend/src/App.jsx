@@ -3,6 +3,7 @@ import { Toaster } from 'sonner'
 import AppRoutes from "./routes/AppRoutes";
 import { AuthProvider } from "./context/AuthContext";
 import { SocketProvider } from "./context/SocketContext";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 function App() {
   useEffect(() => {
@@ -15,12 +16,18 @@ function App() {
   }, []);
 
  return (
-    <AuthProvider>
-      <SocketProvider>
-        <AppRoutes />
-        <Toaster richColors position="top-right" />
-      </SocketProvider>
-    </AuthProvider>
+    <ErrorBoundary level="page">
+      <AuthProvider>
+        <ErrorBoundary level="section">
+          <SocketProvider>
+            <ErrorBoundary level="component">
+              <AppRoutes />
+            </ErrorBoundary>
+            <Toaster richColors position="top-right" />
+          </SocketProvider>
+        </ErrorBoundary>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

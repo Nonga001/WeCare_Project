@@ -1,30 +1,45 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
+import { extractToken, verifyToken, refreshAccessToken } from "../utils/secureAuth.js";
 
 export const protect = async (req, res, next) => {
-  let token;
-  if (
-    req.headers.authorization &&
-    req.headers.authorization.startsWith("Bearer")
-  ) {
-    try {
-      token = req.headers.authorization.split(" ")[1];
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      // For superadmin token that may not exist in DB (fixed login)
-      if (decoded && decoded.id === "superadmin-fixed-id" && decoded.role === "superadmin") {
-        req.user = { _id: decoded.id, role: "superadmin", name: "Super Admin" };
-        return next();
-      }
-
-      req.user = await User.findById(decoded.id).select("-password");
-      next();
-    } catch (err) {
-      res.status(401).json({ message: "Not authorized, token failed" });
+  try {
+    // Extract token from secure cookies or Authorization header
+    const { token, source } = extractToken(req);
+    
+    if (!token) {
+      return res.status(401).json({ message: "Not authorized, no token provided" });
     }
-  }
-
-  if (!token) {
-    res.status(401).json({ message: "Not authorized, no token" });
+    
+    // Verify the token
+    let decoded = verifyToken(token);
+    
+    // If token is invalid and came from cookie, try refresh
+    if (!decoded && source === 'cookie') {
+      console.log('🔄 Access token invalid, attempting refresh...');
+      decoded = refreshAccessToken(req, res);
+    }
+    
+    if (!decoded) {
+      return res.status(401).json({ message: "Not authorized, invalid token" });
+    }
+    
+    // Find user in database (including superadmin)
+    req.user = await User.findById(decoded.id).select("-password");
+    
+    if (!req.user) {
+      return res.status(401).json({ message: "User not found, token invalid" });
+    }
+    
+    // Update last active timestamp
+    req.user.lastActive = new Date();
+    await req.user.save();
+    
+    next();
+    
+  } catch (err) {
+    console.error('Auth middleware error:', err.message);
+    res.status(401).json({ message: "Not authorized, authentication failed" });
   }
 };
 
