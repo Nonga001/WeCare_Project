@@ -10,8 +10,55 @@ const Badge = ({ status }) => {
     rejected: "bg-rose-100 text-rose-700 border-rose-200",
   };
   const label = status === "verified" ? "Verified" : status === "rejected" ? "Rejected" : "Pending";
-  return <span className={`px-2.5 py-1 rounded-lg text-xs font-medium border ${map[status] || map.pending}`}>{label}</span>;
+  return <span className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${map[status] || map.pending}`}>{label}</span>;
 };
+
+const StatCard = ({ icon, label, value, color }) => (
+  <div className={`bg-gradient-to-br ${color} rounded-2xl p-6 text-white shadow-lg hover:shadow-xl transition-all`}>
+    <div className="flex items-start justify-between">
+      <div>
+        <p className="text-sm font-medium opacity-90">{label}</p>
+        <p className="text-3xl font-bold mt-2">{value}</p>
+      </div>
+      <div className="text-4xl opacity-30">{icon}</div>
+    </div>
+  </div>
+);
+
+const RequestCard = ({ type, status }) => {
+  const statusColors = {
+    pending: 'bg-amber-50 text-amber-700 border-amber-200',
+    approved: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    rejected: 'bg-rose-50 text-rose-700 border-rose-200',
+    disbursed: 'bg-blue-50 text-blue-700 border-blue-200',
+  };
+  const typeIcons = {
+    financial: '💰',
+    essentials: '📦',
+  };
+  return (
+    <div className="rounded-xl border-2 border-slate-200 p-4 hover:shadow-md hover:border-slate-300 transition-all">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="text-2xl">{typeIcons[type] || '📄'}</div>
+          <div>
+            <p className="font-semibold text-slate-800">{type === 'financial' ? 'Financial Aid' : 'Essentials'}</p>
+            <span className={`text-xs font-medium mt-1 px-2 py-1 rounded-full inline-block border ${statusColors[status] || statusColors.pending}`}>
+              {status.charAt(0).toUpperCase() + status.slice(1)}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const NotificationItem = ({ notification }) => (
+  <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+    <p className="font-medium text-sm text-slate-800 dark:text-slate-100">{notification.title}</p>
+    <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 line-clamp-2">{notification.message}</p>
+  </div>
+);
 
 const StudentHome = () => {
   const { user } = useAuth();
@@ -46,60 +93,111 @@ const StudentHome = () => {
   }, [user?.token]);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-      <div className="lg:col-span-2 space-y-4">
-        <div className="rounded-xl border border-slate-200 p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-slate-800">Welcome 👋</h3>
-              <p className="text-slate-600 text-sm">Here’s a quick overview of your account.</p>
-            </div>
-            <Badge status={status} />
+    <div className="space-y-6">
+      {/* Welcome Section with Status */}
+      <div className="bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 rounded-2xl p-8 text-white shadow-lg">
+        <div className="flex items-start justify-between">
+          <div>
+            <h2 className="text-3xl font-bold mb-2">Welcome back, {user?.name}! 👋</h2>
+            <p className="text-green-100 text-sm">Here's your financial aid dashboard overview</p>
           </div>
-          {!verified && (
-            <p className="mt-3 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">Your account is pending verification. Complete your profile and wait for approval to access all features.</p>
-          )}
+          <Badge status={status} />
         </div>
-
-        <div className="rounded-xl border border-slate-200 p-5">
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="font-semibold text-slate-800">Current Requests</h4>
-            <div className="text-sm text-slate-500 flex gap-4">
-              <span>Financial pending: {stats.financialPending}</span>
-              <span>Essentials pending: {stats.essentialsPending}</span>
-            </div>
+        {!verified && (
+          <div className="mt-4 bg-white/20 border border-white/40 backdrop-blur rounded-lg px-4 py-3">
+            <p className="text-sm font-medium">⚠️ Your account is pending verification. Complete your profile to unlock all features.</p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {requests.slice(0, 6).map((r) => (
-              <div key={r._id} className="rounded-lg border border-slate-200 p-4">
-                <p className="text-slate-700 font-medium">{r.type === 'financial' ? 'Financial' : 'Essentials'}</p>
-                <p className="text-sm text-slate-500">Status: {r.status}</p>
-              </div>
-            ))}
-          </div>
-        </div>
+        )}
       </div>
 
-      <div className="space-y-4">
-        <div className="rounded-xl border border-slate-200 p-5">
-          <h4 className="font-semibold text-slate-800 mb-3">Notifications</h4>
-          {notifications.length === 0 ? (
-            <p className="text-sm text-slate-500">No notifications yet.</p>
-          ) : (
-            <ul className="space-y-2">
-              {notifications.map((n) => (
-                <li key={n._id} className="text-sm text-slate-600">• {n.title}: {n.message}</li>
-              ))}
-            </ul>
-          )}
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <StatCard 
+          icon="💰"
+          label="Financial Aid Pending"
+          value={stats.financialPending}
+          color="from-blue-400 to-blue-600"
+        />
+        <StatCard 
+          icon="📦"
+          label="Essentials Pending"
+          value={stats.essentialsPending}
+          color="from-purple-400 to-purple-600"
+        />
+      </div>
+
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Current Requests */}
+        <div className="lg:col-span-2">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">📋 Your Requests</h3>
+              <span className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200 text-xs font-semibold px-3 py-1.5 rounded-full">
+                {requests.length} Total
+              </span>
+            </div>
+            <div className="space-y-3">
+              {requests.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-slate-500 dark:text-slate-400">No requests yet.</p>
+                  <a href="/dashboard/student/aid" className="text-green-600 dark:text-green-400 hover:underline text-sm mt-2 inline-block">
+                    Create your first request →
+                  </a>
+                </div>
+              ) : (
+                requests.slice(0, 6).map((r) => (
+                  <RequestCard key={r._id} type={r.type} status={r.status} />
+                ))
+              )}
+            </div>
+          </div>
         </div>
 
-        <a
-          href="#emergency"
-          className="block text-center rounded-xl bg-rose-600 text-white font-semibold py-3 shadow hover:bg-rose-700"
-        >
-          Emergency: Call Campus Help
-        </a>
+        {/* Right Sidebar */}
+        <div className="space-y-4">
+          {/* Notifications Card */}
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
+            <h4 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
+              🔔 Updates
+            </h4>
+            {notifications.length === 0 ? (
+              <div className="text-center py-6">
+                <p className="text-sm text-slate-500 dark:text-slate-400">All caught up! ✨</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {notifications.map((n) => (
+                  <NotificationItem key={n._id} notification={n} />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Emergency Button */}
+          <button
+            className="w-full bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white font-semibold py-4 rounded-2xl shadow-lg hover:shadow-xl transition-all transform hover:scale-105 active:scale-95"
+          >
+            <span className="text-lg">🆘 Emergency Help</span>
+            <p className="text-xs opacity-90 mt-1">Campus Support Line</p>
+          </button>
+
+          {/* Quick Links */}
+          <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-600">
+            <p className="font-semibold text-slate-800 dark:text-slate-100 mb-3 text-sm">Quick Actions</p>
+            <div className="space-y-2">
+              <a href="/dashboard/student/aid" className="block text-sm text-slate-700 dark:text-slate-300 hover:text-green-600 dark:hover:text-green-400 transition-colors">
+                → Submit New Request
+              </a>
+              <a href="/dashboard/student/profile" className="block text-sm text-slate-700 dark:text-slate-300 hover:text-green-600 dark:hover:text-green-400 transition-colors">
+                → Update Profile
+              </a>
+              <a href="/dashboard/student/support" className="block text-sm text-slate-700 dark:text-slate-300 hover:text-green-600 dark:hover:text-green-400 transition-colors">
+                → Get Support
+              </a>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

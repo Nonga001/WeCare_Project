@@ -1,7 +1,7 @@
 // src/components/DashboardLayout.jsx
 import { useAuth } from "../context/AuthContext";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, NavLink } from "react-router-dom";
 import { getNotifications, getUnreadCount, markAsRead } from "../services/notificationService";
 import { useSocket } from "../context/SocketContext";
 
@@ -125,6 +125,38 @@ const DashboardLayout = ({ title, children }) => {
     loadLatest();
   }, [user?.token]);
 
+  const isStudentDashboard = location.pathname.startsWith("/dashboard/student");
+  const isAdminDashboard = location.pathname.startsWith("/dashboard/admin");
+  const isDonorDashboard = location.pathname.startsWith("/dashboard/donor");
+  const isSuperAdminDashboard = location.pathname.startsWith("/dashboard/superadmin");
+  const isVerifiedStudent = user?.role === "superadmin" ? true : user?.isApproved || false;
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [isCompact, setIsCompact] = useState(false);
+
+  useEffect(() => {
+    const check = () => {
+      try {
+        const compact = window.innerWidth <= (window.screen?.width || 1024) / 2 || window.innerWidth < 768;
+        setIsCompact(compact);
+      } catch {
+        setIsCompact(false);
+      }
+    };
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  // Prevent body scroll when mobile side nav is open to avoid layout/content overlap
+  useEffect(() => {
+    if (mobileOpen) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => { document.body.style.overflow = prev; };
+    }
+    return;
+  }, [mobileOpen]);
+
   // Close dropdown on outside click or Escape key
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -177,8 +209,156 @@ const DashboardLayout = ({ title, children }) => {
       <header className="fixed top-0 left-0 right-0 w-full h-14 sm:h-16 lg:h-20 px-3 sm:px-4 lg:px-6 border-b border-slate-200 bg-white/95 backdrop-blur z-40 dark:bg-slate-900/95 dark:border-slate-800">
         <div className="w-full h-full flex flex-col justify-center">
           <div className="flex items-center justify-between gap-3">
-            <h1 className="text-base sm:text-lg lg:text-xl font-extrabold tracking-tight text-slate-800 dark:text-slate-100">{title}</h1>
-            <div className="flex items-center gap-2">
+            {/* Left: WeCare + Role */}
+            <div className="flex items-center gap-3">
+              <h1 className="text-base sm:text-lg lg:text-xl font-extrabold tracking-tight text-slate-800 dark:text-slate-100">
+                WeCare{user?.role === 'student' ? ' Student' : user?.role === 'donor' ? ' Donor' : user?.role === 'admin' ? ' Admin' : user?.role === 'superadmin' ? ' SuperAdmin' : ''}
+              </h1>
+            </div>
+            {/* Right: tabs (on desktop), avatar/name, bell, theme. On compact screens show hamburger instead of tabs */}
+            <div className="flex items-center gap-3">
+              {/* Tabs on larger screens (hidden when compact) - Student */}
+              {isStudentDashboard && user?.role === 'student' && !isCompact && (
+                <nav className="flex items-center gap-2">
+                  <NavLink
+                    to="/dashboard/student"
+                    end
+                    onClick={(e) => { if (!isVerifiedStudent) e.preventDefault(); }}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : `${!isVerifiedStudent ? 'text-slate-400 bg-slate-100 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50'}`}`}
+                  >Home</NavLink>
+                  <NavLink
+                    to="/dashboard/student/profile"
+                    onClick={(e) => { if (!isVerifiedStudent) e.preventDefault(); }}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : `${!isVerifiedStudent ? 'text-slate-400 bg-slate-100 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50'}`}`}
+                  >Profile</NavLink>
+                  <NavLink
+                    to="/dashboard/student/aid"
+                    onClick={(e) => { if (!isVerifiedStudent) e.preventDefault(); }}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : `${!isVerifiedStudent ? 'text-slate-400 bg-slate-100 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50'}`}`}
+                  >Aid</NavLink>
+                  <NavLink
+                    to="/dashboard/student/support"
+                    onClick={(e) => { if (!isVerifiedStudent) e.preventDefault(); }}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : `${!isVerifiedStudent ? 'text-slate-400 bg-slate-100 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50'}`}`}
+                  >Support</NavLink>
+                  <NavLink
+                    to="/dashboard/student/notifications"
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                  >Notifications</NavLink>
+                </nav>
+              )}
+
+              {/* Tabs on larger screens (hidden when compact) - Admin */}
+              {isAdminDashboard && user?.role === 'admin' && !isCompact && (
+                <nav className="flex items-center gap-2">
+                  <NavLink
+                    to="/dashboard/admin"
+                    end
+                    onClick={(e) => { if (!isVerifiedStudent) e.preventDefault(); }}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : `${!isVerifiedStudent ? 'text-slate-400 bg-slate-100 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50'}`}`}
+                  >Home</NavLink>
+                  <NavLink
+                    to="/dashboard/admin/profile"
+                    onClick={(e) => { if (!isVerifiedStudent) e.preventDefault(); }}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : `${!isVerifiedStudent ? 'text-slate-400 bg-slate-100 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50'}`}`}
+                  >Profile</NavLink>
+                  <NavLink
+                    to="/dashboard/admin/verify"
+                    onClick={(e) => { if (!isVerifiedStudent) e.preventDefault(); }}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : `${!isVerifiedStudent ? 'text-slate-400 bg-slate-100 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50'}`}`}
+                  >Verify</NavLink>
+                  <NavLink
+                    to="/dashboard/admin/aid"
+                    onClick={(e) => { if (!isVerifiedStudent) e.preventDefault(); }}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : `${!isVerifiedStudent ? 'text-slate-400 bg-slate-100 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50'}`}`}
+                  >Aid</NavLink>
+                  <NavLink
+                    to="/dashboard/admin/groups"
+                    onClick={(e) => { if (!isVerifiedStudent) e.preventDefault(); }}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : `${!isVerifiedStudent ? 'text-slate-400 bg-slate-100 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50'}`}`}
+                  >Groups</NavLink>
+                  <NavLink
+                    to="/dashboard/admin/reports"
+                    onClick={(e) => { if (!isVerifiedStudent) e.preventDefault(); }}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : `${!isVerifiedStudent ? 'text-slate-400 bg-slate-100 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50'}`}`}
+                  >Reports</NavLink>
+                  <NavLink
+                    to="/dashboard/admin/notifications"
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                  >Notifications</NavLink>
+                </nav>
+              )}
+
+              {/* Tabs on larger screens (hidden when compact) - Donor */}
+              {isDonorDashboard && user?.role === 'donor' && !isCompact && (
+                <nav className="flex items-center gap-2">
+                  <NavLink
+                    to="/dashboard/donor"
+                    end
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                  >Home</NavLink>
+                  <NavLink
+                    to="/dashboard/donor/profile"
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                  >Profile</NavLink>
+                  <NavLink
+                    to="/dashboard/donor/donations"
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                  >Donations</NavLink>
+                  <NavLink
+                    to="/dashboard/donor/browse"
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                  >Browse</NavLink>
+                  <NavLink
+                    to="/dashboard/donor/reports"
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                  >Reports</NavLink>
+                  <NavLink
+                    to="/dashboard/donor/notifications"
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                  >Notifications</NavLink>
+                </nav>
+              )}
+
+              {/* Tabs on larger screens (hidden when compact) - SuperAdmin */}
+              {isSuperAdminDashboard && user?.role === 'superadmin' && !isCompact && (
+                <nav className="flex items-center gap-2">
+                  <NavLink
+                    to="/dashboard/superadmin"
+                    end
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                  >Home</NavLink>
+                  <NavLink
+                    to="/dashboard/superadmin/profile"
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                  >Profile</NavLink>
+                  <NavLink
+                    to="/dashboard/superadmin/users"
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                  >Users</NavLink>
+                  <NavLink
+                    to="/dashboard/superadmin/settings"
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                  >Settings</NavLink>
+                  <NavLink
+                    to="/dashboard/superadmin/analytics"
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                  >Analytics</NavLink>
+                  <NavLink
+                    to="/dashboard/superadmin/notifications"
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                  >Notifications</NavLink>
+                </nav>
+              )}
+
+              {/* Avatar + name */}
+              <div className="flex items-center gap-2 ml-2">
+                <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-400 flex items-center justify-center text-sm font-semibold text-slate-800 dark:text-slate-900">
+                  {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                </div>
+                <div className="hidden sm:block text-sm text-slate-700 dark:text-slate-200">{user?.name || 'User'}</div>
+              </div>
+
               <div className="relative" ref={bellRef}>
               <button
                 onClick={() => setShowDropdown(!showDropdown)}
@@ -244,13 +424,145 @@ const DashboardLayout = ({ title, children }) => {
               <button onClick={toggleTheme} className="btn btn-ghost">
                 {isDark ? 'Light Mode' : 'Dark Mode'}
               </button>
+              {/* Compact hamburger to open side nav (placed to the right of theme toggle) */}
+              {isCompact && (
+                <button aria-label="Open menu" onClick={() => setMobileOpen(true)} className="p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-slate-700 dark:text-slate-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                </button>
+              )}
             </div>
           </div>
+          {/* Mobile side nav overlay */}
+          {mobileOpen && (
+            <>
+              {/* Backdrop - click to close */}
+              <div className="fixed inset-0 bg-black/50 backdrop-blur-md z-40" onClick={()=>setMobileOpen(false)} />
+              {/* Panel on the right */}
+              <aside className={`fixed right-0 top-0 w-72 max-w-full p-6 border-l border-slate-200 bg-white dark:bg-slate-900 shadow-2xl z-50 flex flex-col`}>
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-400 flex items-center justify-center text-lg font-semibold text-slate-800 dark:text-slate-900">{user?.name ? user.name.charAt(0).toUpperCase() : 'U'}</div>
+                    <div>
+                      <div className="text-sm font-semibold text-slate-800 dark:text-slate-100">{user?.name || 'User'}</div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400">{user?.email || ''}</div>
+                    </div>
+                  </div>
+                  <button aria-label="Close menu" onClick={() => setMobileOpen(false)} className="p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800"> 
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-slate-700 dark:text-slate-200" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </div>
+
+                <nav className="flex flex-col gap-3">
+                  {/* Student Navigation */}
+                  {isStudentDashboard && user?.role === 'student' && (
+                    <>
+                      <NavLink to="/dashboard/student" end onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                        <span className="text-sm font-medium">Home</span>
+                      </NavLink>
+                      <NavLink to="/dashboard/student/profile" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                        <span className="text-sm font-medium">Profile</span>
+                      </NavLink>
+                      <NavLink to="/dashboard/student/aid" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                        <span className="text-sm font-medium">Aid</span>
+                      </NavLink>
+                      <NavLink to="/dashboard/student/support" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                        <span className="text-sm font-medium">Support</span>
+                      </NavLink>
+                      <NavLink to="/dashboard/student/notifications" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                        <span className="text-sm font-medium">Notifications</span>
+                      </NavLink>
+                    </>
+                  )}
+
+                  {/* Admin Navigation */}
+                  {isAdminDashboard && user?.role === 'admin' && (
+                    <>
+                      <NavLink to="/dashboard/admin" end onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                        <span className="text-sm font-medium">Home</span>
+                      </NavLink>
+                      <NavLink to="/dashboard/admin/profile" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                        <span className="text-sm font-medium">Profile</span>
+                      </NavLink>
+                      <NavLink to="/dashboard/admin/verify" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                        <span className="text-sm font-medium">Verify</span>
+                      </NavLink>
+                      <NavLink to="/dashboard/admin/aid" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                        <span className="text-sm font-medium">Aid</span>
+                      </NavLink>
+                      <NavLink to="/dashboard/admin/groups" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                        <span className="text-sm font-medium">Groups</span>
+                      </NavLink>
+                      <NavLink to="/dashboard/admin/reports" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                        <span className="text-sm font-medium">Reports</span>
+                      </NavLink>
+                      <NavLink to="/dashboard/admin/notifications" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                        <span className="text-sm font-medium">Notifications</span>
+                      </NavLink>
+                    </>
+                  )}
+
+                  {/* Donor Navigation */}
+                  {isDonorDashboard && user?.role === 'donor' && (
+                    <>
+                      <NavLink to="/dashboard/donor" end onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                        <span className="text-sm font-medium">Home</span>
+                      </NavLink>
+                      <NavLink to="/dashboard/donor/profile" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                        <span className="text-sm font-medium">Profile</span>
+                      </NavLink>
+                      <NavLink to="/dashboard/donor/donations" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                        <span className="text-sm font-medium">Donations</span>
+                      </NavLink>
+                      <NavLink to="/dashboard/donor/browse" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                        <span className="text-sm font-medium">Browse</span>
+                      </NavLink>
+                      <NavLink to="/dashboard/donor/reports" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                        <span className="text-sm font-medium">Reports</span>
+                      </NavLink>
+                      <NavLink to="/dashboard/donor/notifications" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                        <span className="text-sm font-medium">Notifications</span>
+                      </NavLink>
+                    </>
+                  )}
+
+                  {/* SuperAdmin Navigation */}
+                  {isSuperAdminDashboard && user?.role === 'superadmin' && (
+                    <>
+                      <NavLink to="/dashboard/superadmin" end onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                        <span className="text-sm font-medium">Home</span>
+                      </NavLink>
+                      <NavLink to="/dashboard/superadmin/profile" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                        <span className="text-sm font-medium">Profile</span>
+                      </NavLink>
+                      <NavLink to="/dashboard/superadmin/users" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                        <span className="text-sm font-medium">Users</span>
+                      </NavLink>
+                      <NavLink to="/dashboard/superadmin/settings" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                        <span className="text-sm font-medium">Settings</span>
+                      </NavLink>
+                      <NavLink to="/dashboard/superadmin/analytics" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                        <span className="text-sm font-medium">Analytics</span>
+                      </NavLink>
+                      <NavLink to="/dashboard/superadmin/notifications" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                        <span className="text-sm font-medium">Notifications</span>
+                      </NavLink>
+                    </>
+                  )}
+                </nav>
+
+                <div className="mt-6">
+                  <button onClick={toggleTheme} className="w-full px-3 py-2 rounded-lg bg-gradient-to-r from-green-500 to-lime-600 text-white text-sm flex items-center justify-center gap-2">
+                    {isDark ? '☀️ Light Mode' : '🌙 Dark Mode'}
+                  </button>
+                </div>
+              </aside>
+            </>
+          )}
           <div className="mt-0.5">
-            <p className="text-slate-600 text-[12px] sm:text-[13px] dark:text-slate-300">
-              Welcome, <span className="font-semibold text-slate-800 dark:text-slate-100">{user?.name || "User"}</span> 👋
-              <span className="ml-2 text-slate-500 dark:text-slate-400">Role: {user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : "N/A"}</span>
-            </p>
             {(user?.role === "admin" || user?.role === "student") && user?.isApproved === false && (
               <div className="mt-1 alert alert-warn">
                 Awaiting approval. Some features are disabled until your account is verified.
