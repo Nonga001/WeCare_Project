@@ -191,8 +191,13 @@ export const updateStudentProfile = async (req, res) => {
     if (req.user.role !== "student") {
       return res.status(403).json({ message: "Only students can update their profile" });
     }
-
-    const { phone, studentId, studentEmail, course, yearOfStudy, childDetails, documents } = req.body;
+    // If a file was uploaded via multer, it will be available as req.file
+    // We'll prioritize uploaded file over documents in body
+    let { phone, studentId, studentEmail, course, yearOfStudy, childDetails, documents } = req.body;
+    if (req.file) {
+      // store the filename so frontend can preview at /uploads/<filename>
+      documents = req.file.filename;
+    }
     
     const user = await User.findById(req.user._id);
     if (!user) {
@@ -206,7 +211,7 @@ export const updateStudentProfile = async (req, res) => {
     if (course !== undefined) user.course = course;
     if (yearOfStudy !== undefined) user.yearOfStudy = yearOfStudy;
     if (childDetails !== undefined) user.childDetails = childDetails;
-    if (documents !== undefined) user.documents = documents;
+  if (documents !== undefined) user.documents = documents;
 
     // Check if profile is now 100% complete and auto-submit if so
     const requiredFields = ['phone', 'studentId', 'studentEmail', 'course', 'yearOfStudy', 'childDetails', 'documents'];

@@ -1,6 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
+import path from "path";
 import connectDB from "./config/db.js";
 import authRoutes from "./routes/auth.js";
 import userRoutes from "./routes/user.js";
@@ -19,6 +20,9 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+
+// Serve uploaded files from /uploads
+app.use('/uploads', express.static(path.join(process.cwd(), 'wecare-backend', 'uploads')));
 
 // Routes
 app.use("/api/auth", authRoutes);
