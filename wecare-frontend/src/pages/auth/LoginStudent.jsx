@@ -32,7 +32,7 @@ const LoginStudent = () => {
   const [showPassword, setShowPassword] = useState(false);
 
   return (
-    <div className="flex justify-end sm:justify-center items-center h-screen overflow-hidden bg-gradient-to-r from-green-100 via-lime-50 to-teal-50 px-4">
+    <div className="flex justify-center items-center h-screen overflow-hidden bg-gradient-to-r from-amber-100 via-amber-50 to-amber-200 px-4">
       <form
         onSubmit={handleSubmit}
         className="w-full max-w-md p-8 bg-white rounded-2xl shadow-xl border border-gray-200"
@@ -56,7 +56,7 @@ const LoginStudent = () => {
             placeholder="Email"
             value={form.email}
             onChange={handleChange}
-            className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent transition"
+            className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-300 focus:border-transparent transition"
             required
           />
         </div>
@@ -71,7 +71,7 @@ const LoginStudent = () => {
               placeholder="Password"
               value={form.password}
               onChange={handleChange}
-              className="w-full px-4 py-3 pr-12 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent transition"
+              className="w-full px-4 py-3 pr-12 border rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-300 focus:border-transparent transition"
               required
             />
             <button
@@ -89,17 +89,17 @@ const LoginStudent = () => {
           </div>
         </div>
 
-        <button className="w-full py-3 bg-gradient-to-r from-green-500 to-lime-600 text-white font-semibold rounded-xl shadow-md hover:from-green-600 hover:to-lime-700 transition">
+        <button className="w-full py-3 bg-amber-700 text-white font-semibold rounded-xl shadow-md hover:bg-amber-800 focus:outline-none focus:ring-2 focus:ring-amber-300 transition">
           Login
         </button>
 
-        <p className="mt-3 text-center text-green-600 text-sm">
+        <p className="mt-3 text-center text-amber-700 text-sm">
           <a href="#" className="hover:underline">Forgot password?</a>
         </p>
 
         <p className="mt-5 text-center text-gray-600 text-sm">
           Don’t have an account?{" "}
-          <Link to="/register/student" className="text-blue-600 font-medium hover:underline">
+          <Link to="/register/student" className="text-amber-700 font-medium hover:underline">
             Register here
           </Link>
         </p>

@@ -72,7 +72,7 @@ const RegisterDonor = () => {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-purple-100 via-pink-50 to-indigo-50 px-4">
+    <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-stone-50 via-stone-50 to-stone-100 px-4">
       <form
         onSubmit={handleSubmit}
         className="w-full max-w-md p-8 bg-white rounded-2xl shadow-xl border border-gray-200"
@@ -96,20 +96,20 @@ const RegisterDonor = () => {
             placeholder="Full Name / Organization Contact"
             value={form.name}
             onChange={handleChange}
-            className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition"
+            className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-300 focus:border-transparent transition"
             required
           />
         </div>
 
         <label htmlFor="organization" className="block mb-1 text-sm font-medium text-gray-700">Organization</label>
-        <input
+          <input
           id="organization"
           type="text"
           name="organization"
           placeholder="Organization name"
           value={form.organization}
           onChange={handleChange}
-          className="w-full mb-3 px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition"
+            className="w-full mb-3 px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-300 focus:border-transparent transition"
           required
         />
 
@@ -122,7 +122,7 @@ const RegisterDonor = () => {
             placeholder="Format: 07... / 01..."
             value={form.phone}
             onChange={handleChange}
-            className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition"
+            className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-300 focus:border-transparent transition"
             inputMode="numeric"
             maxLength={10}
             pattern="^[0-9]{10}$"
@@ -139,7 +139,7 @@ const RegisterDonor = () => {
             placeholder="Email"
             value={form.email}
             onChange={handleChange}
-            className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition"
+            className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-300 focus:border-transparent transition"
             required
           />
         </div>
@@ -154,7 +154,7 @@ const RegisterDonor = () => {
               placeholder="Minimum 8 characters"
               value={form.password}
               onChange={handleChange}
-              className="w-full px-4 py-3 pr-12 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition"
+              className="w-full px-4 py-3 pr-12 border rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-300 focus:border-transparent transition"
               required
             />
             <button type="button" onClick={() => setShowPassword((s) => !s)} className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-500 hover:text-gray-700" aria-label={showPassword ? "Hide password" : "Show password"}>
@@ -184,7 +184,7 @@ const RegisterDonor = () => {
               placeholder="Re-enter your password"
               value={form.confirmPassword}
               onChange={handleChange}
-              className="w-full px-4 py-3 pr-12 border rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition"
+              className="w-full px-4 py-3 pr-12 border rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-300 focus:border-transparent transition"
               required
             />
             <button type="button" onClick={() => setShowConfirmPassword((s) => !s)} className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-500 hover:text-gray-700" aria-label={showConfirmPassword ? "Hide password" : "Show password"}>
@@ -197,7 +197,7 @@ const RegisterDonor = () => {
           </div>
         </div>
 
-        <button className="w-full py-3 bg-gradient-to-r from-purple-500 to-pink-600 text-white font-semibold rounded-xl shadow-md hover:from-purple-600 hover:to-pink-700 transition transform hover:-translate-y-1">
+        <button className="w-full py-3 bg-stone-800 text-white font-semibold rounded-xl shadow-md hover:bg-stone-900 transition transform hover:-translate-y-1">
           Register
         </button>
 
@@ -205,7 +205,7 @@ const RegisterDonor = () => {
           Already have an account?{" "}
           <Link
             to="/login/donor"
-            className="text-blue-600 font-medium hover:underline"
+            className="text-stone-800 font-medium hover:underline"
           >
             Login here
           </Link>

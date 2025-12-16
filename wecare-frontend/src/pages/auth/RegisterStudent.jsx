@@ -21,10 +21,10 @@ const RegisterStudent = () => {
     const { name, value } = e.target;
     if (name === "phone") {
       const digitsOnly = value.replace(/\D/g, "").slice(0, 10);
-      setForm({ ...form, [name]: digitsOnly });
+      setForm((s) => ({ ...s, [name]: digitsOnly }));
       return;
     }
-    setForm({ ...form, [name]: value });
+    setForm((s) => ({ ...s, [name]: value }));
   };
 
   const universities = useMemo(
@@ -51,6 +51,7 @@ const RegisterStudent = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
     if (form.phone.length !== 10) {
       setError("Phone number must be exactly 10 digits");
       return;
@@ -81,7 +82,7 @@ const RegisterStudent = () => {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-green-100 via-lime-50 to-teal-50 px-4">
+    <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-amber-50 via-amber-50 to-amber-100 px-4">
       <form
         onSubmit={handleSubmit}
         className="w-full max-w-md p-8 bg-white rounded-2xl shadow-xl border border-gray-200"
@@ -106,7 +107,7 @@ const RegisterStudent = () => {
               placeholder="First name"
               value={form.firstName}
               onChange={handleChange}
-              className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent transition"
+              className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-transparent transition"
               required
             />
           </div>
@@ -119,7 +120,7 @@ const RegisterStudent = () => {
               placeholder="Last name"
               value={form.lastName}
               onChange={handleChange}
-              className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent transition"
+              className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-transparent transition"
               required
             />
           </div>
@@ -132,7 +133,7 @@ const RegisterStudent = () => {
             name="university"
             value={form.university}
             onChange={handleChange}
-            className="w-full px-4 py-3 border rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent transition"
+            className="w-full px-4 py-3 border rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-transparent transition"
             required
           >
             <option value="" disabled>Select your university</option>
@@ -151,7 +152,7 @@ const RegisterStudent = () => {
             placeholder="Format: 07... / 01..."
             value={form.phone}
             onChange={handleChange}
-            className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent transition"
+            className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-transparent transition"
             inputMode="numeric"
             maxLength={10}
             pattern="^[0-9]{10}$"
@@ -168,7 +169,7 @@ const RegisterStudent = () => {
             placeholder="your@email.com"
             value={form.email}
             onChange={handleChange}
-            className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent transition"
+            className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-transparent transition"
             required
           />
         </div>
@@ -183,7 +184,7 @@ const RegisterStudent = () => {
               placeholder="Minimum 8 characters"
               value={form.password}
               onChange={handleChange}
-              className="w-full px-4 py-3 pr-12 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent transition"
+              className="w-full px-4 py-3 pr-12 border rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-transparent transition"
               required
             />
             <button type="button" onClick={() => setShowPassword((s) => !s)} className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-500 hover:text-gray-700" aria-label={showPassword ? "Hide password" : "Show password"}>
@@ -214,7 +215,7 @@ const RegisterStudent = () => {
               placeholder="Re-enter your password"
               value={form.confirmPassword}
               onChange={handleChange}
-              className="w-full px-4 py-3 pr-12 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent transition"
+              className="w-full px-4 py-3 pr-12 border rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-transparent transition"
               required
             />
             <button type="button" onClick={() => setShowConfirmPassword((s) => !s)} className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-500 hover:text-gray-700" aria-label={showConfirmPassword ? "Hide password" : "Show password"}>
@@ -227,7 +228,7 @@ const RegisterStudent = () => {
           </div>
         </div>
 
-        <button className="w-full py-3 bg-gradient-to-r from-green-500 to-lime-600 text-white font-semibold rounded-xl shadow-md hover:from-green-600 hover:to-lime-700 transition transform hover:-translate-y-1">
+        <button className="w-full py-3 bg-amber-700 text-white font-semibold rounded-xl shadow-md hover:bg-amber-800 transition transform hover:-translate-y-1">
           Register
         </button>
 
@@ -235,7 +236,7 @@ const RegisterStudent = () => {
           Already have an account?{" "}
           <Link
             to="/login/student"
-            className="text-blue-600 font-medium hover:underline"
+            className="text-amber-700 font-medium hover:underline"
           >
             Login here
           </Link>

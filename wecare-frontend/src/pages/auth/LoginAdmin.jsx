@@ -32,7 +32,7 @@ const LoginAdmin = () => {
   const [showPassword, setShowPassword] = useState(false);
 
   return (
-    <div className="flex justify-end sm:justify-center items-center h-screen overflow-hidden bg-gradient-to-r from-indigo-100 to-red-50 px-4">
+  <div className="flex justify-center items-center h-screen overflow-hidden bg-gradient-to-r from-amber-50 via-amber-50 to-amber-100 px-4">
       <form
         onSubmit={handleSubmit}
         className="w-full max-w-md p-8 bg-white rounded-2xl shadow-xl border border-gray-200"
@@ -56,7 +56,7 @@ const LoginAdmin = () => {
             placeholder="Email"
             value={form.email}
             onChange={handleChange}
-            className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent transition"
+              className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-transparent transition"
             required
           />
         </div>
@@ -71,7 +71,7 @@ const LoginAdmin = () => {
               placeholder="Password"
               value={form.password}
               onChange={handleChange}
-              className="w-full px-4 py-3 pr-12 border rounded-xl focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent transition"
+                className="w-full px-4 py-3 pr-12 border rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-transparent transition"
               required
             />
             <button
@@ -89,11 +89,11 @@ const LoginAdmin = () => {
           </div>
         </div>
 
-        <button className="w-full py-3 bg-gradient-to-r from-red-500 to-rose-600 text-white font-semibold rounded-xl shadow-md hover:from-red-600 hover:to-rose-700 transition">
+        <button className="w-full py-3 bg-amber-600 text-white font-semibold rounded-xl shadow-md hover:bg-amber-700 transition">
           Login
         </button>
 
-        <p className="mt-3 text-center text-red-600 text-sm">
+        <p className="mt-3 text-center text-amber-600 text-sm">
           <a href="#" className="hover:underline">Forgot password?</a>
         </p>
 
@@ -101,7 +101,7 @@ const LoginAdmin = () => {
           Don’t have an account?{" "}
           <Link
             to="/register/admin"
-            className="text-blue-600 font-medium hover:underline"
+              className="text-amber-600 font-medium hover:underline"
           >
             Register here
           </Link>

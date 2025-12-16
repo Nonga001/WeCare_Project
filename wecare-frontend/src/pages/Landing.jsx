@@ -12,7 +12,7 @@ const Landing = () => {
   }, []);
 
   return (
-    <div className="w-full h-screen bg-gradient-to-br from-amber-50 via-white to-stone-50 grid grid-rows-2 lg:grid-rows-1 lg:grid-cols-2">
+    <div className="w-full h-screen bg-gradient-to-br from-amber-50 via-white to-stone-50 grid grid-rows-2 md:grid-rows-1 md:grid-cols-2">
       {/* Left: Full-height image */}
       <div className="relative w-full h-full order-1 lg:order-1">
         <img
@@ -24,7 +24,7 @@ const Landing = () => {
       </div>
 
       {/* Right: Content */}
-      <div className="order-2 lg:order-2 flex items-center justify-center w-full px-6 lg:px-12 py-8 lg:py-0 bg-gradient-to-br from-amber-100 via-amber-50 to-amber-200">
+      <div className="order-2 md:order-2 flex items-center justify-center w-full h-full px-6 md:px-8 lg:px-12 py-8 md:py-0 bg-gradient-to-br from-amber-100 via-amber-50 to-amber-200">
         <div className={`max-w-xl lg:max-w-2xl w-full border border-amber-200 bg-white/40 shadow-xl rounded-2xl p-6 lg:p-10 backdrop-blur-sm ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'} transition-all duration-700`}>
           <h1 className={`mb-6 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'} transition-all duration-700 delay-100`}>
             <span className="relative inline-block">

@@ -79,7 +79,7 @@ const RegisterAdmin = () => {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-indigo-100 via-blue-50 to-red-50 px-4">
+    <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-amber-50 via-amber-50 to-amber-100 px-4">
       <form
         onSubmit={handleSubmit}
         className="w-full max-w-md p-8 bg-white rounded-2xl shadow-xl border border-gray-200"
@@ -103,7 +103,7 @@ const RegisterAdmin = () => {
             placeholder="Full Name"
             value={form.name}
             onChange={handleChange}
-            className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent transition"
+            className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-transparent transition"
             required
           />
         </div>
@@ -117,7 +117,7 @@ const RegisterAdmin = () => {
             placeholder="Format: 07... / 01..."
             value={form.phone}
             onChange={handleChange}
-            className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent transition"
+            className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-transparent transition"
             inputMode="numeric"
             maxLength={10}
             pattern="^[0-9]{10}$"
@@ -132,7 +132,7 @@ const RegisterAdmin = () => {
             name="university"
             value={form.university}
             onChange={handleChange}
-            className="w-full px-4 py-3 border rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent transition"
+            className="w-full px-4 py-3 border rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-transparent transition"
             required
           >
             <option value="" disabled>Select university</option>
@@ -151,7 +151,7 @@ const RegisterAdmin = () => {
             placeholder="Email"
             value={form.email}
             onChange={handleChange}
-            className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-transparent transition"
+            className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-transparent transition"
             required
           />
         </div>
@@ -209,7 +209,7 @@ const RegisterAdmin = () => {
           </div>
         </div>
 
-        <button className="w-full py-3 bg-gradient-to-r from-red-500 to-rose-600 text-white font-semibold rounded-xl shadow-md hover:from-red-600 hover:to-rose-700 transition transform hover:-translate-y-1">
+        <button className="w-full py-3 bg-amber-600 text-white font-semibold rounded-xl shadow-md hover:bg-amber-700 transition transform hover:-translate-y-1">
           Register
         </button>
 
@@ -217,7 +217,7 @@ const RegisterAdmin = () => {
           Already have an account?{" "}
           <Link
             to="/login/admin"
-            className="text-blue-600 font-medium hover:underline"
+            className="text-amber-600 font-medium hover:underline"
           >
             Login here
           </Link>
