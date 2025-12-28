@@ -131,12 +131,19 @@ const DashboardLayout = ({ title, children }) => {
   const isSuperAdminDashboard = location.pathname.startsWith("/dashboard/superadmin");
   const isVerifiedStudent = user?.role === "superadmin" ? true : user?.isApproved || false;
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [isCompact, setIsCompact] = useState(false);
+  const [isCompact, setIsCompact] = useState(() => {
+    // Initialize based on current window width
+    if (typeof window !== 'undefined') {
+      return window.innerWidth < 1024;
+    }
+    return false;
+  });
 
   useEffect(() => {
     const check = () => {
       try {
-        const compact = window.innerWidth <= (window.screen?.width || 1024) / 2 || window.innerWidth < 768;
+        // Trigger sidebar on screens smaller than 1024px (tablet and mobile)
+        const compact = window.innerWidth < 1024;
         setIsCompact(compact);
       } catch {
         setIsCompact(false);
@@ -206,6 +213,16 @@ const DashboardLayout = ({ title, children }) => {
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:bg-slate-950 dark:from-slate-950 dark:via-slate-950 dark:to-slate-950">
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes slideInRight {
+          from { transform: translateX(100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+      `}</style>
       <header className="fixed top-0 left-0 right-0 w-full h-14 sm:h-16 lg:h-20 px-3 sm:px-4 lg:px-6 border-b border-slate-200 bg-white/95 backdrop-blur z-40 dark:bg-slate-900/95 dark:border-slate-800">
         <div className="w-full h-full flex flex-col justify-center">
           <div className="flex items-center justify-between gap-3">
@@ -426,8 +443,8 @@ const DashboardLayout = ({ title, children }) => {
               </button>
               {/* Compact hamburger to open side nav (placed to the right of theme toggle) */}
               {isCompact && (
-                <button aria-label="Open menu" onClick={() => setMobileOpen(true)} className="p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-slate-700 dark:text-slate-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <button aria-label="Open menu" onClick={() => setMobileOpen(true)} className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-slate-800 dark:text-slate-100" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                   </svg>
                 </button>
@@ -438,9 +455,9 @@ const DashboardLayout = ({ title, children }) => {
           {mobileOpen && (
             <>
               {/* Backdrop - click to close */}
-              <div className="fixed inset-0 bg-black/50 backdrop-blur-md z-40" onClick={()=>setMobileOpen(false)} />
+              <div className="fixed inset-0 bg-black/50 backdrop-blur-md z-40 fade-in" onClick={()=>setMobileOpen(false)} style={{animation: 'fadeIn 0.3s ease-out'}} />
               {/* Panel on the right */}
-              <aside className={`fixed right-0 top-0 w-72 max-w-full p-6 border-l border-slate-200 bg-white dark:bg-slate-900 shadow-2xl z-50 flex flex-col`}>
+              <aside className={`fixed right-0 top-0 w-72 max-w-full p-6 border-l border-slate-200 bg-white dark:bg-slate-900 shadow-2xl z-50 flex flex-col h-full overflow-y-auto`} style={{animation: 'slideInRight 0.4s ease-out'}}>
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-400 flex items-center justify-center text-lg font-semibold text-slate-800 dark:text-slate-900">{user?.name ? user.name.charAt(0).toUpperCase() : 'U'}</div>
