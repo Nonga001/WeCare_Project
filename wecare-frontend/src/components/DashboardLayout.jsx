@@ -223,7 +223,7 @@ const DashboardLayout = ({ title, children }) => {
           to { transform: translateX(0); opacity: 1; }
         }
       `}</style>
-      <header className="fixed top-0 left-0 right-0 w-full h-14 sm:h-16 lg:h-20 px-3 sm:px-4 lg:px-6 border-b border-slate-200 bg-white/95 backdrop-blur z-40 dark:bg-slate-900/95 dark:border-slate-800">
+      <header className="fixed top-0 left-0 right-0 w-full h-14 sm:h-16 lg:h-20 px-3 sm:px-4 lg:px-6 border-b border-slate-200 bg-white/95 backdrop-blur z-30 dark:bg-slate-900/95 dark:border-slate-800">
         <div className="w-full h-full flex flex-col justify-center">
           <div className="flex items-center justify-between gap-3">
             {/* Left: WeCare + Role */}
@@ -241,26 +241,26 @@ const DashboardLayout = ({ title, children }) => {
                     to="/dashboard/student"
                     end
                     onClick={(e) => { if (!isVerifiedStudent) e.preventDefault(); }}
-                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : `${!isVerifiedStudent ? 'text-slate-400 bg-slate-100 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50'}`}`}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : `${!isVerifiedStudent ? 'text-slate-400 bg-slate-100 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50'}`}`}
                   >Home</NavLink>
                   <NavLink
                     to="/dashboard/student/profile"
                     onClick={(e) => { if (!isVerifiedStudent) e.preventDefault(); }}
-                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : `${!isVerifiedStudent ? 'text-slate-400 bg-slate-100 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50'}`}`}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : `${!isVerifiedStudent ? 'text-slate-400 bg-slate-100 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50'}`}`}
                   >Profile</NavLink>
                   <NavLink
                     to="/dashboard/student/aid"
                     onClick={(e) => { if (!isVerifiedStudent) e.preventDefault(); }}
-                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : `${!isVerifiedStudent ? 'text-slate-400 bg-slate-100 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50'}`}`}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : `${!isVerifiedStudent ? 'text-slate-400 bg-slate-100 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50'}`}`}
                   >Aid</NavLink>
                   <NavLink
                     to="/dashboard/student/support"
                     onClick={(e) => { if (!isVerifiedStudent) e.preventDefault(); }}
-                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : `${!isVerifiedStudent ? 'text-slate-400 bg-slate-100 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50'}`}`}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : `${!isVerifiedStudent ? 'text-slate-400 bg-slate-100 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50'}`}`}
                   >Support</NavLink>
                   <NavLink
                     to="/dashboard/student/notifications"
-                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
                   >Notifications</NavLink>
                 </nav>
               )}
@@ -272,36 +272,36 @@ const DashboardLayout = ({ title, children }) => {
                     to="/dashboard/admin"
                     end
                     onClick={(e) => { if (!isVerifiedStudent) e.preventDefault(); }}
-                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : `${!isVerifiedStudent ? 'text-slate-400 bg-slate-100 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50'}`}`}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : `${!isVerifiedStudent ? 'text-slate-400 bg-slate-100 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50'}`}`}
                   >Home</NavLink>
                   <NavLink
                     to="/dashboard/admin/profile"
                     onClick={(e) => { if (!isVerifiedStudent) e.preventDefault(); }}
-                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : `${!isVerifiedStudent ? 'text-slate-400 bg-slate-100 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50'}`}`}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : `${!isVerifiedStudent ? 'text-slate-400 bg-slate-100 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50'}`}`}
                   >Profile</NavLink>
                   <NavLink
                     to="/dashboard/admin/verify"
                     onClick={(e) => { if (!isVerifiedStudent) e.preventDefault(); }}
-                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : `${!isVerifiedStudent ? 'text-slate-400 bg-slate-100 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50'}`}`}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : `${!isVerifiedStudent ? 'text-slate-400 bg-slate-100 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50'}`}`}
                   >Verify</NavLink>
                   <NavLink
                     to="/dashboard/admin/aid"
                     onClick={(e) => { if (!isVerifiedStudent) e.preventDefault(); }}
-                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : `${!isVerifiedStudent ? 'text-slate-400 bg-slate-100 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50'}`}`}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : `${!isVerifiedStudent ? 'text-slate-400 bg-slate-100 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50'}`}`}
                   >Aid</NavLink>
                   <NavLink
                     to="/dashboard/admin/groups"
                     onClick={(e) => { if (!isVerifiedStudent) e.preventDefault(); }}
-                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : `${!isVerifiedStudent ? 'text-slate-400 bg-slate-100 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50'}`}`}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : `${!isVerifiedStudent ? 'text-slate-400 bg-slate-100 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50'}`}`}
                   >Groups</NavLink>
                   <NavLink
                     to="/dashboard/admin/reports"
                     onClick={(e) => { if (!isVerifiedStudent) e.preventDefault(); }}
-                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : `${!isVerifiedStudent ? 'text-slate-400 bg-slate-100 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50'}`}`}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : `${!isVerifiedStudent ? 'text-slate-400 bg-slate-100 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50'}`}`}
                   >Reports</NavLink>
                   <NavLink
                     to="/dashboard/admin/notifications"
-                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
                   >Notifications</NavLink>
                 </nav>
               )}
@@ -312,27 +312,27 @@ const DashboardLayout = ({ title, children }) => {
                   <NavLink
                     to="/dashboard/donor"
                     end
-                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
                   >Home</NavLink>
                   <NavLink
                     to="/dashboard/donor/profile"
-                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
                   >Profile</NavLink>
                   <NavLink
                     to="/dashboard/donor/donations"
-                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
                   >Donations</NavLink>
                   <NavLink
                     to="/dashboard/donor/browse"
-                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
                   >Browse</NavLink>
                   <NavLink
                     to="/dashboard/donor/reports"
-                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
                   >Reports</NavLink>
                   <NavLink
                     to="/dashboard/donor/notifications"
-                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
                   >Notifications</NavLink>
                 </nav>
               )}
@@ -343,27 +343,27 @@ const DashboardLayout = ({ title, children }) => {
                   <NavLink
                     to="/dashboard/superadmin"
                     end
-                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
                   >Home</NavLink>
                   <NavLink
                     to="/dashboard/superadmin/profile"
-                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
                   >Profile</NavLink>
                   <NavLink
                     to="/dashboard/superadmin/users"
-                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
                   >Users</NavLink>
                   <NavLink
                     to="/dashboard/superadmin/settings"
-                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
                   >Settings</NavLink>
                   <NavLink
                     to="/dashboard/superadmin/analytics"
-                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
                   >Analytics</NavLink>
                   <NavLink
                     to="/dashboard/superadmin/notifications"
-                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-blue-600 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
                   >Notifications</NavLink>
                 </nav>
               )}
@@ -413,7 +413,7 @@ const DashboardLayout = ({ title, children }) => {
                         }} className="w-full text-left p-3 hover:bg-slate-50">
                           <div className="flex items-start gap-2">
                             {!((n.isRead||[]).some(r => (r.user === (user?._id||user?.id)) || (r.user?._id === (user?._id||user?.id)) || (String(r.user)===String(user?._id||user?.id)))) && (
-                              <span className="mt-1 inline-block w-2 h-2 rounded-full bg-blue-600"></span>
+                              <span className="mt-1 inline-block w-2 h-2 rounded-full bg-amber-700"></span>
                             )}
                             <div className="flex-1">
                               <div className="text-sm font-medium text-slate-800 truncate">{n.title}</div>
@@ -451,45 +451,57 @@ const DashboardLayout = ({ title, children }) => {
               )}
             </div>
           </div>
-          {/* Mobile side nav overlay */}
-          {mobileOpen && (
+          <div className="mt-0.5">
+            {(user?.role === "admin" || user?.role === "student") && user?.isApproved === false && (
+              <div className="mt-1 alert alert-warn">
+                Awaiting approval. Some features are disabled until your account is verified.
+              </div>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* Mobile side nav overlay - MOVED OUTSIDE HEADER */}
+      {mobileOpen && (
             <>
-              {/* Backdrop - click to close */}
-              <div className="fixed inset-0 bg-black/50 backdrop-blur-md z-40 fade-in" onClick={()=>setMobileOpen(false)} style={{animation: 'fadeIn 0.3s ease-out'}} />
-              {/* Panel on the right */}
-              <aside className={`fixed right-0 top-0 w-72 max-w-full p-6 border-l border-slate-200 bg-white dark:bg-slate-900 shadow-2xl z-50 flex flex-col h-full overflow-y-auto`} style={{animation: 'slideInRight 0.4s ease-out'}}>
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
+              {/* Backdrop - click to close, covers entire screen */}
+              <div className="fixed inset-0 bg-black/50 backdrop-blur-md z-[100] fade-in" onClick={()=>setMobileOpen(false)} style={{animation: 'fadeIn 0.3s ease-out'}} />
+              {/* Panel on the right - spans full viewport height */}
+              <aside className={`fixed right-0 top-0 bottom-0 w-72 max-w-full border-l border-slate-200 bg-white dark:bg-slate-900 shadow-2xl z-[110] flex flex-col overflow-hidden`} style={{animation: 'slideInRight 0.4s ease-out'}}>
+                {/* Header section with user info and close button */}
+                <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex-shrink-0 relative">
+                  <div className="flex items-center gap-3 pr-8">
                     <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-400 flex items-center justify-center text-lg font-semibold text-slate-800 dark:text-slate-900">{user?.name ? user.name.charAt(0).toUpperCase() : 'U'}</div>
                     <div>
                       <div className="text-sm font-semibold text-slate-800 dark:text-slate-100">{user?.name || 'User'}</div>
                       <div className="text-xs text-slate-500 dark:text-slate-400">{user?.email || ''}</div>
                     </div>
                   </div>
-                  <button aria-label="Close menu" onClick={() => setMobileOpen(false)} className="p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800"> 
+                  <button aria-label="Close menu" onClick={() => setMobileOpen(false)} className="absolute top-4 right-4 p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800"> 
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-slate-700 dark:text-slate-200" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
                     </svg>
                   </button>
                 </div>
 
-                <nav className="flex flex-col gap-3">
+                {/* Navigation - displays all items without scroll */}
+                <nav className="flex-1 p-6 flex flex-col gap-3 overflow-hidden">
                   {/* Student Navigation */}
                   {isStudentDashboard && user?.role === 'student' && (
                     <>
-                      <NavLink to="/dashboard/student" end onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                      <NavLink to="/dashboard/student" end onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-amber-700 text-white shadow' : 'text-slate-800 hover:bg-amber-50 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
                         <span className="text-sm font-medium">Home</span>
                       </NavLink>
-                      <NavLink to="/dashboard/student/profile" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                      <NavLink to="/dashboard/student/profile" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-amber-700 text-white shadow' : 'text-slate-800 hover:bg-amber-50 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
                         <span className="text-sm font-medium">Profile</span>
                       </NavLink>
-                      <NavLink to="/dashboard/student/aid" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                      <NavLink to="/dashboard/student/aid" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-amber-700 text-white shadow' : 'text-slate-800 hover:bg-amber-50 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
                         <span className="text-sm font-medium">Aid</span>
                       </NavLink>
-                      <NavLink to="/dashboard/student/support" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                      <NavLink to="/dashboard/student/support" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-amber-700 text-white shadow' : 'text-slate-800 hover:bg-amber-50 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
                         <span className="text-sm font-medium">Support</span>
                       </NavLink>
-                      <NavLink to="/dashboard/student/notifications" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                      <NavLink to="/dashboard/student/notifications" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-amber-700 text-white shadow' : 'text-slate-800 hover:bg-amber-50 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
                         <span className="text-sm font-medium">Notifications</span>
                       </NavLink>
                     </>
@@ -571,25 +583,17 @@ const DashboardLayout = ({ title, children }) => {
                   )}
                 </nav>
 
-                <div className="mt-6">
-                  <button onClick={toggleTheme} className="w-full px-3 py-2 rounded-lg bg-gradient-to-r from-green-500 to-lime-600 text-white text-sm flex items-center justify-center gap-2">
+                {/* Footer section - fixed at bottom of sidebar */}
+                <div className="p-6 border-t border-slate-100 dark:border-slate-800 flex-shrink-0">
+                  <button onClick={toggleTheme} className="w-full px-3 py-2 rounded-lg bg-amber-700 hover:bg-amber-800 text-white text-sm flex items-center justify-center gap-2 transition-colors">
                     {isDark ? '☀️ Light Mode' : '🌙 Dark Mode'}
                   </button>
                 </div>
               </aside>
             </>
           )}
-          <div className="mt-0.5">
-            {(user?.role === "admin" || user?.role === "student") && user?.isApproved === false && (
-              <div className="mt-1 alert alert-warn">
-                Awaiting approval. Some features are disabled until your account is verified.
-              </div>
-            )}
-          </div>
-        </div>
-      </header>
 
-      <main className="w-full px-4 sm:px-6 lg:px-10 pt-16 sm:pt-20 lg:pt-24 pb-16">
+      <main className={`w-full px-4 sm:px-6 lg:px-10 pt-16 sm:pt-20 lg:pt-24 pb-16 ${mobileOpen ? 'pointer-events-none' : ''}`}>
         {children}
       </main>
 

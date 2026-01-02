@@ -129,7 +129,7 @@ const StudentNotifications = () => {
       <div className="rounded-xl border border-slate-200 p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-slate-800">Recent Notifications</h3>
-          <button onClick={markAllAsReadNow} className="text-sm text-blue-600 hover:underline">Mark all as read</button>
+          <button onClick={markAllAsReadNow} className="text-sm text-amber-600 hover:underline">Mark all as read</button>
         </div>
         
         {notifications.length === 0 ? (
@@ -143,7 +143,7 @@ const StudentNotifications = () => {
                 className={`border rounded-lg p-4 cursor-pointer ${
                   isRead(notification) 
                     ? "border-slate-200 bg-slate-50" 
-                    : "border-blue-200 bg-blue-50"
+                    : "border-amber-200 bg-amber-50"
                 }`}
               >
                 <div className="flex justify-between items-start">
@@ -151,7 +151,7 @@ const StudentNotifications = () => {
                     <div className="flex items-center gap-2">
                       <h4 className="font-medium text-slate-800">{notification.title}</h4>
                       {!isRead(notification) && (
-                        <span className="px-2 py-1 bg-blue-600 text-white text-xs rounded">New</span>
+                        <span className="px-2 py-1 bg-amber-700 text-white text-xs rounded">New</span>
                       )}
                     </div>
                     <p className="text-slate-600 mt-1">{notification.message}</p>
@@ -164,7 +164,7 @@ const StudentNotifications = () => {
                       {!isRead(notification) && (
                         <button
                           onClick={(e) => { e.stopPropagation(); handleMarkAsRead(notification._id); }}
-                          className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
+                          className="px-3 py-1 bg-amber-700 text-white rounded hover:bg-amber-800 text-sm"
                         >
                           Mark as Read
                         </button>
@@ -181,7 +181,7 @@ const StudentNotifications = () => {
             ))}
             <div className="mt-3 text-center">
               {hasMore && (
-                <button onClick={loadMore} className="px-3 py-1 text-sm text-blue-600 hover:underline">Load older</button>
+                <button onClick={loadMore} className="px-3 py-1 text-sm text-amber-600 hover:underline">Load older</button>
               )}
             </div>
           </div>
@@ -209,7 +209,7 @@ const StudentNotifications = () => {
                   <div className="flex gap-2 ml-4">
                     <button
                       onClick={() => handleUnhide(n._id)}
-                      className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                      className="px-3 py-1 bg-amber-700 text-white rounded hover:bg-amber-800 text-sm"
                     >
                       Unhide
                     </button>

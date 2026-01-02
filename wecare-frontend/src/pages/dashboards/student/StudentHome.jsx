@@ -30,7 +30,7 @@ const RequestCard = ({ type, status }) => {
     pending: 'bg-amber-50 text-amber-700 border-amber-200',
     approved: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     rejected: 'bg-rose-50 text-rose-700 border-rose-200',
-    disbursed: 'bg-blue-50 text-blue-700 border-blue-200',
+    disbursed: 'bg-amber-50 text-amber-700 border-amber-200',
   };
   const typeIcons = {
     financial: '💰',
@@ -95,17 +95,17 @@ const StudentHome = () => {
   return (
     <div className="space-y-6">
       {/* Welcome Section with Status */}
-      <div className="bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 rounded-2xl p-8 text-white shadow-lg">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 border border-slate-200 dark:border-slate-700 shadow-sm">
         <div className="flex items-start justify-between">
           <div>
-            <h2 className="text-3xl font-bold mb-2">Welcome back, {user?.name}! 👋</h2>
-            <p className="text-green-100 text-sm">Here's your financial aid dashboard overview</p>
+            <h2 className="text-3xl font-bold mb-2 text-slate-800 dark:text-slate-100">Welcome back, {user?.name}! 👋</h2>
+            <p className="text-slate-600 dark:text-slate-400 text-sm">Here's your financial aid dashboard overview</p>
           </div>
           <Badge status={status} />
         </div>
         {!verified && (
-          <div className="mt-4 bg-white/20 border border-white/40 backdrop-blur rounded-lg px-4 py-3">
-            <p className="text-sm font-medium">⚠️ Your account is pending verification. Complete your profile to unlock all features.</p>
+          <div className="mt-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg px-4 py-3">
+            <p className="text-sm font-medium text-amber-800 dark:text-amber-200">⚠️ Your account is pending verification. Complete your profile to unlock all features.</p>
           </div>
         )}
       </div>
@@ -116,13 +116,13 @@ const StudentHome = () => {
           icon="💰"
           label="Financial Aid Pending"
           value={stats.financialPending}
-          color="from-blue-400 to-blue-600"
+          color="from-amber-400 to-amber-600"
         />
         <StatCard 
           icon="📦"
           label="Essentials Pending"
           value={stats.essentialsPending}
-          color="from-purple-400 to-purple-600"
+          color="from-amber-500 to-amber-700"
         />
       </div>
 
@@ -133,20 +133,20 @@ const StudentHome = () => {
           <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">📋 Your Requests</h3>
-              <span className="bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200 text-xs font-semibold px-3 py-1.5 rounded-full">
+              <span className="bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-200 text-xs font-semibold px-3 py-1.5 rounded-full">
                 {requests.length} Total
               </span>
             </div>
-            <div className="space-y-3">
+            <div className={`space-y-3 ${requests.length > 4 ? 'max-h-[400px] overflow-y-auto pr-2' : ''}`}>
               {requests.length === 0 ? (
                 <div className="text-center py-8">
                   <p className="text-slate-500 dark:text-slate-400">No requests yet.</p>
-                  <a href="/dashboard/student/aid" className="text-green-600 dark:text-green-400 hover:underline text-sm mt-2 inline-block">
+                  <a href="/dashboard/student/aid" className="text-amber-600 dark:text-amber-400 hover:underline text-sm mt-2 inline-block">
                     Create your first request →
                   </a>
                 </div>
               ) : (
-                requests.slice(0, 6).map((r) => (
+                requests.map((r) => (
                   <RequestCard key={r._id} type={r.type} status={r.status} />
                 ))
               )}
@@ -176,7 +176,7 @@ const StudentHome = () => {
 
           {/* Emergency Button */}
           <button
-            className="w-full bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white font-semibold py-4 rounded-2xl shadow-lg hover:shadow-xl transition-all transform hover:scale-105 active:scale-95"
+            className="w-full bg-amber-700 hover:bg-amber-800 text-white font-semibold py-4 rounded-2xl shadow-md hover:shadow-lg transition-all"
           >
             <span className="text-lg">🆘 Emergency Help</span>
             <p className="text-xs opacity-90 mt-1">Campus Support Line</p>
@@ -186,13 +186,13 @@ const StudentHome = () => {
           <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-600">
             <p className="font-semibold text-slate-800 dark:text-slate-100 mb-3 text-sm">Quick Actions</p>
             <div className="space-y-2">
-              <a href="/dashboard/student/aid" className="block text-sm text-slate-700 dark:text-slate-300 hover:text-green-600 dark:hover:text-green-400 transition-colors">
+              <a href="/dashboard/student/aid" className="block text-sm text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 transition-colors">
                 → Submit New Request
               </a>
-              <a href="/dashboard/student/profile" className="block text-sm text-slate-700 dark:text-slate-300 hover:text-green-600 dark:hover:text-green-400 transition-colors">
+              <a href="/dashboard/student/profile" className="block text-sm text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 transition-colors">
                 → Update Profile
               </a>
-              <a href="/dashboard/student/support" className="block text-sm text-slate-700 dark:text-slate-300 hover:text-green-600 dark:hover:text-green-400 transition-colors">
+              <a href="/dashboard/student/support" className="block text-sm text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 transition-colors">
                 → Get Support
               </a>
             </div>

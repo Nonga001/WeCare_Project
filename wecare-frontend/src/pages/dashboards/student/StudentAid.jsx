@@ -123,7 +123,7 @@ const StudentAid = () => {
             <button 
               onClick={submitFinancial} 
               disabled={!profileComplete}
-              className="px-5 py-2.5 rounded-xl bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-5 py-2.5 rounded-xl bg-amber-700 text-white font-medium hover:bg-amber-800 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {profileComplete ? "Submit" : "Complete Profile First"}
             </button>
@@ -160,7 +160,7 @@ const StudentAid = () => {
             <button 
               onClick={submitEssential} 
               disabled={!profileComplete}
-              className="px-5 py-2.5 rounded-xl bg-emerald-600 text-white font-medium hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-5 py-2.5 rounded-xl bg-amber-700 text-white font-medium hover:bg-amber-800 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {profileComplete ? "Submit" : "Complete Profile First"}
             </button>
@@ -181,9 +181,9 @@ const StudentAid = () => {
                   <p className="text-slate-500 text-xs">
                     Status: <span className={`font-medium ${
                       h.status === 'pending' ? 'text-yellow-600' :
-                      h.status === 'approved' ? 'text-blue-600' :
+                      h.status === 'approved' ? 'text-amber-600' :
                       h.status === 'waiting' ? 'text-orange-600' :
-                      h.status === 'disbursed' ? 'text-green-600' :
+                      h.status === 'disbursed' ? 'text-amber-600' :
                       h.status === 'rejected' ? 'text-red-600' : 'text-gray-600'
                     }`}>{h.status}</span>
                   </p>
