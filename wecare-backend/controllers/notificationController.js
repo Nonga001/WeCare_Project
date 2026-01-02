@@ -2,44 +2,52 @@ import Notification from "../models/Notification.js";
 import User from "../models/User.js";
 import { io } from "../server.js";
 
+// Build the base visibility query for the current user
+const buildVisibilityQuery = (req) => {
+  const userId = req.user._id;
+  const role = req.user.role;
+  const roleWideTypes = [];
+  if (role === "student") roleWideTypes.push("all_students");
+  if (role === "admin") roleWideTypes.push("all_admins");
+  if (role === "donor") roleWideTypes.push("all_donors");
+
+  const isValidObjectId = typeof userId === "string" && /^[a-fA-F0-9]{24}$/.test(userId);
+
+  let baseQuery;
+  if (isValidObjectId) {
+    baseQuery = {
+      $or: [
+        { recipients: userId },
+        { recipientType: "everyone", sender: { $ne: userId } },
+        { recipientType: { $in: roleWideTypes }, sender: { $ne: userId } },
+        { recipientType: "university_students", university: req.user.university, sender: { $ne: userId } },
+      ],
+    };
+  } else {
+    baseQuery = {
+      $or: [
+        { recipientType: "everyone" },
+        { recipientType: { $in: roleWideTypes } },
+        { recipientType: "university_students", university: req.user.university },
+      ],
+    };
+  }
+
+  if (req.user.createdAt) {
+    baseQuery.createdAt = { $gte: req.user.createdAt };
+  }
+
+  return baseQuery;
+};
+
 // Get notifications for a user
 export const getNotifications = async (req, res) => {
   try {
     const userId = req.user._id;
-    const role = req.user.role;
+    const baseQuery = buildVisibilityQuery(req);
 
-    const roleWideTypes = [];
-    if (role === "student") roleWideTypes.push("all_students");
-    if (role === "admin") roleWideTypes.push("all_admins");
-    if (role === "donor") roleWideTypes.push("all_donors");
-
-    const isValidObjectId = typeof userId === 'string' && /^[a-fA-F0-9]{24}$/.test(userId);
-
-    let baseQuery;
-    if (isValidObjectId) {
-      baseQuery = {
-        $or: [
-          { recipients: userId },
-          { recipientType: "everyone", sender: { $ne: userId } },
-          { recipientType: { $in: roleWideTypes }, sender: { $ne: userId } },
-          { recipientType: "university_students", university: req.user.university, sender: { $ne: userId } }
-        ],
-        isDeleted: { $not: { $elemMatch: { user: userId } } }
-      };
-    } else {
-      baseQuery = {
-        $or: [
-          { recipientType: "everyone" },
-          { recipientType: { $in: roleWideTypes } },
-          { recipientType: "university_students", university: req.user.university }
-        ]
-      };
-    }
-
-    // New users only see notifications created after their account was created
-    if (req.user.createdAt) {
-      baseQuery.createdAt = { $gte: req.user.createdAt };
-    }
+    // Exclude items the user deleted/hidden
+    baseQuery.isDeleted = { $not: { $elemMatch: { user: userId } } };
 
     const { before, limit } = req.query;
     const pageLimit = Math.min(Number(limit) || 50, 100);
@@ -336,9 +344,17 @@ export const unhideNotification = async (req, res) => {
 export const getHiddenNotifications = async (req, res) => {
   try {
     const userId = req.user._id;
-    const list = await Notification.find({ isDeleted: { $elemMatch: { user: userId } } })
+    const baseQuery = buildVisibilityQuery(req);
+    const query = {
+      ...baseQuery,
+      isDeleted: { $elemMatch: { user: userId } },
+    };
+    const { limit } = req.query;
+    const pageLimit = Math.min(Number(limit) || 100, 200);
+    const list = await Notification.find(query)
+      .populate("sender", "name email role")
       .sort({ createdAt: -1 })
-      .limit(100);
+      .limit(pageLimit);
     res.json(list);
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });

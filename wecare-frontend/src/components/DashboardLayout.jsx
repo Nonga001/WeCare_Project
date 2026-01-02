@@ -17,6 +17,14 @@ const DashboardLayout = ({ title, children }) => {
   const bellRef = useRef(null);
   const [dropdownItems, setDropdownItems] = useState([]);
   const latestBefore = useRef(null);
+  const hasUnread = (Number(unreadCount) || 0) > 0;
+
+  const isReadForUser = (notification) => {
+    const uid = user?._id || user?.id;
+    return (notification?.isRead || []).some(r => (
+      r.user === uid || r.user?._id === uid || String(r.user) === String(uid)
+    ));
+  };
   useEffect(() => {
     try {
       const saved = localStorage.getItem("theme:dark");
@@ -61,7 +69,7 @@ const DashboardLayout = ({ title, children }) => {
         setUnreadCount(Number(count) || 0);
         if (showDropdown) {
           const latest = await getNotifications(user.token, { limit: 5 });
-          setDropdownItems(latest);
+          setDropdownItems(latest.filter(n => !isReadForUser(n)));
         }
       } catch {}
     };
@@ -83,7 +91,7 @@ const DashboardLayout = ({ title, children }) => {
         const count = await getUnreadCount(user.token);
         setUnreadCount(Number(count) || 0);
         const latest = await getNotifications(user.token, { limit: 5 });
-        setDropdownItems(latest);
+        setDropdownItems(latest.filter(n => !isReadForUser(n)));
       } catch {}
     };
     // Optimistic updates for immediate UI response
@@ -100,16 +108,22 @@ const DashboardLayout = ({ title, children }) => {
         refresh();
       }
     };
+    const onHide = ({ userId }) => {
+      const uid = user?._id || user?.id;
+      if (String(userId) === String(uid)) refresh();
+    };
     s.on("notification:new", onNew);
     s.on("notification:update", refresh);
     s.on("notification:delete", refresh);
     s.on("notification:read", onRead);
+    s.on("notification:hide", onHide);
     return () => {
       try {
         s.off("notification:new", onNew);
         s.off("notification:update", refresh);
         s.off("notification:delete", refresh);
         s.off("notification:read", onRead);
+        s.off("notification:hide", onHide);
       } catch {}
     };
   }, [socketRef?.current, user?.token, user?._id, user?.id]);
@@ -119,11 +133,25 @@ const DashboardLayout = ({ title, children }) => {
       try {
         if (!user?.token) return;
         const latest = await getNotifications(user.token, { limit: 5 });
-        setDropdownItems(latest);
+        setDropdownItems(latest.filter(n => !isReadForUser(n)));
       } catch {}
     };
     loadLatest();
   }, [user?.token]);
+
+  // Fetch fresh list whenever dropdown opens to avoid stale items (e.g., after deletes)
+  useEffect(() => {
+    const loadOnOpen = async () => {
+      if (!showDropdown || !user?.token) return;
+      try {
+        const latest = await getNotifications(user.token, { limit: 5 });
+        setDropdownItems(latest.filter(n => !isReadForUser(n)));
+        const count = await getUnreadCount(user.token);
+        setUnreadCount(Number(count) || 0);
+      } catch {}
+    };
+    loadOnOpen();
+  }, [showDropdown, user?.token]);
 
   const isStudentDashboard = location.pathname.startsWith("/dashboard/student");
   const isAdminDashboard = location.pathname.startsWith("/dashboard/admin");
@@ -189,19 +217,16 @@ const DashboardLayout = ({ title, children }) => {
     try {
       const uid = user?._id || user?.id;
       const toMark = dropdownItems.filter(n => !(n.isRead || []).some(r => (r.user === uid) || (r.user?._id === uid) || (String(r.user) === String(uid))));
-      // Optimistically reset unread counter and clear dropdown
-      if (toMark.length > 0) {
-        setUnreadCount(0);
+      if (toMark.length === 0) {
         setDropdownItems([]);
+        setUnreadCount(0);
+        return;
       }
-      for (const n of toMark) {
-        await markAsRead(user?.token, n._id);
-      }
-      const latest = await getNotifications(user?.token, { limit: 5 });
-      // If backend still returns items, keep UI decision: show empty after mark-all
-      setDropdownItems([]);
+      await Promise.allSettled(toMark.map(n => markAsRead(user?.token, n._id)));
       const count = await getUnreadCount(user?.token);
       setUnreadCount(Number(count) || 0);
+      const latest = await getNotifications(user?.token, { limit: 5 });
+      setDropdownItems(latest.filter(n => !isReadForUser(n)));
     } catch {}
   };
   const toggleTheme = () => {
@@ -379,11 +404,11 @@ const DashboardLayout = ({ title, children }) => {
               <div className="relative" ref={bellRef}>
               <button
                 onClick={() => setShowDropdown(!showDropdown)}
-                className="btn btn-ghost relative"
+                className={`relative inline-flex items-center justify-center px-2.5 py-2 rounded-lg transition border ${hasUnread ? 'bg-amber-50 border-amber-200 text-amber-800 shadow-sm' : 'border-transparent text-slate-700 hover:bg-slate-100'} `}
                 title="Notifications"
               >
                 <span className="relative inline-flex items-center">
-                  <span>🔔</span>
+                  <span className={hasUnread ? '' : 'opacity-80'}>🔔</span>
                   <span className={`ml-1 w-2 h-2 rounded-full ${socketStatus === 'connected' ? 'bg-emerald-500' : socketStatus === 'reconnecting' ? 'bg-yellow-500' : 'bg-slate-400'}`}></span>
                 </span>
                 {unreadCount > 0 && (

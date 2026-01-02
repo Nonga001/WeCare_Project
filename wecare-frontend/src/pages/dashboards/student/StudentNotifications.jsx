@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
-import { getNotifications, markAsRead } from "../../../services/notificationService";
+import { getNotifications, markAsRead, deleteNotification } from "../../../services/notificationService";
 // Removed localStorage fallback for hidden notifications
 import { useSocket } from "../../../context/SocketContext";
 import { hideNotificationServer, unhideNotificationServer, getHiddenNotifications } from "../../../services/notificationService";
@@ -14,6 +14,7 @@ const StudentNotifications = () => {
   const [before, setBefore] = useState(null);
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState("");
+  const [showHidden, setShowHidden] = useState(false);
 
   const fetchNotifications = async () => {
     try {
@@ -102,13 +103,47 @@ const StudentNotifications = () => {
     try { setHiddenList(await getHiddenNotifications(user?.token)); } catch {}
   };
 
+  const handleDelete = async (notificationId) => {
+    try {
+      // For recipients, use hide so it is removed only for this user; if sender, backend will delete globally
+      await hideNotificationServer(user?.token, notificationId);
+    } catch (_) {
+      // Fallback to delete endpoint if hide fails (e.g., already hidden)
+      try { await deleteNotification(user?.token, notificationId); } catch {}
+    }
+    try {
+      await fetchNotifications();
+      try { setHiddenList(await getHiddenNotifications(user?.token)); } catch {}
+    } catch (err) {
+      setNotifications(prev => prev.filter(n => String(n._id) !== String(notificationId)));
+      setHiddenList(prev => prev.filter(n => String(n._id) !== String(notificationId)));
+      setError(err.response?.data?.message || "Failed to delete notification");
+    }
+  };
+
   const handleUnhide = async (notificationId) => {
     try { await unhideNotificationServer(user?.token, notificationId); } catch {}
     try { setHiddenList(await getHiddenNotifications(user?.token)); } catch {}
   };
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleString();
+  const toggleHidden = async () => {
+    const next = !showHidden;
+    setShowHidden(next);
+    if (next) {
+      try { setHiddenList(await getHiddenNotifications(user?.token)); } catch {}
+    }
+  };
+
+  const formatDateTime = (dateString) => new Date(dateString).toLocaleString();
+  const formatDay = (dateString) => {
+    const d = new Date(dateString);
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
+    const isSameDay = (a,b)=> a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
+    if (isSameDay(d, today)) return "Today";
+    if (isSameDay(d, yesterday)) return "Yesterday";
+    return d.toLocaleDateString();
   };
 
   const isRead = (notification) => {
@@ -118,105 +153,161 @@ const StudentNotifications = () => {
     ));
   };
 
+  const grouped = notifications.reduce((acc, n) => {
+    const key = formatDay(n.createdAt);
+    acc[key] = acc[key] || [];
+    acc[key].push(n);
+    return acc;
+  }, {});
+
+  const unreadCount = notifications.filter((n) => !isRead(n)).length;
+
   if (loading) {
-    return <div className="text-center py-8">Loading notifications...</div>;
+    return (
+      <div className="rounded-xl border border-slate-200 p-6 space-y-4">
+        {[...Array(3)].map((_,i)=>(
+          <div key={i} className="animate-pulse space-y-3">
+            <div className="h-3 w-24 bg-slate-200 rounded"></div>
+            <div className="h-4 w-48 bg-slate-200 rounded"></div>
+            <div className="h-16 w-full bg-slate-100 rounded"></div>
+          </div>
+        ))}
+      </div>
+    );
   }
 
   return (
     <div className="space-y-4">
       {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">{error}</div>}
       
-      <div className="rounded-xl border border-slate-200 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-slate-800">Recent Notifications</h3>
-          <button onClick={markAllAsReadNow} className="text-sm text-amber-600 hover:underline">Mark all as read</button>
+      <div className="rounded-xl border border-slate-200 p-0 overflow-hidden">
+        <div className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b border-slate-200 px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <h3 className="text-lg font-semibold text-slate-800">Recent Notifications</h3>
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">
+              {unreadCount} unread
+            </span>
+          </div>
+          <div className="flex items-center gap-2 sm:justify-end">
+            <button onClick={markAllAsReadNow} className="text-sm text-amber-700 hover:text-amber-800 font-medium">Mark all as read</button>
+            {hasMore && (
+              <button onClick={loadMore} className="text-sm text-amber-700 hover:text-amber-800 font-medium">Load older</button>
+            )}
+          </div>
         </div>
-        
+
         {notifications.length === 0 ? (
-          <p className="text-slate-500 text-center py-8">No notifications yet.</p>
+          <div className="py-10 text-center text-slate-500">No notifications yet. Check your profile or aid status for updates.</div>
         ) : (
-          <div className="space-y-3">
-            {notifications.map((notification) => (
-              <div 
-                key={notification._id} 
-                onClick={() => { if (!isRead(notification)) handleMarkAsRead(notification._id); }}
-                className={`border rounded-lg p-4 cursor-pointer ${
-                  isRead(notification) 
-                    ? "border-slate-200 bg-slate-50" 
-                    : "border-amber-200 bg-amber-50"
-                }`}
-              >
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-medium text-slate-800">{notification.title}</h4>
-                      {!isRead(notification) && (
-                        <span className="px-2 py-1 bg-amber-700 text-white text-xs rounded">New</span>
-                      )}
-                    </div>
-                    <p className="text-slate-600 mt-1">{notification.message}</p>
-                    <div className="flex gap-4 mt-2 text-sm text-slate-500">
-                      <span>From: {notification.sender?.name || notification.senderName || notification.senderRole || 'System'}</span>
-                      <span>{formatDate(notification.createdAt)}</span>
-                    </div>
-                  </div>
-                    <div className="flex gap-2 ml-4">
-                      {!isRead(notification) && (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleMarkAsRead(notification._id); }}
-                          className="px-3 py-1 bg-amber-700 text-white rounded hover:bg-amber-800 text-sm"
-                        >
-                          Mark as Read
-                        </button>
-                      )}
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleHide(notification._id); }}
-                      className="px-3 py-1 bg-slate-600 text-white rounded hover:bg-slate-700 text-sm"
+          <div className="max-h-[70vh] overflow-y-auto px-6 py-4 space-y-5">
+            {Object.entries(grouped).map(([day, list]) => (
+              <div key={day} className="space-y-3">
+                <div className="text-xs font-semibold text-slate-500 tracking-wide">{day}</div>
+                <div className="space-y-3">
+                  {list.map((notification) => (
+                    <div
+                      key={notification._id}
+                      onClick={() => { if (!isRead(notification)) handleMarkAsRead(notification._id); }}
+                      className={`border rounded-lg p-4 cursor-pointer transition hover:shadow-sm ${
+                        isRead(notification)
+                          ? "border-slate-200 bg-white"
+                          : "border-amber-200 bg-amber-50"
+                      }`}
                     >
-                      Hide
-                    </button>
-                  </div>
+                      <div className="flex justify-between items-start gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-semibold text-slate-800 truncate">{notification.title}</h4>
+                            {!isRead(notification) && (
+                              <span className="px-2 py-0.5 bg-amber-700 text-white text-[11px] rounded-full">New</span>
+                            )}
+                          </div>
+                          <p className="text-slate-600 mt-1 text-sm line-clamp-3">{notification.message}</p>
+                          <div className="flex flex-wrap gap-3 mt-2 text-xs text-slate-500">
+                            <span>From: {notification.sender?.name || notification.senderName || notification.senderRole || 'System'}</span>
+                            <span>{formatDateTime(notification.createdAt)}</span>
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-2 items-end">
+                          {!isRead(notification) && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleMarkAsRead(notification._id); }}
+                              className="px-3 py-1 rounded-lg border border-amber-300 text-amber-700 hover:bg-amber-50 text-xs font-medium"
+                            >
+                              Mark read
+                            </button>
+                          )}
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleHide(notification._id); }}
+                            className="px-3 py-1 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 text-xs font-medium"
+                          >
+                            Hide
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleDelete(notification._id); }}
+                            className="px-3 py-1 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-xs font-medium"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}
-            <div className="mt-3 text-center">
-              {hasMore && (
-                <button onClick={loadMore} className="px-3 py-1 text-sm text-amber-600 hover:underline">Load older</button>
-              )}
-            </div>
           </div>
         )}
       </div>
 
       {/* Hidden */}
-      <div className="rounded-xl border border-slate-200 p-6">
-        <h3 className="text-lg font-semibold text-slate-800 mb-4">Hidden</h3>
-        {(hiddenList || []).length === 0 ? (
-          <p className="text-slate-500">No hidden notifications.</p>
-        ) : (
-          <div className="space-y-3">
-            {hiddenList.map((n) => (
-              <div key={n._id} className="border rounded-lg p-4 bg-slate-50">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <h4 className="font-medium text-slate-800">{n.title}</h4>
-                    <p className="text-slate-600 mt-1">{n.message}</p>
-                    <div className="flex gap-4 mt-2 text-sm text-slate-500">
-                      <span>From: {n.sender?.name || n.senderName || n.senderRole || 'System'}</span>
-                      <span>{formatDate(n.createdAt)}</span>
+      <div className="rounded-xl border border-slate-200">
+        <button
+          onClick={toggleHidden}
+          className="w-full px-6 py-4 flex items-center justify-between text-left"
+        >
+          <div>
+            <h3 className="text-lg font-semibold text-slate-800">Hidden</h3>
+            <p className="text-xs text-slate-500">Notifications you removed from your feed</p>
+          </div>
+          <span className="text-sm text-slate-500">{showHidden ? "Hide" : "Show"}</span>
+        </button>
+        {showHidden && (
+          <div className="border-t border-slate-200 p-6">
+            {(hiddenList || []).length === 0 ? (
+              <p className="text-slate-500">No hidden notifications.</p>
+            ) : (
+              <div className="space-y-3">
+                {hiddenList.map((n) => (
+                  <div key={n._id} className="border rounded-lg p-4 bg-slate-50">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-slate-800 truncate">{n.title}</h4>
+                        <p className="text-slate-600 mt-1 text-sm line-clamp-3">{n.message}</p>
+                        <div className="flex flex-wrap gap-3 mt-2 text-xs text-slate-500">
+                          <span>From: {n.sender?.name || n.senderName || n.senderRole || 'System'}</span>
+                          <span>{formatDateTime(n.createdAt)}</span>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 ml-4">
+                        <button
+                          onClick={() => handleUnhide(n._id)}
+                          className="px-3 py-1 rounded-lg border border-amber-300 text-amber-700 hover:bg-amber-50 text-xs font-medium"
+                        >
+                          Unhide
+                        </button>
+                        <button
+                          onClick={() => handleDelete(n._id)}
+                          className="px-3 py-1 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-xs font-medium"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex gap-2 ml-4">
-                    <button
-                      onClick={() => handleUnhide(n._id)}
-                      className="px-3 py-1 bg-amber-700 text-white rounded hover:bg-amber-800 text-sm"
-                    >
-                      Unhide
-                    </button>
-                  </div>
-                </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
         )}
       </div>
