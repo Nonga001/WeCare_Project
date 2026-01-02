@@ -31,17 +31,19 @@ export const generateGroupResponse = async (messages, groupName = "group") => {
 
     const systemPrompt = `You are a helpful AI assistant for the WeCare student support platform. 
 You're helping in the "${groupName}" group chat. 
-Analyze the conversation and provide a helpful, empathetic response that:
-- Addresses any questions or concerns raised
-- Offers practical advice or resources when appropriate
-- Maintains a supportive and friendly tone
-- Keeps responses concise (2-3 sentences max)
-- If the conversation is casual, acknowledge it briefly and offer to help`;
+Analyze the conversation and provide a helpful, empathetic response using statements only:
+- Address any questions or concerns raised with clear statements
+- Provide practical advice or resources when appropriate
+- Maintain a supportive and friendly tone
+- Keep responses concise (2-3 sentences max)
+- Use declarative statements, not questions
+- Avoid asking questions back to the group
+- Provide answers and insights based on the conversation context`;
 
     const chatCompletion = await groq.chat.completions.create({
       messages: [
         { role: "system", content: systemPrompt },
-        { role: "user", content: `Recent conversation:\n${formattedMessages}\n\nProvide a helpful response:` }
+        { role: "user", content: `Recent conversation:\n${formattedMessages}\n\nProvide a helpful response using statements only, no questions:` }
       ],
       model: "llama-3.3-70b-versatile",
       temperature: 0.7,

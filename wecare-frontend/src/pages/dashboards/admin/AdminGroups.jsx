@@ -14,6 +14,8 @@ const AdminGroups = () => {
   const [newName, setNewName] = useState("");
   const [newScope, setNewScope] = useState("uni");
   const [messageText, setMessageText] = useState("");
+  const [showOptions, setShowOptions] = useState(false);
+  const [showMembers, setShowMembers] = useState(false);
   // removed private group UI
 
   const load = async () => {
@@ -73,6 +75,15 @@ const AdminGroups = () => {
   };
 
   const onDelete = async () => {
+    // Check if group has members other than the admin
+    const memberCount = selected.members?.length || 0;
+    const hasOnlyAdmin = memberCount === 0 || (memberCount === 1 && selected.members[0].user === user?._id);
+    
+    if (!hasOnlyAdmin) {
+      alert("You cannot delete a group which still has members. Please remove all members before deleting the group.");
+      return;
+    }
+    
     if (!confirm("Delete this group? This cannot be undone.")) return;
     try {
       await deleteGroup(user?.token, selected._id);
@@ -98,42 +109,40 @@ const AdminGroups = () => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2 space-y-6">
-        <div className="card p-5">
-          <h3 className="mb-3">Create Group</h3>
+        <div className="rounded-2xl border border-amber-200 bg-white dark:bg-slate-800 p-5 shadow-sm">
+          <h3 className="mb-3 font-semibold text-slate-800">Create Group</h3>
           <div className="flex flex-wrap gap-2 items-center">
-            <input value={newName} onChange={(e)=>setNewName(e.target.value)} placeholder="Group name" className="input max-w-sm" />
-            <select value={newScope} onChange={(e)=>setNewScope(e.target.value)} className="input max-w-[200px]">
-              <option value="uni">University</option>
-            </select>
-            <button disabled={creating} onClick={onCreate} className="btn btn-primary">{creating?"Creating...":"Create"}</button>
+            <input value={newName} onChange={(e)=>setNewName(e.target.value)} placeholder="Group name" className="px-4 py-2 border border-amber-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-300 flex-1 max-w-sm" />
+            <button disabled={creating} onClick={onCreate} className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 text-white font-medium hover:from-amber-700 hover:to-amber-800 disabled:opacity-50 transition-all">{creating?"Creating...":"Create"}</button>
+            <p className="text-sm text-amber-700 font-medium">Group will be created for your university</p>
           </div>
           
         </div>
 
-        <div className="card p-5">
-          <h3 className="mb-3">Your University Groups</h3>
+        <div className="rounded-2xl border border-amber-200 bg-white dark:bg-slate-800 p-5 shadow-sm">
+          <h3 className="mb-3 font-semibold text-slate-800">Your University Groups</h3>
           {loading ? <p className="text-sm text-slate-500">Loading...</p> : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {uniGroups.map((g)=> (
-                <div key={g._id} className="card p-4 hover:shadow-lg transition-shadow">
-                  <p className="font-medium text-slate-800">{g.name}</p>
-                  <p className="text-sm text-slate-600">Members: {g.membersCount}</p>
-                  <button onClick={()=>openDetails(g._id)} className="mt-3 btn btn-primary">Manage</button>
+                <div key={g._id} className="rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-amber-100 p-4 hover:shadow-lg transition-shadow">
+                  <p className="font-medium text-amber-900">{g.name}</p>
+                  <p className="text-sm text-amber-700">Members: {g.membersCount}</p>
+                  <button onClick={()=>openDetails(g._id)} className="mt-3 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 text-white text-sm font-medium hover:from-amber-700 hover:to-amber-800 transition-all">Manage</button>
                 </div>
               ))}
             </div>
           )}
         </div>
 
-        <div className="card p-5">
-          <h3 className="mb-3">Global Groups</h3>
+        <div className="rounded-2xl border border-amber-200 bg-white dark:bg-slate-800 p-5 shadow-sm">
+          <h3 className="mb-3 font-semibold text-slate-800">Global Groups</h3>
           {loading ? <p className="text-sm text-slate-500">Loading...</p> : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {globalGroups.map((g)=> (
-                <div key={g._id} className="card p-4 hover:shadow-lg transition-shadow">
-                  <p className="font-medium text-slate-800">{g.name}</p>
-                  <p className="text-sm text-slate-600">Members: {g.membersCount}</p>
-                  <button onClick={()=>openDetails(g._id)} className="mt-3 btn btn-primary">Manage</button>
+                <div key={g._id} className="rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-amber-100 p-4 hover:shadow-lg transition-shadow">
+                  <p className="font-medium text-amber-900">{g.name}</p>
+                  <p className="text-sm text-amber-700">Members: {g.membersCount}</p>
+                  <button onClick={()=>openDetails(g._id)} className="mt-3 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 text-white text-sm font-medium hover:from-amber-700 hover:to-amber-800 transition-all">Manage</button>
                 </div>
               ))}
             </div>
@@ -142,50 +151,69 @@ const AdminGroups = () => {
       </div>
 
       <div className="space-y-4">
-        <div className="card p-5">
+        <div className="rounded-2xl border border-amber-200 bg-white dark:bg-slate-800 p-5 shadow-sm">
           <h4 className="font-semibold text-slate-800 mb-2">Group Details</h4>
           {error && <p className="text-sm text-rose-600 mb-2">{error}</p>}
           {!selected ? (
             <p className="text-sm text-slate-600">Select a group to manage</p>
           ) : (
             <div>
-              <p className="font-medium text-slate-800">{selected.name}</p>
-              <p className="text-xs text-slate-600 mb-2">{selected.isGlobal ? 'Global' : `University: ${selected.university || '-'}`}</p>
-              {!selected.isGlobal && (
-                <div className="flex gap-2 mb-3">
-                  <button onClick={onRename} className="btn btn-ghost border text-xs">Rename</button>
-                  <button onClick={onDelete} className="btn btn-secondary text-xs">Delete</button>
+              <div className="flex items-start justify-between mb-3">
+                <div>
+                  <p className="font-medium text-slate-800">{selected.name}</p>
+                  <p className="text-xs text-slate-600">{selected.isGlobal ? 'Global' : `University: ${selected.university || '-'}`}</p>
+                  <p className="text-xs text-amber-700 font-medium mt-1">{selected.members?.length || 0} Participants</p>
                 </div>
-              )}
-              <div>
-                <p className="font-medium text-slate-800 mb-2 text-sm">Members</p>
-                <div className="space-y-2 max-h-72 overflow-auto pr-1">
-                  {selected.members?.map((m)=> (
-                    <div key={m.user} className="flex items-center justify-between border rounded-lg px-3 py-2">
-                      <div>
-                        <p className="text-sm text-slate-800">{m.name}</p>
-                        {m.isAnonymous && <p className="text-[11px] text-slate-500">Anonymous{m.alias?` • ${m.alias}`:''}</p>}
+                {!selected.isGlobal && (
+                  <div className="relative">
+                    <button 
+                      onClick={() => setShowOptions(!showOptions)} 
+                      className="px-3 py-1.5 border border-amber-200 rounded-xl text-xs font-medium text-amber-700 hover:bg-amber-50"
+                    >
+                      Options
+                    </button>
+                    {showOptions && (
+                      <div className="absolute right-0 mt-1 w-40 rounded-xl border border-amber-200 bg-white shadow-lg z-10">
+                        <button 
+                          onClick={() => { onRename(); setShowOptions(false); }} 
+                          className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-amber-50 rounded-t-xl"
+                        >
+                          Rename Group
+                        </button>
+                        <button 
+                          onClick={() => { setShowMembers(true); setShowOptions(false); }} 
+                          className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-amber-50"
+                        >
+                          View Members
+                        </button>
+                        <button 
+                          onClick={() => { onDelete(); setShowOptions(false); }} 
+                          className="w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 rounded-b-xl"
+                        >
+                          Delete Group
+                        </button>
                       </div>
-                      <button onClick={()=>onRemoveMember(m.user)} className="btn btn-ghost text-xs">Remove</button>
-                    </div>
-                  ))}
-                </div>
+                    )}
+                  </div>
+                )}
               </div>
+              
               <div className="mt-5">
                 <p className="font-medium text-slate-800 mb-2 text-sm">Messages</p>
-                <div className="border rounded-xl overflow-hidden">
-                  <div className="max-h-64 overflow-auto p-3 space-y-2 bg-white">
+                <div className="border border-amber-200 rounded-2xl overflow-hidden bg-white">
+                  <div className="max-h-64 overflow-auto p-3 space-y-2">
                     {selected.messages?.length ? selected.messages.map(msg => {
-                      const mine = msg.sender === user?._id;
+                      const mine = !msg.isAIGenerated && String(msg.sender) === String(user?._id);
+                      const isAI = msg.isAIGenerated;
                       return (
                         <div key={msg._id} className={`flex ${mine? 'justify-end' : 'justify-start'}`}>
-                          <div className={`max-w-[80%] rounded-2xl px-3 py-2 ${mine? 'bg-blue-600 text-white rounded-br-sm' : 'bg-slate-100 text-slate-800 rounded-bl-sm'}`}>
-                            <p className="text-[11px] opacity-80 mb-0.5">{msg.senderName || 'Member'} • {new Date(msg.createdAt).toLocaleTimeString()}</p>
+                          <div className={`max-w-[80%] rounded-2xl px-3 py-2 ${mine? 'bg-gradient-to-r from-amber-600 to-amber-700 text-white rounded-br-sm' : 'bg-amber-50 text-slate-800 border border-amber-200 rounded-bl-sm'}`}>
+                            <p className="text-[11px] opacity-80 mb-0.5">{isAI ? 'AI Assistant' : (msg.senderName || 'Member')} • {new Date(msg.createdAt).toLocaleTimeString()}</p>
                             <p className="text-sm leading-relaxed">{msg.text}</p>
                             <div className="text-[10px] mt-1 flex justify-between items-center opacity-70">
                               <span></span>
-                              {(mine || !selected.isGlobal) && (
-                                <button onClick={async()=>{ try{ await deleteMessage(user?.token, selected._id, msg._id); const d=await getGroup(user?.token, selected._id); setSelected(d);}catch(e){alert('Failed to delete');}}} className={`hover:underline ${mine? 'text-white' : 'text-slate-600'}`}>Delete</button>
+                              {(mine || isAI || !selected.isGlobal) && (
+                                <button onClick={async()=>{ try{ await deleteMessage(user?.token, selected._id, msg._id); const d=await getGroup(user?.token, selected._id); setSelected(d);}catch(e){alert('Failed to delete');}}} className={`hover:underline ${mine? 'text-white' : 'text-amber-700'}`}>Delete</button>
                               )}
                             </div>
                           </div>
@@ -195,9 +223,9 @@ const AdminGroups = () => {
                       <div className="p-2 text-sm text-slate-500">No messages yet.</div>
                     )}
                   </div>
-                  <div className="p-3 bg-slate-50 flex gap-2">
-                    <input value={messageText} onChange={(e)=>setMessageText(e.target.value)} placeholder="Write a message..." className="input flex-1" />
-                    <button onClick={async()=>{ if(!messageText.trim())return; try{ await postMessage(user?.token, selected._id, messageText.trim()); setMessageText(""); const d=await getGroup(user?.token, selected._id); setSelected(d);}catch(e){alert('Failed to send');}}} className="btn btn-primary">Send</button>
+                  <div className="p-3 bg-amber-50 border-t border-amber-200 flex gap-2">
+                    <input value={messageText} onChange={(e)=>setMessageText(e.target.value)} placeholder="Write a message..." className="px-4 py-2 border border-amber-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-300 flex-1" />
+                    <button onClick={async()=>{ if(!messageText.trim())return; try{ await postMessage(user?.token, selected._id, messageText.trim()); setMessageText(""); const d=await getGroup(user?.token, selected._id); setSelected(d);}catch(e){alert('Failed to send');}}} className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 text-white font-medium hover:from-amber-700 hover:to-amber-800 transition-all">Send</button>
                   </div>
                 </div>
               </div>
@@ -205,6 +233,34 @@ const AdminGroups = () => {
           )}
         </div>
       </div>
+      
+      {showMembers && selected && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setShowMembers(false)}>
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4 max-h-[80vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-slate-800 text-lg">Group Members</h3>
+              <button 
+                onClick={() => setShowMembers(false)} 
+                className="text-slate-400 hover:text-slate-600 text-xl"
+              >
+                ×
+              </button>
+            </div>
+            <p className="text-sm text-slate-600 mb-4">{selected.name}</p>
+            <div className="space-y-2">
+              {selected.members?.map((m)=> (
+                <div key={m.user} className="flex items-center justify-between border border-amber-200 rounded-xl px-3 py-2 bg-amber-50">
+                  <div>
+                    <p className="text-sm text-slate-800">{m.name}</p>
+                    {m.isAnonymous && <p className="text-[11px] text-slate-500">Anonymous{m.alias?` • ${m.alias}`:''}</p>}
+                  </div>
+                  <button onClick={()=>onRemoveMember(m.user)} className="px-2 py-1 rounded-lg text-xs font-medium text-rose-600 hover:bg-rose-50">Remove</button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

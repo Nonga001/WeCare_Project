@@ -3,10 +3,10 @@ import { useAuth } from "../../../context/AuthContext";
 import { getAdminReports } from "../../../services/aidService";
 
 const ReportCard = ({ title, value, trend }) => (
-  <div className="rounded-xl border border-slate-200 p-5">
-    <p className="text-sm text-slate-500">{title}</p>
-    <p className="mt-1 text-2xl font-bold text-slate-800">{value}</p>
-    {trend && <p className="text-xs text-slate-500">{trend}</p>}
+  <div className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-amber-100 p-5 shadow-sm hover:shadow-md transition-shadow">
+    <p className="text-sm text-amber-700">{title}</p>
+    <p className="mt-1 text-2xl font-bold text-amber-900">{value}</p>
+    {trend && <p className="text-xs text-amber-600">{trend}</p>}
   </div>
 );
 
@@ -54,7 +54,7 @@ const AdminReports = () => {
         <ReportCard title="Retention Rate" value={`${retention}%`} trend="" />
       </div>
 
-      <div className="rounded-xl border border-slate-200 p-5">
+      <div className="rounded-2xl border border-amber-200 bg-white dark:bg-slate-800 p-5 shadow-sm">
         <h3 className="font-semibold text-slate-800 mb-3">Visualizations</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
@@ -62,15 +62,15 @@ const AdminReports = () => {
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <span className="w-24 text-xs text-slate-500">Previous</span>
-                <div className="h-3 bg-slate-200 rounded w-full">
-                  <div className="h-3 bg-slate-500 rounded" style={{ width: `${Math.max(5, Math.min(100, ((vm.previousMonth || 0) / Math.max(1, vm.currentTotal || 1)) * 100))}%` }} />
+                <div className="h-3 bg-amber-200 rounded w-full">
+                  <div className="h-3 bg-amber-500 rounded" style={{ width: `${Math.max(5, Math.min(100, ((vm.previousMonth || 0) / Math.max(1, vm.currentTotal || 1)) * 100))}%` }} />
                 </div>
                 <span className="w-16 text-right text-xs text-slate-600">{vm.previousMonth}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-24 text-xs text-slate-500">Current</span>
-                <div className="h-3 bg-slate-200 rounded w-full">
-                  <div className="h-3 bg-violet-600 rounded" style={{ width: `${Math.max(5, Math.min(100, ((vm.currentTotal || 0) / Math.max(1, vm.currentTotal || 1)) * 100))}%` }} />
+                <div className="h-3 bg-amber-200 rounded w-full">
+                  <div className="h-3 bg-amber-700 rounded" style={{ width: `${Math.max(5, Math.min(100, ((vm.currentTotal || 0) / Math.max(1, vm.currentTotal || 1)) * 100))}%` }} />
                 </div>
                 <span className="w-16 text-right text-xs text-slate-600">{vm.currentTotal}</span>
               </div>
@@ -82,15 +82,15 @@ const AdminReports = () => {
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <span className="w-24 text-xs text-slate-500">Previous</span>
-                <div className="h-3 bg-slate-200 rounded w-full">
-                  <div className="h-3 bg-slate-500 rounded" style={{ width: `${Math.max(5, Math.min(100, ((fa.previousMonth || 0) / Math.max(1, fa.currentMonth || 1)) * 100))}%` }} />
+                <div className="h-3 bg-amber-200 rounded w-full">
+                  <div className="h-3 bg-amber-500 rounded" style={{ width: `${Math.max(5, Math.min(100, ((fa.previousMonth || 0) / Math.max(1, fa.currentMonth || 1)) * 100))}%` }} />
                 </div>
                 <span className="w-20 text-right text-xs text-slate-600">{fa.previousMonth.toLocaleString()}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-24 text-xs text-slate-500">Current</span>
-                <div className="h-3 bg-slate-200 rounded w-full">
-                  <div className="h-3 bg-emerald-600 rounded" style={{ width: `${Math.max(5, Math.min(100, ((fa.currentMonth || 0) / Math.max(1, fa.currentMonth || 1)) * 100))}%` }} />
+                <div className="h-3 bg-amber-200 rounded w-full">
+                  <div className="h-3 bg-amber-700 rounded" style={{ width: `${Math.max(5, Math.min(100, ((fa.currentMonth || 0) / Math.max(1, fa.currentMonth || 1)) * 100))}%` }} />
                 </div>
                 <span className="w-20 text-right text-xs text-slate-600">{fa.currentMonth.toLocaleString()}</span>
               </div>
@@ -102,15 +102,15 @@ const AdminReports = () => {
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <span className="w-24 text-xs text-slate-500">Previous</span>
-                <div className="h-3 bg-slate-200 rounded w-full">
-                  <div className="h-3 bg-slate-500 rounded" style={{ width: `${Math.max(5, Math.min(100, ((ed.previousMonthItems || 0) / Math.max(1, ed.currentMonthItems || 1)) * 100))}%` }} />
+                <div className="h-3 bg-amber-200 rounded w-full">
+                  <div className="h-3 bg-amber-500 rounded" style={{ width: `${Math.max(5, Math.min(100, ((ed.previousMonthItems || 0) / Math.max(1, ed.currentMonthItems || 1)) * 100))}%` }} />
                 </div>
                 <span className="w-16 text-right text-xs text-slate-600">{ed.previousMonthItems.toLocaleString()}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-24 text-xs text-slate-500">Current</span>
-                <div className="h-3 bg-slate-200 rounded w-full">
-                  <div className="h-3 bg-blue-600 rounded" style={{ width: `${Math.max(5, Math.min(100, ((ed.currentMonthItems || 0) / Math.max(1, ed.currentMonthItems || 1)) * 100))}%` }} />
+                <div className="h-3 bg-amber-200 rounded w-full">
+                  <div className="h-3 bg-amber-700 rounded" style={{ width: `${Math.max(5, Math.min(100, ((ed.currentMonthItems || 0) / Math.max(1, ed.currentMonthItems || 1)) * 100))}%` }} />
                 </div>
                 <span className="w-16 text-right text-xs text-slate-600">{ed.currentMonthItems.toLocaleString()}</span>
               </div>
@@ -120,8 +120,8 @@ const AdminReports = () => {
           <div>
             <p className="text-sm text-slate-600 mb-2">Retention</p>
             <div className="flex items-center gap-2">
-              <div className="h-3 bg-slate-200 rounded w-full">
-                <div className="h-3 bg-amber-500 rounded" style={{ width: `${Math.max(5, Math.min(100, retention))}%` }} />
+              <div className="h-3 bg-amber-200 rounded w-full">
+                <div className="h-3 bg-amber-600 rounded" style={{ width: `${Math.max(5, Math.min(100, retention))}%` }} />
               </div>
               <span className="w-12 text-right text-xs text-slate-600">{retention}%</span>
             </div>
@@ -129,7 +129,7 @@ const AdminReports = () => {
         </div>
       </div>
 
-      <div className="rounded-xl border border-slate-200 p-5">
+      <div className="rounded-2xl border border-amber-200 bg-white dark:bg-slate-800 p-5 shadow-sm">
         <h3 className="font-semibold text-slate-800 mb-3">Downloads</h3>
         <div className="flex flex-wrap gap-3">
           <button onClick={() => {
@@ -148,7 +148,7 @@ const AdminReports = () => {
             const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a'); a.href = url; a.download = 'admin_reports.csv'; a.click(); URL.revokeObjectURL(url);
-          }} className="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-medium hover:bg-slate-800">Export CSV</button>
+          }} className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 text-white text-sm font-medium hover:from-amber-700 hover:to-amber-800 transition-all">Export CSV</button>
           <button onClick={() => {
             const w = window.open('', '_blank');
             if (!w) return;
@@ -183,7 +183,7 @@ const AdminReports = () => {
               </html>`;
             w.document.write(html);
             w.document.close(); w.focus(); w.print(); w.close();
-          }} className="px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">Export PDF</button>
+          }} className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 text-white text-sm font-medium hover:from-emerald-700 hover:to-emerald-800 transition-all">Export PDF</button>
         </div>
       </div>
     </div>

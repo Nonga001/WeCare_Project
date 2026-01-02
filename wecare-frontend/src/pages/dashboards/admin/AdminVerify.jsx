@@ -57,7 +57,7 @@ const AdminVerify = () => {
   };
 
   const StudentCard = ({ student, showActions = false }) => (
-    <div className="border border-slate-200 rounded-xl p-4 mb-4">
+    <div className="border border-amber-200 rounded-2xl p-4 mb-4 bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-shadow">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <h4 className="font-semibold text-slate-800 mb-2">{student.name}</h4>
@@ -74,8 +74,8 @@ const AdminVerify = () => {
         </div>
       </div>
       {student.childDetails && (
-        <div className="mt-3 p-3 bg-slate-50 rounded-lg">
-          <p className="text-sm text-slate-700"><strong>Child Details:</strong> {student.childDetails}</p>
+        <div className="mt-3 p-3 bg-amber-50 border border-amber-100 rounded-lg">
+          <p className="text-sm text-amber-800"><strong>Child Details:</strong> {student.childDetails}</p>
         </div>
       )}
       {showActions && (
@@ -84,13 +84,13 @@ const AdminVerify = () => {
             onClick={() => handleApprove(student._id, student.name)} 
             className="px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700"
           >
-            ✅ Approve
+            Approve
           </button>
           <button 
             onClick={() => handleReject(student._id, student.name)} 
             className="px-4 py-2 rounded-lg bg-rose-600 text-white hover:bg-rose-700"
           >
-            ❌ Reject
+            Reject
           </button>
         </div>
       )}
@@ -118,7 +118,7 @@ const AdminVerify = () => {
 
     const getStatusText = () => {
       if (type === 'profile') {
-        return status ? '✅ Submitted' : '❌ Not Submitted';
+        return status ? 'Submitted' : 'Not Submitted';
       }
       
       if (!student.isApproved && !student.profileSubmitted) {
@@ -178,13 +178,13 @@ const AdminVerify = () => {
                       onClick={() => handleApprove(s._id, s.name)} 
                       className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 text-xs font-medium transition-colors"
                     >
-                      ✅ Approve
+                      Approve
                     </button>
                     <button 
                       onClick={() => handleReject(s._id, s.name)} 
                       className="px-3 py-1.5 rounded-lg bg-rose-600 text-white hover:bg-rose-700 text-xs font-medium transition-colors"
                     >
-                      ❌ Reject
+                      Reject
                     </button>
                   </div>
                 </td>
@@ -200,23 +200,43 @@ const AdminVerify = () => {
     <div className="space-y-4">
       {error && <p className="text-red-600 bg-red-50 rounded px-3 py-2">{error}</p>}
       <div className="flex items-center gap-3 flex-wrap">
-        <button onClick={() => setTab("pending")} className={`px-4 py-2 rounded-xl ${tab === "pending" ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-700"}`}>Pending Registration</button>
-        <button onClick={() => setTab("awaiting")} className={`px-4 py-2 rounded-xl ${tab === "awaiting" ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-700"}`}>Awaiting Profile Verification</button>
-        <button onClick={() => setTab("verified")} className={`px-4 py-2 rounded-xl ${tab === "verified" ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-700"}`}>Verified Students</button>
-        <button onClick={() => setTab("approved")} className={`px-4 py-2 rounded-xl ${tab === "approved" ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-700"}`}>Approved Student Moms</button>
+        <button 
+          onClick={() => setTab("pending")} 
+          className={`px-4 py-2 rounded-xl font-medium transition-all ${tab === "pending" ? "bg-gradient-to-r from-amber-600 to-amber-700 text-white" : "bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100"}`}
+        >
+          Pending Registration
+        </button>
+        <button 
+          onClick={() => setTab("awaiting")} 
+          className={`px-4 py-2 rounded-xl font-medium transition-all ${tab === "awaiting" ? "bg-gradient-to-r from-amber-600 to-amber-700 text-white" : "bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100"}`}
+        >
+          Awaiting Profile Verification
+        </button>
+        <button 
+          onClick={() => setTab("verified")} 
+          className={`px-4 py-2 rounded-xl font-medium transition-all ${tab === "verified" ? "bg-gradient-to-r from-amber-600 to-amber-700 text-white" : "bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100"}`}
+        >
+          Verified Students
+        </button>
+        <button 
+          onClick={() => setTab("approved")} 
+          className={`px-4 py-2 rounded-xl font-medium transition-all ${tab === "approved" ? "bg-gradient-to-r from-amber-600 to-amber-700 text-white" : "bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100"}`}
+        >
+          Approved Student Moms
+        </button>
       </div>
-      <div className="rounded-xl border border-slate-200 p-5">
+      <div className="rounded-2xl border border-amber-200 bg-white dark:bg-slate-800 p-5 shadow-sm">
         {loading ? (
           <p className="text-slate-500">Loading...</p>
         ) : tab === "pending" ? (
           <div>
-            <h3 className="text-lg font-semibold text-slate-800 mb-4">📝 Pending Registration</h3>
+            <h3 className="text-lg font-semibold text-slate-800 mb-4">Pending Registration</h3>
             <p className="text-sm text-slate-600 mb-4">Students who have registered but haven't been approved yet</p>
             <Table data={pendingRegistration} showActions={true} showProfileStatus={true} stage="unverified" />
           </div>
         ) : tab === "awaiting" ? (
           <div>
-            <h3 className="text-lg font-semibold text-slate-800 mb-4">⏳ Awaiting Profile Verification</h3>
+            <h3 className="text-lg font-semibold text-slate-800 mb-4">Awaiting Profile Verification</h3>
             <p className="text-sm text-slate-600 mb-4">Verified students who completed their profile (100%) and are waiting for admin approval</p>
             {awaitingProfileVerification.length === 0 ? (
               <p className="text-slate-500">No students awaiting profile verification.</p>
@@ -228,13 +248,13 @@ const AdminVerify = () => {
           </div>
         ) : tab === "verified" ? (
           <div>
-            <h3 className="text-lg font-semibold text-slate-800 mb-4">✅ Verified Students</h3>
+            <h3 className="text-lg font-semibold text-slate-800 mb-4">Verified Students</h3>
             <p className="text-sm text-slate-600 mb-4">All students from your university who are not pending verification (dynamic list)</p>
             <Table data={verifiedStudents} showActions={false} showProfileStatus={true} stage="verified" />
           </div>
         ) : (
           <div>
-            <h3 className="text-lg font-semibold text-slate-800 mb-4">🎉 Approved Student Moms</h3>
+            <h3 className="text-lg font-semibold text-slate-800 mb-4">Approved Student Moms</h3>
             <p className="text-sm text-slate-600 mb-4">Students whose profile has been approved by admin - they can access all features</p>
             <Table data={approvedStudentMoms} showActions={false} showProfileStatus={true} stage="approved" />
           </div>

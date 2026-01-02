@@ -1,21 +1,61 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
-import { updateAdminDepartment, changePassword as changePasswordApi } from "../../../services/userService";
+import { updateAdminDepartment, changePassword as changePasswordApi, getProfile } from "../../../services/userService";
 
 const AdminProfile = () => {
   const { user } = useAuth();
-  const [form, setForm] = useState({ name: "", university: "", email: "", department: "welfare", currentPassword: "", newPassword: "", confirmNewPassword: "" });
+  const [form, setForm] = useState({ name: "", university: "", email: "", department: "", currentPassword: "", newPassword: "", confirmNewPassword: "" });
   const [show, setShow] = useState({ next: false, confirm: false });
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [pendingDepartment, setPendingDepartment] = useState(null);
+  const [isUpdatingDept, setIsUpdatingDept] = useState(false);
+
+  // Debug log to check what's coming from user context
+  useEffect(() => {
+    console.log("AdminProfile - User data from context:", user);
+    console.log("AdminProfile - University field:", user?.university);
+  }, [user]);
 
   useEffect(() => {
+    const fetchProfileData = async () => {
+      if (!user?.token) return;
+      try {
+        const profileData = await getProfile(user.token);
+        console.log("AdminProfile - Fresh profile data from API:", profileData);
+        // Update form with fresh data
+        setForm((f) => ({
+          ...f,
+          name: profileData.name || "",
+          university: profileData.university || "",
+          email: profileData.email || "",
+          department: profileData.department || "",
+        }));
+      } catch (err) {
+        console.error("Failed to fetch profile:", err);
+        // Fallback to user context data
+        setForm((f)=>({
+          ...f,
+          name: user?.name || "",
+          university: user?.university || "",
+          email: user?.email || "",
+          department: user?.department || "",
+        }));
+      }
+    };
+    
+    fetchProfileData();
+  }, [user?.token]);
+
+  useEffect(() => {
+    // Ensure form is updated from context
     setForm((f)=>({
       ...f,
       name: user?.name || "",
       university: user?.university || "",
       email: user?.email || "",
-      department: user?.department || "welfare",
+      department: user?.department || "",
     }));
   }, [user?.name, user?.university, user?.email, user?.department]);
 
@@ -25,10 +65,41 @@ const AdminProfile = () => {
     try {
       setError(""); setMessage("");
       await updateAdminDepartment(user?.token, form.department);
-      setMessage("Department updated");
+      setMessage("Department updated successfully");
+      setShowConfirmModal(false);
+      setPendingDepartment(null);
       setTimeout(()=>setMessage(""), 3000);
     } catch (err) {
       setError(err.response?.data?.message || "Failed to update department");
+      setShowConfirmModal(false);
+    }
+  };
+
+  const handleDepartmentChange = (e) => {
+    const newDept = e.target.value;
+    if (newDept !== form.department) {
+      setPendingDepartment(newDept);
+      setShowConfirmModal(true);
+    }
+  };
+
+  const confirmDepartmentUpdate = async () => {
+    setIsUpdatingDept(true);
+    setForm({ ...form, department: pendingDepartment });
+    try {
+      setError(""); setMessage("");
+      await updateAdminDepartment(user?.token, pendingDepartment);
+      setMessage("Department updated successfully and is now permanent");
+      setShowConfirmModal(false);
+      setPendingDepartment(null);
+      setTimeout(()=>setMessage(""), 3000);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to update department");
+      setShowConfirmModal(false);
+      // Revert the form change
+      setForm((f) => ({ ...f, department: user?.department || "" }));
+    } finally {
+      setIsUpdatingDept(false);
     }
   };
 
@@ -65,37 +136,46 @@ const AdminProfile = () => {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2 space-y-6">
         {(message || error) && (
-          <div className={`${error?"bg-red-50 border-red-200 text-red-700":"bg-green-50 border-green-200 text-green-700"} border px-4 py-3 rounded`}>{error||message}</div>
+          <div className={`${error?"bg-red-50 border-red-200 text-red-700":"bg-amber-50 border-amber-200 text-amber-700"} border px-4 py-3 rounded-xl`}>{error||message}</div>
         )}
-        <div className="rounded-xl border border-slate-200 p-5">
+        <div className="rounded-2xl border border-amber-200 bg-white dark:bg-slate-800 p-5 shadow-sm">
           <h3 className="font-semibold text-slate-800 mb-4">Admin Details</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <input name="name" placeholder="Full Name" value={form.name} disabled className="w-full px-4 py-3 border rounded-xl bg-slate-50 text-slate-500" />
             <input name="university" placeholder="University" value={form.university} disabled className="w-full px-4 py-3 border rounded-xl bg-slate-50 text-slate-500" />
-            <select name="department" value={form.department} onChange={handleChange} className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300">
-              <option value="welfare">Welfare</option>
-              <option value="gender">Gender</option>
-              <option value="health">Health</option>
-            </select>
-            <input name="email" placeholder="Official Email" value={form.email} disabled className="w-full px-4 py-3 border rounded-xl bg-slate-50 text-slate-500" />
-            <div className="sm:col-span-2">
-              <button type="button" onClick={handleDepartmentUpdate} className="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-medium hover:bg-slate-800">Update Department</button>
+            <div>
+              <select 
+                name="department" 
+                value={form.department} 
+                onChange={handleDepartmentChange}
+                disabled={form.department && form.department.trim() !== ""}
+                className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 ${form.department && form.department.trim() !== "" ? "border-slate-200 bg-slate-50 text-slate-500 cursor-not-allowed" : "border-amber-200 focus:ring-amber-300"}`}
+              >
+                <option value="">Select Department</option>
+                <option value="welfare">Welfare</option>
+                <option value="gender">Gender</option>
+                <option value="health">Health</option>
+              </select>
+              <p className={`text-xs mt-1 ${form.department && form.department.trim() !== "" ? "text-emerald-600 font-medium" : "text-slate-600"}`}>
+                {form.department && form.department.trim() !== "" ? "✓ Department assigned and locked" : "💡 Once assigned, this department is permanent for your university"}
+              </p>
             </div>
+            <input name="email" placeholder="Official Email" value={form.email} disabled className="w-full px-4 py-3 border rounded-xl bg-slate-50 text-slate-500" />
           </div>
         </div>
 
-        <div className="rounded-xl border border-slate-200 p-5">
+        <div className="rounded-2xl border border-amber-200 bg-white dark:bg-slate-800 p-5 shadow-sm">
           <h3 className="font-semibold text-slate-800 mb-4">Security</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="relative">
-              <input name="currentPassword" type="password" placeholder="Current Password" value={form.currentPassword} onChange={handleChange} className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300" />
+              <input name="currentPassword" type="password" placeholder="Current Password" value={form.currentPassword} onChange={handleChange} className="w-full px-4 py-3 border border-amber-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-300" />
             </div>
             <div className="relative">
-              <input name="newPassword" type={show.next?"text":"password"} placeholder="New Password" value={form.newPassword} onChange={handleChange} className="w-full px-4 py-3 pr-12 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300" />
+              <input name="newPassword" type={show.next?"text":"password"} placeholder="New Password" value={form.newPassword} onChange={handleChange} className="w-full px-4 py-3 pr-12 border border-amber-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-300" />
               <button type="button" onClick={()=>setShow(s=>({...s, next:!s.next}))} className="absolute inset-y-0 right-0 px-3 text-slate-500">{show.next?"🙈":"👁️"}</button>
             </div>
             <div className="relative sm:col-span-2">
-              <input name="confirmNewPassword" type={show.confirm?"text":"password"} placeholder="Confirm New Password" value={form.confirmNewPassword} onChange={handleChange} className="w-full px-4 py-3 pr-12 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300" />
+              <input name="confirmNewPassword" type={show.confirm?"text":"password"} placeholder="Confirm New Password" value={form.confirmNewPassword} onChange={handleChange} className="w-full px-4 py-3 pr-12 border border-amber-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-300" />
               <button type="button" onClick={()=>setShow(s=>({...s, confirm:!s.confirm}))} className="absolute inset-y-0 right-0 px-3 text-slate-500">{show.confirm?"🙈":"👁️"}</button>
             </div>
           </div>
@@ -107,16 +187,74 @@ const AdminProfile = () => {
             <li className={/[^A-Za-z0-9]/.test(form.newPassword)?"text-emerald-600":"text-slate-500"}>• Special character</li>
           </ul>
           <div className="mt-3">
-            <button type="button" onClick={handlePasswordChange} className="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-medium hover:bg-slate-800">Update Password</button>
+            <button type="button" onClick={handlePasswordChange} className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 text-white text-sm font-medium hover:from-amber-700 hover:to-amber-800 transition-all">Update Password</button>
           </div>
         </div>
       </div>
 
       <div className="space-y-4">
-        <div className="rounded-xl border border-slate-200 p-5">
-          <h4 className="font-semibold text-slate-800 mb-2">Status</h4>
-          <p className="text-slate-600 text-sm">Approved by Super Admin</p>
+        <div className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-amber-100 dark:bg-slate-800 p-5 shadow-sm">
+          <h4 className="font-semibold text-slate-900 mb-3">Admin Information</h4>
+          <div className="space-y-3">
+            <div>
+              <p className="text-xs font-medium text-slate-700 uppercase">University</p>
+              <p className="text-slate-900 font-bold text-base mt-1">{form.university && form.university.trim() ? form.university : "Not set"}</p>
+            </div>
+            <div className="h-px bg-amber-300"></div>
+            <div>
+              <p className="text-xs font-medium text-slate-700 uppercase">Department</p>
+              <p className="text-slate-900 font-bold text-base mt-1 capitalize">{form.department || "Not set"}</p>
+            </div>
+            <div className="h-px bg-amber-300"></div>
+            <div>
+              <p className="text-xs font-medium text-slate-700 uppercase">Status</p>
+              <p className="text-emerald-700 font-bold text-base mt-1">Approved by Super Admin</p>
+            </div>
+          </div>
         </div>
+
+        {/* Confirmation Modal */}
+        {showConfirmModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+            <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border-2 border-amber-300">
+              <h3 className="text-xl font-bold text-slate-900 mb-2">Confirm Department Assignment</h3>
+              <p className="text-slate-700 mb-4">
+                You are about to assign the <span className="font-bold capitalize text-amber-700">{pendingDepartment}</span> department to yourself.
+              </p>
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
+                <p className="text-sm text-slate-700 font-medium">⚠️ Important Notes:</p>
+                <ul className="text-xs text-slate-600 mt-2 space-y-1 list-disc list-inside">
+                  <li>This assignment is <span className="font-bold">permanent</span></li>
+                  <li>Only one admin per department per university</li>
+                  <li>Other admins without departments cannot perform activities</li>
+                  <li>This action cannot be undone</li>
+                </ul>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowConfirmModal(false);
+                    setForm((f) => ({ ...f, department: user?.department || "" }));
+                    setPendingDepartment(null);
+                  }}
+                  disabled={isUpdatingDept}
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-medium hover:bg-slate-50 transition-all disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmDepartmentUpdate}
+                  disabled={isUpdatingDept}
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 text-white font-medium hover:from-amber-700 hover:to-amber-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isUpdatingDept ? "Confirming..." : "Yes, Confirm"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

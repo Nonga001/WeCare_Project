@@ -1,5 +1,5 @@
 import express from "express";
-import { protect } from "../middleware/authMiddleware.js";
+import { protect, requireAdminDepartment } from "../middleware/authMiddleware.js";
 import {
   createAidRequest,
   listMyAidRequests,
@@ -19,15 +19,15 @@ router.use(protect);
 router.post("/", createAidRequest);
 router.get("/mine", listMyAidRequests);
 
-// Admin
-router.get("/university", listUniversityAidRequests);
-router.patch("/:id/status", setAidStatus);
-router.patch("/:id/waiting", moveToWaiting);
-router.post("/:id/disburse", disburseAid);
+// Admin - require department assignment
+router.get("/university", requireAdminDepartment, listUniversityAidRequests);
+router.patch("/:id/status", requireAdminDepartment, setAidStatus);
+router.patch("/:id/waiting", requireAdminDepartment, moveToWaiting);
+router.post("/:id/disburse", requireAdminDepartment, disburseAid);
 
-// Stats
-router.get("/stats", getAidStats);
-router.get("/reports", getAdminReports);
+// Stats - require admin department
+router.get("/stats", requireAdminDepartment, getAidStats);
+router.get("/reports", requireAdminDepartment, getAdminReports);
 
 export default router;
 

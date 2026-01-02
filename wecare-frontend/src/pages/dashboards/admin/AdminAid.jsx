@@ -10,6 +10,7 @@ const AdminAid = () => {
   const [typeFilter, setTypeFilter] = useState("");
   const [error, setError] = useState("");
   const [stats, setStats] = useState(null);
+  const [expandedRequests, setExpandedRequests] = useState({});
 
   const load = async () => {
     try {
@@ -95,28 +96,28 @@ const AdminAid = () => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Balances */}
-      <div className="rounded-xl border border-slate-200 p-5 lg:col-span-2">
+      <div className="rounded-2xl border border-amber-200 bg-white dark:bg-slate-800 p-5 lg:col-span-2 shadow-sm">
         <h3 className="font-semibold text-slate-800 mb-3">Available Balances</h3>
         {balances ? (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="rounded-lg border border-slate-200 p-4">
-              <p className="text-sm text-slate-500">Financial Total</p>
-              <p className="text-xl font-semibold">KES {balances.financial.total.toLocaleString()}</p>
+            <div className="rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-amber-100 p-4">
+              <p className="text-sm text-amber-700">Financial Total</p>
+              <p className="text-xl font-semibold text-amber-900">KES {balances.financial.total.toLocaleString()}</p>
             </div>
-            <div className="rounded-lg border border-slate-200 p-4">
-              <p className="text-sm text-slate-500">Financial Balance</p>
-              <p className="text-xl font-semibold">KES {balances.financial.balance.toLocaleString()}</p>
+            <div className="rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-amber-100 p-4">
+              <p className="text-sm text-amber-700">Financial Balance</p>
+              <p className="text-xl font-semibold text-amber-900">KES {balances.financial.balance.toLocaleString()}</p>
             </div>
-            <div className="rounded-lg border border-slate-200 p-4">
-              <p className="text-sm text-slate-500">Essentials Balance (items)</p>
-              <p className="text-xl font-semibold">{balances.essentials.balanceItems.toLocaleString()}</p>
+            <div className="rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-amber-100 p-4">
+              <p className="text-sm text-amber-700">Essentials Balance (items)</p>
+              <p className="text-xl font-semibold text-amber-900">{balances.essentials.balanceItems.toLocaleString()}</p>
             </div>
           </div>
         ) : (
           <p className="text-sm text-slate-500">Loading balances...</p>
         )}
       </div>
-      <div className="rounded-xl border border-slate-200 p-5">
+      <div className="rounded-2xl border border-amber-200 bg-white dark:bg-slate-800 p-5 shadow-sm">
         <h3 className="font-semibold text-slate-800 mb-3">Aid Requests</h3>
         
         {error && (
@@ -126,53 +127,80 @@ const AdminAid = () => {
         )}
         
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-          <select value={typeFilter} onChange={(e)=>setTypeFilter(e.target.value)} className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-300">
+          <select value={typeFilter} onChange={(e)=>setTypeFilter(e.target.value)} className="px-4 py-2 border border-amber-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-300">
             <option value="">All Types</option>
             <option value="Financial">Financial</option>
             <option value="Essentials">Essentials</option>
           </select>
           <div></div>
         </div>
-        <div className="space-y-3">
-          {filtered.map((r) => (
-            <div key={r._id} className="rounded-lg border border-slate-200 p-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-                <p className="font-medium text-slate-800">{r.type}</p>
-                <p className="text-slate-700">{r.detail}</p>
-                <p className="text-slate-700">Requester: {r.requester}</p>
-                <p className="text-xs">
-                  Status: <span className={`font-medium ${
-                    r.status === 'pending' ? 'text-yellow-600' :
-                    r.status === 'approved' ? 'text-blue-600' :
-                    r.status === 'waiting' ? 'text-orange-600' :
-                    r.status === 'disbursed' ? 'text-green-600' :
-                    r.status === 'rejected' ? 'text-red-600' : 'text-gray-600'
-                  }`}>{r.status}</span>
-                </p>
+        <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+          {filtered.slice(0, 5).map((r) => (
+            <div key={r._id} className="rounded-xl border border-amber-200 bg-white dark:bg-slate-800 p-4 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <span className="font-medium text-slate-800 px-3 py-1 rounded-lg bg-amber-50 whitespace-nowrap">{r.type}</span>
+                  <p className="text-slate-700 font-medium">{r.requester}</p>
+                  <p className="text-xs px-2 py-1 rounded-lg font-medium whitespace-nowrap" style={{
+                    backgroundColor: r.status === 'pending' ? '#fef3c7' :
+                      r.status === 'approved' ? '#dbeafe' :
+                      r.status === 'waiting' ? '#fed7aa' :
+                      r.status === 'disbursed' ? '#dcfce7' :
+                      r.status === 'rejected' ? '#fee2e2' : '#f3f4f6',
+                    color: r.status === 'pending' ? '#92400e' :
+                      r.status === 'approved' ? '#1e40af' :
+                      r.status === 'waiting' ? '#92400e' :
+                      r.status === 'disbursed' ? '#166534' :
+                      r.status === 'rejected' ? '#991b1b' : '#374151'
+                  }}>{r.status}</p>
+                </div>
+                <button 
+                  onClick={() => setExpandedRequests(prev => ({ ...prev, [r._id]: !prev[r._id] }))} 
+                  className="px-3 py-1 rounded-lg text-sm font-medium bg-amber-100 text-amber-700 hover:bg-amber-200 transition-colors whitespace-nowrap"
+                >
+                  {expandedRequests[r._id] ? 'Show Less' : 'Show More'}
+                </button>
               </div>
-              <p className="text-sm text-slate-600 mt-2">Reason: {r.reason}</p>
-              <p className="text-xs text-slate-400 mt-1">Created: {new Date(r.createdAt).toLocaleString()}</p>
-              {r.approvedAt && <p className="text-xs text-slate-400">Approved: {new Date(r.approvedAt).toLocaleString()}</p>}
-              {r.disbursedAt && <p className="text-xs text-slate-400">Disbursed: {new Date(r.disbursedAt).toLocaleString()}</p>}
+              
+              {expandedRequests[r._id] && (
+                <div className="mt-4 pt-4 border-t border-amber-100">
+                  <div className="space-y-2 mb-4 text-sm">
+                    <p className="text-slate-600"><strong>Details:</strong> {r.detail}</p>
+                    <p className="text-slate-600"><strong>Reason:</strong> {r.reason}</p>
+                    <p className="text-xs text-slate-500"><strong>Created:</strong> {new Date(r.createdAt).toLocaleString()}</p>
+                    {r.approvedAt && <p className="text-xs text-slate-500"><strong>Approved:</strong> {new Date(r.approvedAt).toLocaleString()}</p>}
+                    {r.disbursedAt && <p className="text-xs text-slate-500"><strong>Disbursed:</strong> {new Date(r.disbursedAt).toLocaleString()}</p>}
+                    {r.items && r.items.length > 0 && (
+                      <div><strong>Items:</strong>
+                        <ul className="ml-4 mt-1">
+                          {r.items.map((item, idx) => (
+                            <li key={idx} className="text-slate-600">• {item.name} x{item.quantity}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
               
               <div className="mt-3 flex flex-wrap gap-2">
                 {r.status === 'pending' && (
                   <>
-                    <button onClick={()=>approve(r._id)} className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700">✅ Approve</button>
-                    <button onClick={()=>reject(r._id)} className="px-4 py-2 rounded-lg bg-rose-600 text-white text-sm hover:bg-rose-700">❌ Reject</button>
+                    <button onClick={()=>approve(r._id)} className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 text-white text-sm font-medium hover:from-amber-700 hover:to-amber-800 transition-all">Approve</button>
+                    <button onClick={()=>reject(r._id)} className="px-4 py-2 rounded-xl bg-rose-600 text-white text-sm font-medium hover:bg-rose-700">Reject</button>
                   </>
                 )}
                 {r.status === 'approved' && (
-                  <button onClick={()=>moveToWaitingStatus(r._id)} className="px-4 py-2 rounded-lg bg-orange-600 text-white text-sm hover:bg-orange-700">⏳ Move to Waiting</button>
+                  <button onClick={()=>moveToWaitingStatus(r._id)} className="px-4 py-2 rounded-xl bg-gradient-to-r from-orange-600 to-amber-600 text-white text-sm font-medium hover:from-orange-700 hover:to-amber-700 transition-all">Move to Waiting</button>
                 )}
                 {r.status === 'waiting' && (
-                  <button onClick={()=>disburse(r._id)} className="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm hover:bg-emerald-700">💰 Disburse</button>
+                  <button onClick={()=>disburse(r._id)} className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 text-white text-sm font-medium hover:from-emerald-700 hover:to-emerald-800 transition-all">Disburse</button>
                 )}
                 {r.status === 'rejected' && (
-                  <span className="px-4 py-2 rounded-lg bg-gray-100 text-gray-600 text-sm">No actions available</span>
+                  <span className="px-4 py-2 rounded-xl bg-amber-50 text-amber-700 text-sm font-medium border border-amber-200">No actions available</span>
                 )}
-                {r.status === 'disbursed' && (
-                  <span className="px-4 py-2 rounded-lg bg-green-100 text-green-600 text-sm">✅ Completed</span>
+                {r.status === 'disbursed' && expandedRequests[r._id] && (
+                  <span className="px-4 py-2 rounded-xl bg-emerald-50 text-emerald-700 text-sm font-medium border border-emerald-200">Completed</span>
                 )}
               </div>
             </div>
@@ -180,27 +208,27 @@ const AdminAid = () => {
         </div>
       </div>
 
-      <div className="rounded-xl border border-slate-200 p-5">
+      <div className="rounded-2xl border border-amber-200 bg-white dark:bg-slate-800 p-5 shadow-sm">
         <h3 className="font-semibold text-slate-800 mb-3">Distribution Tracker</h3>
         {!stats ? (
           <p className="text-sm text-slate-600">Loading distribution stats...</p>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="rounded-lg border border-slate-200 p-4 text-center">
-              <p className="text-xs text-slate-500">Pending</p>
-              <p className="text-lg font-semibold text-slate-800">{stats.pending}</p>
+            <div className="rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-amber-100 p-4 text-center">
+              <p className="text-xs text-amber-700">Pending</p>
+              <p className="text-lg font-semibold text-amber-900">{stats.pending}</p>
             </div>
-            <div className="rounded-lg border border-slate-200 p-4 text-center">
-              <p className="text-xs text-slate-500">Approved</p>
-              <p className="text-lg font-semibold text-slate-800">{stats.approved}</p>
+            <div className="rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-amber-100 p-4 text-center">
+              <p className="text-xs text-amber-700">Approved</p>
+              <p className="text-lg font-semibold text-amber-900">{stats.approved}</p>
             </div>
-            <div className="rounded-lg border border-slate-200 p-4 text-center">
-              <p className="text-xs text-slate-500">Waiting</p>
-              <p className="text-lg font-semibold text-slate-800">{stats.waiting}</p>
+            <div className="rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-amber-100 p-4 text-center">
+              <p className="text-xs text-amber-700">Waiting</p>
+              <p className="text-lg font-semibold text-amber-900">{stats.waiting}</p>
             </div>
-            <div className="rounded-lg border border-slate-200 p-4 text-center">
-              <p className="text-xs text-slate-500">Disbursed</p>
-              <p className="text-lg font-semibold text-slate-800">{stats.disbursed}</p>
+            <div className="rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-amber-100 p-4 text-center">
+              <p className="text-xs text-amber-700">Disbursed</p>
+              <p className="text-lg font-semibold text-amber-900">{stats.disbursed}</p>
             </div>
           </div>
         )}
@@ -209,9 +237,9 @@ const AdminAid = () => {
             <h4 className="font-medium text-slate-700 mb-2">Essentials Inventory</h4>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
               {balances.essentials.inventory.map(item => (
-                <div key={item.name} className="border border-slate-200 rounded-lg px-3 py-2 flex justify-between">
-                  <span className="text-slate-700">{item.name}</span>
-                  <span className="text-slate-900 font-medium">{item.available}</span>
+                <div key={item.name} className="border border-amber-200 rounded-xl px-3 py-2 flex justify-between bg-amber-50">
+                  <span className="text-amber-700">{item.name}</span>
+                  <span className="text-amber-900 font-medium">{item.available}</span>
                 </div>
               ))}
             </div>

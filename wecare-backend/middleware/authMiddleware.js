@@ -39,6 +39,22 @@ export const requireApproved = (req, res, next) => {
   return next();
 };
 
+// Require admin to have a department assigned
+export const requireAdminDepartment = (req, res, next) => {
+  // Superadmin bypass
+  if (req.user && req.user.role === "superadmin") return next();
+  // Only check for admins
+  if (req.user && req.user.role === "admin") {
+    if (!req.user.department || !["welfare", "gender", "health"].includes(req.user.department)) {
+      return res.status(403).json({ 
+        message: "You must assign yourself a department before performing administrative activities. Please complete your profile setup.",
+        requiresDepartment: true
+      });
+    }
+  }
+  return next();
+};
+
 export const verifySocketToken = (token) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);

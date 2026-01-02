@@ -535,25 +535,25 @@ const DashboardLayout = ({ title, children }) => {
                   {/* Admin Navigation */}
                   {isAdminDashboard && user?.role === 'admin' && (
                     <>
-                      <NavLink to="/dashboard/admin" end onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                      <NavLink to="/dashboard/admin" end onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-amber-600 to-amber-700 text-white shadow' : 'text-slate-800 hover:bg-amber-50 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
                         <span className="text-sm font-medium">Home</span>
                       </NavLink>
-                      <NavLink to="/dashboard/admin/profile" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                      <NavLink to="/dashboard/admin/profile" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-amber-600 to-amber-700 text-white shadow' : 'text-slate-800 hover:bg-amber-50 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
                         <span className="text-sm font-medium">Profile</span>
                       </NavLink>
-                      <NavLink to="/dashboard/admin/verify" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                      <NavLink to="/dashboard/admin/verify" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-amber-600 to-amber-700 text-white shadow' : 'text-slate-800 hover:bg-amber-50 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
                         <span className="text-sm font-medium">Verify</span>
                       </NavLink>
-                      <NavLink to="/dashboard/admin/aid" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                      <NavLink to="/dashboard/admin/aid" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-amber-600 to-amber-700 text-white shadow' : 'text-slate-800 hover:bg-amber-50 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
                         <span className="text-sm font-medium">Aid</span>
                       </NavLink>
-                      <NavLink to="/dashboard/admin/groups" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                      <NavLink to="/dashboard/admin/groups" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-amber-600 to-amber-700 text-white shadow' : 'text-slate-800 hover:bg-amber-50 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
                         <span className="text-sm font-medium">Groups</span>
                       </NavLink>
-                      <NavLink to="/dashboard/admin/reports" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                      <NavLink to="/dashboard/admin/reports" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-amber-600 to-amber-700 text-white shadow' : 'text-slate-800 hover:bg-amber-50 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
                         <span className="text-sm font-medium">Reports</span>
                       </NavLink>
-                      <NavLink to="/dashboard/admin/notifications" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                      <NavLink to="/dashboard/admin/notifications" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-amber-600 to-amber-700 text-white shadow' : 'text-slate-800 hover:bg-amber-50 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
                         <span className="text-sm font-medium">Notifications</span>
                       </NavLink>
                     </>
@@ -562,22 +562,22 @@ const DashboardLayout = ({ title, children }) => {
                   {/* Donor Navigation */}
                   {isDonorDashboard && user?.role === 'donor' && (
                     <>
-                      <NavLink to="/dashboard/donor" end onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                      <NavLink to="/dashboard/donor" end onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-stone-600 to-stone-700 text-white shadow' : 'text-slate-800 hover:bg-stone-50 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
                         <span className="text-sm font-medium">Home</span>
                       </NavLink>
-                      <NavLink to="/dashboard/donor/profile" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                      <NavLink to="/dashboard/donor/profile" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-stone-600 to-stone-700 text-white shadow' : 'text-slate-800 hover:bg-stone-50 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
                         <span className="text-sm font-medium">Profile</span>
                       </NavLink>
-                      <NavLink to="/dashboard/donor/donations" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                      <NavLink to="/dashboard/donor/donations" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-stone-600 to-stone-700 text-white shadow' : 'text-slate-800 hover:bg-stone-50 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
                         <span className="text-sm font-medium">Donations</span>
                       </NavLink>
-                      <NavLink to="/dashboard/donor/browse" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                      <NavLink to="/dashboard/donor/browse" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-stone-600 to-stone-700 text-white shadow' : 'text-slate-800 hover:bg-stone-50 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
                         <span className="text-sm font-medium">Browse</span>
                       </NavLink>
-                      <NavLink to="/dashboard/donor/reports" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                      <NavLink to="/dashboard/donor/reports" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-stone-600 to-stone-700 text-white shadow' : 'text-slate-800 hover:bg-stone-50 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
                         <span className="text-sm font-medium">Reports</span>
                       </NavLink>
-                      <NavLink to="/dashboard/donor/notifications" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                      <NavLink to="/dashboard/donor/notifications" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-stone-600 to-stone-700 text-white shadow' : 'text-slate-800 hover:bg-stone-50 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
                         <span className="text-sm font-medium">Notifications</span>
                       </NavLink>
                     </>
@@ -586,22 +586,22 @@ const DashboardLayout = ({ title, children }) => {
                   {/* SuperAdmin Navigation */}
                   {isSuperAdminDashboard && user?.role === 'superadmin' && (
                     <>
-                      <NavLink to="/dashboard/superadmin" end onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                      <NavLink to="/dashboard/superadmin" end onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-indigo-600 to-red-700 text-white shadow' : 'text-slate-800 hover:bg-indigo-50 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
                         <span className="text-sm font-medium">Home</span>
                       </NavLink>
-                      <NavLink to="/dashboard/superadmin/profile" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                      <NavLink to="/dashboard/superadmin/profile" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-indigo-600 to-red-700 text-white shadow' : 'text-slate-800 hover:bg-indigo-50 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
                         <span className="text-sm font-medium">Profile</span>
                       </NavLink>
-                      <NavLink to="/dashboard/superadmin/users" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                      <NavLink to="/dashboard/superadmin/users" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-indigo-600 to-red-700 text-white shadow' : 'text-slate-800 hover:bg-indigo-50 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
                         <span className="text-sm font-medium">Users</span>
                       </NavLink>
-                      <NavLink to="/dashboard/superadmin/settings" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                      <NavLink to="/dashboard/superadmin/settings" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-indigo-600 to-red-700 text-white shadow' : 'text-slate-800 hover:bg-indigo-50 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
                         <span className="text-sm font-medium">Settings</span>
                       </NavLink>
-                      <NavLink to="/dashboard/superadmin/analytics" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                      <NavLink to="/dashboard/superadmin/analytics" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-indigo-600 to-red-700 text-white shadow' : 'text-slate-800 hover:bg-indigo-50 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
                         <span className="text-sm font-medium">Analytics</span>
                       </NavLink>
-                      <NavLink to="/dashboard/superadmin/notifications" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-green-500 to-lime-600 text-white shadow' : 'text-slate-800 hover:bg-white/60 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                      <NavLink to="/dashboard/superadmin/notifications" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-indigo-600 to-red-700 text-white shadow' : 'text-slate-800 hover:bg-indigo-50 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
                         <span className="text-sm font-medium">Notifications</span>
                       </NavLink>
                     </>

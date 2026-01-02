@@ -4,7 +4,22 @@ import bcrypt from "bcryptjs";
 // Example user profile route
 export const getProfile = async (req, res) => {
   try {
-    res.json(req.user);
+    // Fetch fresh user data from database to ensure all fields are included
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.json({
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      isApproved: user.isApproved,
+      university: user.university,
+      department: user.department,
+      organization: user.organization,
+      phone: user.phone,
+    });
   } catch (err) {
     res.status(500).json({ message: "Something went wrong" });
   }
@@ -22,9 +37,24 @@ export const updateAdminProfile = async (req, res) => {
     }
     const user = await User.findById(req.user._id);
     if (!user) return res.status(404).json({ message: "User not found" });
+    
+    // Check if another admin in the same university already has this department
+    const duplicateAdmin = await User.findOne({
+      role: "admin",
+      university: user.university,
+      department: department,
+      _id: { $ne: user._id } // Exclude current user
+    });
+    
+    if (duplicateAdmin) {
+      return res.status(400).json({ 
+        message: `Another admin in ${user.university} already manages the ${department} department` 
+      });
+    }
+    
     user.department = department;
     await user.save();
-    res.json({ message: "Department updated", user });
+    res.json({ message: "Department updated", user: { id: user._id, name: user.name, department: user.department, university: user.university } });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
   }
@@ -71,6 +101,37 @@ export const approveAdmin = async (req, res) => {
     admin.isApproved = true;
     await admin.save();
     res.json({ message: "Admin approved" });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+// Superadmin resets admin department assignment
+export const resetAdminDepartment = async (req, res) => {
+  try {
+    if (req.user.role !== "superadmin") {
+      return res.status(403).json({ message: "Only superadmin can reset admin departments" });
+    }
+    const { adminId } = req.params;
+    const admin = await User.findById(adminId);
+    if (!admin || admin.role !== "admin") {
+      return res.status(404).json({ message: "Admin not found" });
+    }
+    
+    const oldDepartment = admin.department;
+    admin.department = undefined;
+    await admin.save();
+    
+    res.json({ 
+      message: "Admin department reset successfully", 
+      admin: { 
+        id: admin._id, 
+        name: admin.name, 
+        university: admin.university,
+        department: admin.department,
+        oldDepartment: oldDepartment
+      } 
+    });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
   }

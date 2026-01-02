@@ -6,6 +6,12 @@ export const getAuthHeaders = (token) => ({
   headers: { Authorization: `Bearer ${token}` },
 });
 
+// Get current user profile
+export const getProfile = async (token) => {
+  const res = await axios.get(`${API_URL}/profile`, getAuthHeaders(token));
+  return res.data;
+};
+
 export const listUsers = async (token) => {
   const res = await axios.get(API_URL, getAuthHeaders(token));
   return res.data;
@@ -65,6 +71,12 @@ export const getProfileCompletion = async (token) => {
 // Admin: update department
 export const updateAdminDepartment = async (token, department) => {
   const res = await axios.patch(`${API_URL}/profile/admin`, { department }, getAuthHeaders(token));
+  return res.data;
+};
+
+// Superadmin: reset admin department
+export const resetAdminDepartmentByAdmin = async (token, adminId) => {
+  const res = await axios.post(`${API_URL}/admin/${adminId}/reset-department`, {}, getAuthHeaders(token));
   return res.data;
 };
 

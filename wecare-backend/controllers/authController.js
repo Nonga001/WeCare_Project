@@ -199,6 +199,8 @@ export const login = async (req, res) => {
           email: user.email,
           role: user.role,
           isApproved: user.isApproved,
+          university: user.university,
+          department: user.department,
         },
       });
     }
@@ -217,6 +219,9 @@ export const login = async (req, res) => {
         email: user.email,
         role: user.role,
         isApproved: user.isApproved,
+        university: user.university,
+        department: user.department,
+        organization: user.organization,
       },
     });
   } catch (err) {
