@@ -51,13 +51,19 @@ io.on("connection", (socket) => {
     const token = socket.handshake?.auth?.token;
     if (!token) return socket.disconnect(true);
     // Lazily import to avoid circular
-    import("./middleware/authMiddleware.js").then(({ verifySocketToken }) => {
+    import("./middleware/authMiddleware.js").then(async ({ verifySocketToken }) => {
       const payload = verifySocketToken(token);
       if (!payload) return socket.disconnect(true);
       const userId = payload.id;
       const role = payload.role;
       if (userId) socket.join(`user:${userId}`);
       if (role) socket.join(`role:${role}`);
+      
+      // Join all groups the user is a member of
+      try {
+        const userGroups = await Group.find({ 'members.user': userId });
+        userGroups.forEach(g => socket.join(`group:${g._id}`));
+      } catch {}
     }).catch(() => socket.disconnect(true));
   } catch {
     socket.disconnect(true);

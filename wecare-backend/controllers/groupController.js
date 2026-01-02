@@ -1,5 +1,7 @@
 import Group from "../models/Group.js";
 import User from "../models/User.js";
+import { generateGroupResponse, shouldTriggerAIResponse } from "../services/groqService.js";
+import { io } from "../server.js";
 
 const canModerate = (user, group) => {
   if (!user || !group) return false;
@@ -60,8 +62,9 @@ export const getGroup = async (req, res) => {
         return {
           _id: msg._id,
           sender: senderId,
-          senderName,
+          senderName: msg.isAIGenerated ? "AI Assistant" : senderName,
           text: msg.text,
+          isAIGenerated: msg.isAIGenerated || false,
           createdAt: msg.createdAt,
         };
       }),
@@ -191,6 +194,76 @@ export const postMessage = async (req, res) => {
     if (!isMember && !isMod) return res.status(403).json({ message: "Join or moderate the group to post messages" });
     group.messages.push({ sender: req.user._id, text: text.trim() });
     await group.save();
+    
+    // Emit new message via socket
+    if (io) {
+      io.to(`group:${id}`).emit("group:message", {
+        groupId: id,
+        message: {
+          _id: group.messages[group.messages.length - 1]._id,
+          sender: req.user._id,
+          senderName: req.user.name,
+          text: text.trim(),
+          isAIGenerated: false,
+          createdAt: new Date()
+        }
+      });
+    }
+    
+    // Check if AI should respond (no activity for 3 minutes, with at least 2 messages)
+    const messageCount = group.messages.length;
+    if (messageCount >= 2) {
+      setTimeout(async () => {
+        try {
+          const freshGroup = await Group.findById(id).populate("messages.sender", "name");
+          if (!freshGroup || freshGroup.messages.length === 0) return;
+          
+          const lastMessage = freshGroup.messages[freshGroup.messages.length - 1];
+          if (!lastMessage || lastMessage.isAIGenerated) return; // Don't respond to AI messages
+          
+          const timeSinceLastMsg = Date.now() - new Date(lastMessage.createdAt).getTime();
+          const minutesSinceLastMsg = timeSinceLastMsg / (1000 * 60);
+          
+          if (minutesSinceLastMsg >= 3) {
+            // Format messages for AI (last 20)
+            const formattedMessages = freshGroup.messages.slice(-20).map(msg => ({
+              senderName: msg.sender?.name || "User",
+              text: msg.text,
+              createdAt: msg.createdAt
+            }));
+            
+            const aiResponse = await generateGroupResponse(formattedMessages, freshGroup.name);
+            
+            // Post AI response as system user
+            freshGroup.messages.push({
+              sender: req.user._id,
+              text: `🤖 AI Assistant: ${aiResponse}`,
+              isAIGenerated: true
+            });
+            freshGroup.lastAIResponseAt = new Date();
+            await freshGroup.save();
+            
+            // Emit AI message
+            if (io) {
+              io.to(`group:${id}`).emit("group:message", {
+                groupId: id,
+                message: {
+                  _id: freshGroup.messages[freshGroup.messages.length - 1]._id,
+                  sender: null,
+                  senderName: "AI Assistant",
+                  text: `🤖 ${aiResponse}`,
+                  isAIGenerated: true,
+                  createdAt: new Date()
+                }
+              });
+            }
+          }
+        } catch (err) {
+          console.error("AI response error:", err.message);
+        }
+      }, 3 * 60 * 1000); // 3 minutes
+    }
+    
     res.status(201).json({ message: "Posted" });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });

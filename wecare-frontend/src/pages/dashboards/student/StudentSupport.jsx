@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import { listGroups, joinGroup, leaveGroup, getGroup, postMessage, deleteMessage } from "../../../services/groupService";
+import { useSocket } from "../../../context/SocketContext";
 
 const StudentSupport = () => {
   const { user } = useAuth();
+  const { socketRef } = useSocket();
   const [uniGroups, setUniGroups] = useState([]);
   const [globalGroups, setGlobalGroups] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -30,6 +32,26 @@ const StudentSupport = () => {
   };
 
   useEffect(() => { if (user?.token) load(); }, [user?.token]);
+
+  // Listen for real-time group messages via socket
+  useEffect(() => {
+    const s = socketRef?.current;
+    if (!s || !openGroup) return;
+
+    const onGroupMessage = (data) => {
+      if (String(data.groupId) === String(openGroup._id)) {
+        setOpenGroup(prev => ({
+          ...prev,
+          messages: [...(prev.messages || []), data.message]
+        }));
+      }
+    };
+
+    s.on("group:message", onGroupMessage);
+    return () => {
+      try { s.off("group:message", onGroupMessage); } catch {}
+    };
+  }, [socketRef?.current, openGroup?._id]);
 
   const onJoin = async (id, anonymous) => {
     try {
@@ -148,7 +170,7 @@ const StudentSupport = () => {
               <div className="border rounded-xl overflow-hidden flex flex-col h-full">
                 <div className="flex-1 max-h-[480px] lg:max-h-[520px] overflow-y-auto p-3 space-y-2 bg-white" style={{scrollbarWidth:'thin'}}>
                   {openGroup.messages?.length ? openGroup.messages.map((msg) => {
-                    const mine = msg.sender === user?._id;
+                    const mine = !msg.isAIGenerated && msg.sender === user?._id;
                     return (
                       <div key={msg._id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
                         <div className={`max-w-[80%] rounded-2xl px-3 py-2 ${mine ? 'bg-amber-700 text-white rounded-br-sm' : 'bg-slate-100 text-slate-800 rounded-bl-sm'}`}>

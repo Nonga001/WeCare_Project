@@ -10,6 +10,7 @@ const memberSchema = new mongoose.Schema({
 const messageSchema = new mongoose.Schema({
   sender: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   text: { type: String, required: true },
+  isAIGenerated: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now }
 });
 
@@ -21,7 +22,8 @@ const groupSchema = new mongoose.Schema(
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     moderators: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     members: [memberSchema],
-    messages: [messageSchema]
+    messages: [messageSchema],
+    lastAIResponseAt: { type: Date }
   },
   { timestamps: true }
 );
