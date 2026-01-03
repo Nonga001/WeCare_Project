@@ -369,27 +369,27 @@ const DashboardLayout = ({ title, children }) => {
                   <NavLink
                     to="/dashboard/donor"
                     end
-                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-semibold transition ${isActive ? 'bg-gradient-to-r from-stone-700 to-stone-800 text-white shadow' : 'text-stone-800 hover:bg-stone-50 dark:text-stone-100 dark:hover:bg-slate-800/50'}`}
                   >Home</NavLink>
                   <NavLink
                     to="/dashboard/donor/profile"
-                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-semibold transition ${isActive ? 'bg-gradient-to-r from-stone-700 to-stone-800 text-white shadow' : 'text-stone-800 hover:bg-stone-50 dark:text-stone-100 dark:hover:bg-slate-800/50'}`}
                   >Profile</NavLink>
                   <NavLink
                     to="/dashboard/donor/donations"
-                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-semibold transition ${isActive ? 'bg-gradient-to-r from-stone-700 to-stone-800 text-white shadow' : 'text-stone-800 hover:bg-stone-50 dark:text-stone-100 dark:hover:bg-slate-800/50'}`}
                   >Donations</NavLink>
                   <NavLink
                     to="/dashboard/donor/browse"
-                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-semibold transition ${isActive ? 'bg-gradient-to-r from-stone-700 to-stone-800 text-white shadow' : 'text-stone-800 hover:bg-stone-50 dark:text-stone-100 dark:hover:bg-slate-800/50'}`}
                   >Browse</NavLink>
                   <NavLink
                     to="/dashboard/donor/reports"
-                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-semibold transition ${isActive ? 'bg-gradient-to-r from-stone-700 to-stone-800 text-white shadow' : 'text-stone-800 hover:bg-stone-50 dark:text-stone-100 dark:hover:bg-slate-800/50'}`}
                   >Reports</NavLink>
                   <NavLink
                     to="/dashboard/donor/notifications"
-                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-semibold transition ${isActive ? 'bg-gradient-to-r from-stone-700 to-stone-800 text-white shadow' : 'text-stone-800 hover:bg-stone-50 dark:text-stone-100 dark:hover:bg-slate-800/50'}`}
                   >Notifications</NavLink>
                 </nav>
               )}

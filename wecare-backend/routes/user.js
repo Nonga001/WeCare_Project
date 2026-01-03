@@ -1,6 +1,6 @@
 import express from "express";
 import multer from "multer";
-import { getProfile, approveAdmin, approveStudent, listUsers, setSuspended, listStudentsForAdmin, rejectStudent, getAdminStats, updateStudentProfile, submitProfileForApproval, getProfileCompletion, updateAdminProfile, changePassword, resetAdminDepartment } from "../controllers/userController.js";
+import { getProfile, approveAdmin, approveStudent, listUsers, setSuspended, listStudentsForAdmin, rejectStudent, getAdminStats, updateStudentProfile, updateDonorProfile, submitProfileForApproval, getProfileCompletion, updateAdminProfile, changePassword, resetAdminDepartment } from "../controllers/userController.js";
 import { protect, requireAdminDepartment } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
@@ -30,7 +30,12 @@ router.get("/admin/stats", protect, requireAdminDepartment, getAdminStats);
 
 // Student profile management
 // Accept optional file upload named 'documents' when updating profile
-router.patch("/profile", protect, upload.single('documents'), updateStudentProfile);
+router.patch("/profile", protect, upload.single('documents'), (req, res, next) => {
+  if (req.user.role === 'donor') {
+    return updateDonorProfile(req, res, next);
+  }
+  return updateStudentProfile(req, res, next);
+});
 router.post("/profile/submit", protect, submitProfileForApproval);
 router.get("/profile/completion", protect, getProfileCompletion);
 

@@ -19,6 +19,10 @@ export const getProfile = async (req, res) => {
       department: user.department,
       organization: user.organization,
       phone: user.phone,
+      donorType: user.donorType,
+      donorPreference: user.donorPreference,
+      contactPerson: user.contactPerson,
+      csrFocus: user.csrFocus,
     });
   } catch (err) {
     res.status(500).json({ message: "Something went wrong" });
@@ -292,6 +296,38 @@ export const updateStudentProfile = async (req, res) => {
       message: isComplete && !user.profileSubmitted ? "Profile updated and automatically submitted for approval" : "Profile updated successfully", 
       user,
       autoSubmitted: isComplete && !user.profileSubmitted
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+// Update donor profile
+export const updateDonorProfile = async (req, res) => {
+  try {
+    if (req.user.role !== "donor") {
+      return res.status(403).json({ message: "Only donors can update their profile" });
+    }
+    const { phone, donorType, donorPreference, organization, contactPerson, csrFocus } = req.body;
+    
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Update allowed fields
+    if (phone !== undefined) user.phone = phone;
+    if (donorType !== undefined && ["individual", "corporate"].includes(donorType)) user.donorType = donorType;
+    if (donorPreference !== undefined && ["monthly", "occasional"].includes(donorPreference)) user.donorPreference = donorPreference;
+    if (organization !== undefined) user.organization = organization;
+    if (contactPerson !== undefined) user.contactPerson = contactPerson;
+    if (csrFocus !== undefined) user.csrFocus = csrFocus;
+
+    await user.save();
+    
+    res.json({ 
+      message: "Profile updated successfully", 
+      user
     });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });

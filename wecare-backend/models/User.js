@@ -5,7 +5,11 @@ const userSchema = new mongoose.Schema(
     name: { type: String, required: true },
     university: { type: String }, // for students/admins
     department: { type: String, enum: ["welfare", "gender", "health"], default: undefined }, // for admins
-    organization: { type: String }, // for donors
+    organization: { type: String }, // for corporate donors
+    donorType: { type: String, enum: ["individual", "corporate"], default: "individual" }, // donor type
+    donorPreference: { type: String, enum: ["monthly", "occasional"], default: "monthly" }, // donation frequency for individual
+    contactPerson: { type: String }, // contact person for corporate donors
+    csrFocus: { type: String }, // CSR focus area for corporate donors
     phone: { type: String },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
