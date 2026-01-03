@@ -20,6 +20,8 @@ const AdminNotifications = () => {
   const [sent, setSent] = useState([]);
   const [loading, setLoading] = useState(true);
   const [hiddenList, setHiddenList] = useState([]);
+  const [openSentId, setOpenSentId] = useState(null);
+  const [showHiddenList, setShowHiddenList] = useState(false);
   const { socketRef } = useSocket();
   const [before, setBefore] = useState(null);
   const [hasMore, setHasMore] = useState(true);
@@ -151,8 +153,10 @@ const AdminNotifications = () => {
   };
 
   const handleUnhide = async (id) => {
-    try { await unhideNotificationServer(user?.token, id); } catch {}
-    try { setHiddenList(await getHiddenNotifications(user?.token)); } catch {}
+    try {
+      await unhideNotificationServer(user?.token, id);
+      await fetchData();
+    } catch {}
   };
 
   const handleMarkAsRead = async (notificationId) => {
@@ -181,6 +185,18 @@ const AdminNotifications = () => {
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleString();
+  };
+
+  const formatDateTime = (dateString) => new Date(dateString).toLocaleString();
+  const formatDay = (dateString) => {
+    const d = new Date(dateString);
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
+    const isSameDay = (a,b)=> a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
+    if (isSameDay(d, today)) return "Today";
+    if (isSameDay(d, yesterday)) return "Yesterday";
+    return d.toLocaleDateString();
   };
 
   const getRecipientText = (n) => {
@@ -213,6 +229,15 @@ const AdminNotifications = () => {
     ));
   };
 
+  const grouped = notifications.reduce((acc, n) => {
+    const key = formatDay(n.createdAt);
+    acc[key] = acc[key] || [];
+    acc[key].push(n);
+    return acc;
+  }, {});
+
+  const unreadCount = notifications.filter((n) => !isRead(n)).length;
+
   if (loading) {
     return <div className="text-center py-8">Loading notifications...</div>;
   }
@@ -228,7 +253,7 @@ const AdminNotifications = () => {
           <h3 className="text-lg font-semibold text-slate-800">Send Notification</h3>
           <button
             onClick={() => setShowSendForm(!showSendForm)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700"
           >
             {showSendForm ? "Cancel" : "Send New"}
           </button>
@@ -242,7 +267,7 @@ const AdminNotifications = () => {
                 type="text"
                 value={sendForm.title}
                 onChange={(e) => setSendForm({...sendForm, title: e.target.value})}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
                 required
               />
             </div>
@@ -252,7 +277,7 @@ const AdminNotifications = () => {
               <textarea
                 value={sendForm.message}
                 onChange={(e) => setSendForm({...sendForm, message: e.target.value})}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"
                 rows="3"
                 required
               />
@@ -263,10 +288,9 @@ const AdminNotifications = () => {
               <select
                 value={sendForm.recipientType}
                 onChange={(e) => setSendForm({...sendForm, recipientType: e.target.value})}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
               >
-                <option value="university_students">All Students in {user?.university}</option>
-                <option value="all_students">All Students (All Universities)</option>
+                <option value="university_students">All Students in ({user?.university || user?.organization || 'your university'})</option>
                 <option value="single_student">Single Student</option>
                 <option value="superadmin">Super Admin</option>
               </select>
@@ -278,7 +302,7 @@ const AdminNotifications = () => {
                 <select
                   value={sendForm.recipientId}
                   onChange={(e) => setSendForm({...sendForm, recipientId: e.target.value})}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
                   required
                 >
                   <option value="">Select a student</option>
@@ -291,7 +315,7 @@ const AdminNotifications = () => {
 
             <button
               type="submit"
-              className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+              className="w-full px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700"
             >
               Send Notification
             </button>
@@ -300,92 +324,125 @@ const AdminNotifications = () => {
       </div>
 
       {/* Notifications List */}
-      <div className="rounded-xl border border-slate-200 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-slate-800">Recent Notifications</h3>
-          <button onClick={markAllAsReadNow} className="text-sm text-blue-600 hover:underline">Mark all as read</button>
+      <div className="rounded-xl border border-slate-200 p-0 overflow-hidden">
+        <div className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b border-slate-200 px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <h3 className="text-lg font-semibold text-slate-800">Recent Notifications</h3>
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">
+              {unreadCount} unread
+            </span>
+          </div>
+          <div className="flex items-center gap-2 sm:justify-end">
+            <button onClick={markAllAsReadNow} className="text-sm text-amber-700 hover:text-amber-800 font-medium">Mark all as read</button>
+            {hasMore && (
+              <button onClick={loadMore} className="text-sm text-amber-700 hover:text-amber-800 font-medium">Load older</button>
+            )}
+          </div>
         </div>
-        
+
         {notifications.length === 0 ? (
-          <p className="text-slate-500 text-center py-8">No notifications sent yet.</p>
+          <div className="py-10 text-center text-slate-500">No notifications yet.</div>
         ) : (
-          <div className="space-y-4">
-            {notifications.map((notification) => (
-              <div key={notification._id} onClick={() => { if (!isRead(notification)) handleMarkAsRead(notification._id); }} className={`border rounded-lg p-4 ${isRead(notification) ? "border-slate-200 bg-slate-50" : "border-blue-200 bg-blue-50"}`}>
-                {editingNotification?._id === notification._id ? (
-                  <form onSubmit={handleEditNotification} className="space-y-3">
-                    <input
-                      type="text"
-                      value={editingNotification.title}
-                      onChange={(e) => setEditingNotification({...editingNotification, title: e.target.value})}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <textarea
-                      value={editingNotification.message}
-                      onChange={(e) => setEditingNotification({...editingNotification, message: e.target.value})}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      rows="2"
-                    />
-                    <div className="flex gap-2">
-                      <button type="submit" className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700">Save</button>
-                      <button type="button" onClick={() => setEditingNotification(null)} className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600">Cancel</button>
+          <div className="max-h-[70vh] overflow-y-auto px-6 py-4 space-y-5">
+            {Object.entries(grouped).map(([day, list]) => (
+              <div key={day} className="space-y-3">
+                <div className="text-xs font-semibold text-slate-500 tracking-wide">{day}</div>
+                <div className="space-y-3">
+                  {list.map((notification) => (
+                    <div
+                      key={notification._id}
+                      onClick={() => { if (!isRead(notification)) handleMarkAsRead(notification._id); }}
+                      className={`border rounded-lg p-4 cursor-pointer transition hover:shadow-sm ${
+                        isRead(notification)
+                          ? "border-slate-200 bg-white"
+                          : "border-amber-200 bg-amber-50"
+                      }`}
+                    >
+                      {editingNotification?._id === notification._id ? (
+                        <form onSubmit={handleEditNotification} className="space-y-3">
+                          <input
+                            type="text"
+                            value={editingNotification.title}
+                            onChange={(e) => setEditingNotification({...editingNotification, title: e.target.value})}
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                          />
+                          <textarea
+                            value={editingNotification.message}
+                            onChange={(e) => setEditingNotification({...editingNotification, message: e.target.value})}
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                            rows="2"
+                          />
+                          <div className="flex gap-2">
+                            <button type="submit" className="px-3 py-1 bg-amber-600 text-white rounded hover:bg-amber-700">Save</button>
+                            <button type="button" onClick={() => setEditingNotification(null)} className="px-3 py-1 bg-slate-500 text-white rounded hover:bg-slate-600">Cancel</button>
+                          </div>
+                        </form>
+                      ) : (
+                        <>
+                          <div className="flex justify-between items-start gap-3">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-semibold text-slate-800 truncate">{notification.title}</h4>
+                                {!isRead(notification) && (
+                                  <span className="px-2 py-0.5 bg-amber-700 text-white text-[11px] rounded-full">New</span>
+                                )}
+                              </div>
+                              <p className="text-slate-600 mt-1 text-sm line-clamp-3">{notification.message}</p>
+                              <div className="flex flex-wrap gap-3 mt-2 text-xs text-slate-500">
+                                <span>To: {getRecipientText(notification)}</span>
+                                <span>{formatDateTime(notification.createdAt)}</span>
+                                <span>By: {notification.sender?.name || notification.senderName || notification.senderRole || 'System'}</span>
+                              </div>
+                            </div>
+                            <div className="flex flex-col gap-2 items-end">
+                              {!isRead(notification) && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleMarkAsRead(notification._id); }}
+                                  className="px-3 py-1 rounded-lg border border-amber-300 text-amber-700 hover:bg-amber-50 text-xs font-medium"
+                                >
+                                  Mark read
+                                </button>
+                              )}
+                              {isSender(notification) && (
+                                <button
+                                  onClick={() => setEditingNotification(notification)}
+                                  className="px-3 py-1 bg-amber-500 text-white rounded hover:bg-amber-600 text-xs font-medium"
+                                >
+                                  Edit
+                                </button>
+                              )}
+                              {isSender(notification) ? (
+                                <button
+                                  onClick={async (e) => { e.stopPropagation(); await handleDeleteNotification(notification._id); setNotifications(prev => prev.filter(x => x._id !== notification._id)); }}
+                                  className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-xs font-medium"
+                                >
+                                  Delete
+                                </button>
+                              ) : (
+                                <div className="flex flex-col gap-1 w-full items-end">
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); handleHide(notification._id); }}
+                                    className="px-3 py-1 border border-amber-200 text-amber-700 rounded hover:bg-amber-50 text-xs font-medium"
+                                  >
+                                    Hide
+                                  </button>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); handleHide(notification._id); }}
+                                    className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-xs font-medium"
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
-                  </form>
-                ) : (
-                  <>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-medium text-slate-800">{notification.title}</h4>
-                        <p className="text-slate-600 mt-1">{notification.message}</p>
-                        <div className="flex gap-4 mt-2 text-sm text-slate-500">
-                          <span>To: {getRecipientText(notification)}</span>
-                          <span>Sent: {formatDate(notification.createdAt)}</span>
-                          <span>By: {notification.sender?.name || notification.senderName || notification.senderRole || 'System'}</span>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        {!((notification.isRead || []).some(r => (r.user === (user?._id||user?.id)) || (r.user?._id === (user?._id||user?.id)) || (String(r.user)===String(user?._id||user?.id)))) && (
-                          <button
-                            onClick={() => handleMarkAsRead(notification._id)}
-                            className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
-                          >
-                            Mark as Read
-                          </button>
-                        )}
-                        {isSender(notification) && (
-                          <button
-                            onClick={() => setEditingNotification(notification)}
-                            className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
-                          >
-                            Edit
-                          </button>
-                        )}
-                        {isSender(notification) ? (
-                          <button
-                            onClick={async () => { await handleDeleteNotification(notification._id); setNotifications(prev => prev.filter(x => x._id !== notification._id)); }}
-                            className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
-                          >
-                            Delete
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleHide(notification._id)}
-                            className="px-3 py-1 bg-slate-600 text-white rounded hover:bg-slate-700"
-                          >
-                            Hide
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </>
-                )}
+                  ))}
+                </div>
               </div>
             ))}
-            <div className="mt-3 text-center">
-              {hasMore && (
-                <button onClick={loadMore} className="px-3 py-1 text-sm text-blue-600 hover:underline">Load older</button>
-              )}
-            </div>
           </div>
         )}
       </div>
@@ -393,48 +450,118 @@ const AdminNotifications = () => {
       {/* Sent by You */}
       <div className="rounded-xl border border-slate-200 p-6">
         <h3 className="text-lg font-semibold text-slate-800 mb-4">Sent by You</h3>
-        {sent.filter(isSender).length === 0 ? (
-          <p className="text-slate-500 text-center py-8">You haven't sent any notifications.</p>
+        {sent.length === 0 ? (
+          <p className="text-slate-500 text-center py-8">No notifications sent yet.</p>
         ) : (
-          <div className="space-y-4">
-            {sent.filter(isSender).map((n) => (
-              <div key={n._id} className="border border-slate-200 rounded-lg p-4">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h4 className="font-medium text-slate-800">{n.title}</h4>
-                    <p className="text-slate-600 mt-1">{n.message}</p>
-                    <p className="text-xs text-slate-500 mt-1">{new Date(n.createdAt).toLocaleString()}</p>
-                  </div>
+          <div className="space-y-3 overflow-y-auto pr-1" style={{ maxHeight: "520px" }}>
+            {sent.map((n) => {
+              const isOpen = openSentId === n._id;
+              const isEditing = editingNotification?._id === n._id;
+              return (
+                <div key={n._id} className="border border-slate-200 rounded-lg p-4 bg-white">
+                  {isEditing ? (
+                    <form onSubmit={handleEditNotification} className="space-y-3">
+                      <input
+                        type="text"
+                        value={editingNotification.title}
+                        onChange={(e) => setEditingNotification({ ...editingNotification, title: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      />
+                      <textarea
+                        value={editingNotification.message}
+                        onChange={(e) => setEditingNotification({ ...editingNotification, message: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                        rows="2"
+                      />
+                      <div className="flex gap-2">
+                        <button type="submit" className="px-3 py-1 bg-amber-600 text-white rounded hover:bg-amber-700">Save</button>
+                        <button type="button" onClick={() => setEditingNotification(null)} className="px-3 py-1 bg-slate-500 text-white rounded hover:bg-slate-600">Cancel</button>
+                      </div>
+                    </form>
+                  ) : (
+                    <>
+                      <div className="flex justify-between items-start gap-3">
+                        <div className="flex-1 min-w-0 space-y-1">
+                          <h4 className="font-medium text-slate-800 truncate">{n.title}</h4>
+                          <div className="flex flex-wrap gap-3 text-xs text-slate-500">
+                            <span>{formatDateTime(n.createdAt)}</span>
+                            <span>To: {getRecipientText(n)}</span>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => setOpenSentId(isOpen ? null : n._id)}
+                          className="px-3 py-1 text-xs font-semibold rounded-lg border border-amber-200 text-amber-700 hover:bg-amber-50"
+                        >
+                          {isOpen ? "Close" : "Show more"}
+                        </button>
+                      </div>
+
+                      {isOpen && (
+                        <div className="mt-3 space-y-2 text-sm text-slate-700">
+                          <p className="leading-relaxed whitespace-pre-wrap">{n.message}</p>
+                          <div className="flex flex-wrap gap-3 text-xs text-slate-500">
+                            <span>By: {n.sender?.name || n.senderName || n.senderRole || 'System'}</span>
+                          </div>
+                          {isSender(n) && (
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => { setEditingNotification(n); setOpenSentId(n._id); }}
+                                className="px-3 py-1 bg-amber-600 text-white rounded hover:bg-amber-700 text-xs font-medium"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={async () => { await handleDeleteNotification(n._id); setSent(prev => prev.filter(x => x._id !== n._id)); if (openSentId === n._id) setOpenSentId(null); }}
+                                className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-xs font-medium"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
 
       {/* Hidden */}
       <div className="rounded-xl border border-slate-200 p-6">
-        <h3 className="text-lg font-semibold text-slate-800 mb-4">Hidden</h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-slate-800">Hidden</h3>
+          {(hiddenList || []).length > 0 && (
+            <button
+              onClick={() => setShowHiddenList(!showHiddenList)}
+              className="px-3 py-1 text-xs font-semibold rounded-lg border border-amber-200 text-amber-700 hover:bg-amber-50"
+            >
+              {showHiddenList ? "Close" : "Show"}
+            </button>
+          )}
+        </div>
         {(hiddenList || []).length === 0 ? (
           <p className="text-slate-500">No hidden notifications.</p>
+        ) : !showHiddenList ? (
+          <p className="text-slate-600 text-sm">Hidden notifications are collapsed. Click Show to view them.</p>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3 overflow-y-auto pr-1" style={{ maxHeight: "360px" }}>
             {hiddenList.map((n) => (
               <div key={n._id} className="border border-slate-200 rounded-lg p-4 bg-slate-50">
-                <div className="flex justify-between items-start">
-                  <div>
+                <div className="flex justify-between items-start gap-3">
+                  <div className="space-y-1">
                     <h4 className="font-medium text-slate-800">{n.title}</h4>
-                    <p className="text-slate-600 mt-1">{n.message}</p>
-                    <div className="flex gap-4 mt-2 text-sm text-slate-500">
+                    <div className="flex flex-wrap gap-4 text-xs text-slate-500">
+                      <span>{formatDate(n.createdAt)}</span>
                       <span>To: {getRecipientText(n)}</span>
-                      <span>Sent: {formatDate(n.createdAt)}</span>
                       <span>By: {n.sender?.name || n.senderName || n.senderRole || 'System'}</span>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <button onClick={() => handleUnhide(n._id)} className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">Unhide</button>
-                  </div>
+                  <button onClick={() => handleUnhide(n._id)} className="px-3 py-1 bg-amber-600 text-white rounded hover:bg-amber-700 text-xs font-medium">Unhide</button>
                 </div>
+                <p className="mt-2 text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{n.message}</p>
               </div>
             ))}
           </div>

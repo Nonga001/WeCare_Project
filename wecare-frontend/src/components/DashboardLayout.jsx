@@ -14,6 +14,7 @@ const DashboardLayout = ({ title, children }) => {
   const { socketRef, status: socketStatus } = useSocket();
   const location = useLocation();
   const [showDropdown, setShowDropdown] = useState(false);
+  const clearTimer = useRef(null);
   const bellRef = useRef(null);
   const [dropdownItems, setDropdownItems] = useState([]);
   const latestBefore = useRef(null);
@@ -24,6 +25,17 @@ const DashboardLayout = ({ title, children }) => {
     return (notification?.isRead || []).some(r => (
       r.user === uid || r.user?._id === uid || String(r.user) === String(uid)
     ));
+  };
+
+  const fetchDropdownItems = async () => {
+    if (!user?.token) return [];
+    try {
+      const list = await getNotifications(user.token, { limit: 50 });
+      const sorted = [...(list || [])].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      return sorted.slice(0, 5);
+    } catch {
+      return [];
+    }
   };
   useEffect(() => {
     try {
@@ -68,8 +80,8 @@ const DashboardLayout = ({ title, children }) => {
         const count = await getUnreadCount(user.token);
         setUnreadCount(Number(count) || 0);
         if (showDropdown) {
-          const latest = await getNotifications(user.token, { limit: 5 });
-          setDropdownItems(latest.filter(n => !isReadForUser(n)));
+          const latest = await fetchDropdownItems();
+          setDropdownItems(latest);
         }
       } catch {}
     };
@@ -90,8 +102,8 @@ const DashboardLayout = ({ title, children }) => {
         if (!user?.token) return;
         const count = await getUnreadCount(user.token);
         setUnreadCount(Number(count) || 0);
-        const latest = await getNotifications(user.token, { limit: 5 });
-        setDropdownItems(latest.filter(n => !isReadForUser(n)));
+        const latest = await fetchDropdownItems();
+        setDropdownItems(latest);
       } catch {}
     };
     // Optimistic updates for immediate UI response
@@ -132,8 +144,8 @@ const DashboardLayout = ({ title, children }) => {
     const loadLatest = async () => {
       try {
         if (!user?.token) return;
-        const latest = await getNotifications(user.token, { limit: 5 });
-        setDropdownItems(latest.filter(n => !isReadForUser(n)));
+        const latest = await fetchDropdownItems();
+        setDropdownItems(latest);
       } catch {}
     };
     loadLatest();
@@ -144,8 +156,8 @@ const DashboardLayout = ({ title, children }) => {
     const loadOnOpen = async () => {
       if (!showDropdown || !user?.token) return;
       try {
-        const latest = await getNotifications(user.token, { limit: 5 });
-        setDropdownItems(latest.filter(n => !isReadForUser(n)));
+        const latest = await fetchDropdownItems();
+        setDropdownItems(latest);
         const count = await getUnreadCount(user.token);
         setUnreadCount(Number(count) || 0);
       } catch {}
@@ -213,20 +225,40 @@ const DashboardLayout = ({ title, children }) => {
     };
   }, [showDropdown]);
 
+  // Auto-clear dropdown items after a delay when opened
+  useEffect(() => {
+    if (clearTimer.current) {
+      clearTimeout(clearTimer.current);
+      clearTimer.current = null;
+    }
+    if (showDropdown) {
+      clearTimer.current = setTimeout(() => {
+        setDropdownItems([]);
+      }, 2 * 60 * 1000); // 2 minutes
+    }
+    return () => {
+      if (clearTimer.current) {
+        clearTimeout(clearTimer.current);
+        clearTimer.current = null;
+      }
+    };
+  }, [showDropdown]);
+
   const markAllAsRead = async () => {
     try {
       const uid = user?._id || user?.id;
       const toMark = dropdownItems.filter(n => !(n.isRead || []).some(r => (r.user === uid) || (r.user?._id === uid) || (String(r.user) === String(uid))));
       if (toMark.length === 0) {
-        setDropdownItems([]);
+        const latest = await fetchDropdownItems();
+        setDropdownItems(latest);
         setUnreadCount(0);
         return;
       }
       await Promise.allSettled(toMark.map(n => markAsRead(user?.token, n._id)));
       const count = await getUnreadCount(user?.token);
       setUnreadCount(Number(count) || 0);
-      const latest = await getNotifications(user?.token, { limit: 5 });
-      setDropdownItems(latest.filter(n => !isReadForUser(n)));
+      const latest = await fetchDropdownItems();
+      setDropdownItems(latest);
     } catch {}
   };
   const toggleTheme = () => {

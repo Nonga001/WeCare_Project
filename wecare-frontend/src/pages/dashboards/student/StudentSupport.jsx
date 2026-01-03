@@ -170,11 +170,19 @@ const StudentSupport = () => {
               <div className="border rounded-xl overflow-hidden flex flex-col h-full">
                 <div className="flex-1 max-h-[480px] lg:max-h-[520px] overflow-y-auto p-3 space-y-2 bg-white" style={{scrollbarWidth:'thin'}}>
                   {openGroup.messages?.length ? openGroup.messages.map((msg) => {
-                    const mine = !msg.isAIGenerated && msg.sender === user?._id;
+                    const mine = !msg.isAIGenerated && String(msg.sender) === String(user?._id);
+                    const isAI = msg.isAIGenerated;
+                    const isAdmin = String(msg.sender) === String(openGroup.createdBy);
                     return (
                       <div key={msg._id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
                         <div className={`max-w-[80%] rounded-2xl px-3 py-2 ${mine ? 'bg-amber-700 text-white rounded-br-sm' : 'bg-slate-100 text-slate-800 rounded-bl-sm'}`}>
-                          <p className="text-[11px] opacity-80 mb-0.5">{msg.senderName || 'Member'} • {new Date(msg.createdAt).toLocaleTimeString()}</p>
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            <p className="text-[11px] opacity-80">{isAI ? 'AI Assistant' : (msg.senderName || 'Member')}</p>
+                            {isAdmin && !isAI && (
+                              <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500 text-white font-semibold uppercase">ADMIN</span>
+                            )}
+                            <p className="text-[11px] opacity-80">• {new Date(msg.createdAt).toLocaleTimeString()}</p>
+                          </div>
                           <p className="text-sm leading-relaxed break-words">{msg.text}</p>
                           {mine && (
                             <div className="text-[10px] mt-1 flex justify-end opacity-70">

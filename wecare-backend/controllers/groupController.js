@@ -195,6 +195,9 @@ export const postMessage = async (req, res) => {
     group.messages.push({ sender: req.user._id, text: text.trim() });
     await group.save();
     
+    // Check if message is from admin (group creator)
+    const isAdmin = String(req.user._id) === String(group.createdBy);
+    
     // Emit new message via socket
     if (io) {
       io.to(`group:${id}`).emit("group:message", {
@@ -210,9 +213,61 @@ export const postMessage = async (req, res) => {
       });
     }
     
+    // AI reinforcement for admin messages after 10 seconds
+    if (isAdmin) {
+      setTimeout(async () => {
+        try {
+          const freshGroup = await Group.findById(id);
+          if (!freshGroup) return;
+          
+          const adminMessage = text.trim().toLowerCase();
+          let aiResponse = "";
+          
+          // Simple greeting reinforcement
+          if (adminMessage.match(/^(hi|hello|hey|greetings|good morning|good afternoon|good evening)/)) {
+            aiResponse = adminMessage.charAt(0).toUpperCase() + adminMessage.slice(1) + "!";
+          } 
+          // Questions or meaningful content
+          else if (adminMessage.includes("?") || adminMessage.split(" ").length > 5) {
+            aiResponse = "Noted.";
+          }
+          // Short statements
+          else {
+            aiResponse = "Acknowledged.";
+          }
+          
+          // Post AI reinforcement
+          freshGroup.messages.push({
+            sender: req.user._id,
+            text: aiResponse,
+            isAIGenerated: true
+          });
+          freshGroup.lastAIResponseAt = new Date();
+          await freshGroup.save();
+          
+          // Emit AI message
+          if (io) {
+            io.to(`group:${id}`).emit("group:message", {
+              groupId: id,
+              message: {
+                _id: freshGroup.messages[freshGroup.messages.length - 1]._id,
+                sender: req.user._id,
+                senderName: "AI Assistant",
+                text: aiResponse,
+                isAIGenerated: true,
+                createdAt: new Date()
+              }
+            });
+          }
+        } catch (err) {
+          console.error("AI reinforcement error:", err.message);
+        }
+      }, 10 * 1000); // 10 seconds
+    }
+    
     // Check if AI should respond (no activity for 3 minutes, with at least 2 messages)
     const messageCount = group.messages.length;
-    if (messageCount >= 2) {
+    if (messageCount >= 2 && !isAdmin) {
       setTimeout(async () => {
         try {
           const freshGroup = await Group.findById(id).populate("messages.sender", "name");
@@ -289,6 +344,37 @@ export const deleteMessage = async (req, res) => {
     msg.deleteOne();
     await group.save();
     res.json({ message: "Deleted" });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+export const editMessage = async (req, res) => {
+  try {
+    const { id, messageId } = req.params;
+    const { text } = req.body;
+    if (!text || !text.trim()) return res.status(400).json({ message: "Message text required" });
+
+    const group = await Group.findById(id);
+    if (!group) return res.status(404).json({ message: "Group not found" });
+    const msg = group.messages.id(messageId);
+    if (!msg) return res.status(404).json({ message: "Message not found" });
+
+    const isSender = String(msg.sender) === String(req.user._id);
+    const isModerator = canModerate(req.user, group) || group.moderators?.some(m => String(m) === String(req.user._id));
+    // In global group, only sender can edit
+    if (group.isGlobal) {
+      if (!isSender) return res.status(403).json({ message: "Only the sender can edit this message" });
+    } else {
+      if (!isSender && !isModerator) return res.status(403).json({ message: "Not allowed" });
+    }
+
+    msg.text = String(text).trim();
+    msg.isEdited = true;
+    msg.editedAt = new Date();
+    await group.save();
+
+    res.json({ message: "Updated", data: { _id: msg._id, text: msg.text, isEdited: msg.isEdited, editedAt: msg.editedAt } });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
   }

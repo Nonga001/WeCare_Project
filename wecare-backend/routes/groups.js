@@ -1,6 +1,6 @@
 import express from "express";
 import { protect } from "../middleware/authMiddleware.js";
-import { listGroups, getGroup, createGroup, joinGroup, leaveGroup, renameGroup, removeMember, deleteGroup, postMessage, deleteMessage } from "../controllers/groupController.js";
+import { listGroups, getGroup, createGroup, joinGroup, leaveGroup, renameGroup, removeMember, deleteGroup, postMessage, deleteMessage, editMessage } from "../controllers/groupController.js";
 
 const router = express.Router();
 
@@ -15,6 +15,7 @@ router.patch("/:id/rename", renameGroup);
 router.delete("/:id/members/:userId", removeMember);
 router.delete("/:id", deleteGroup);
 router.post("/:id/messages", postMessage);
+router.patch("/:id/messages/:messageId", editMessage);
 router.delete("/:id/messages/:messageId", deleteMessage);
 router.post("/:id/ai-response", async (req, res) => {
   // Manual trigger for testing AI responses

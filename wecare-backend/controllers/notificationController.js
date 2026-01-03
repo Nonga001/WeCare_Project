@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Notification from "../models/Notification.js";
 import User from "../models/User.js";
 import { io } from "../server.js";
@@ -5,33 +6,23 @@ import { io } from "../server.js";
 // Build the base visibility query for the current user
 const buildVisibilityQuery = (req) => {
   const userId = req.user._id;
+  const userObjectId = mongoose.Types.ObjectId.isValid(userId) ? new mongoose.Types.ObjectId(userId) : null;
   const role = req.user.role;
   const roleWideTypes = [];
   if (role === "student") roleWideTypes.push("all_students");
   if (role === "admin") roleWideTypes.push("all_admins");
   if (role === "donor") roleWideTypes.push("all_donors");
 
-  const isValidObjectId = typeof userId === "string" && /^[a-fA-F0-9]{24}$/.test(userId);
-
-  let baseQuery;
-  if (isValidObjectId) {
-    baseQuery = {
-      $or: [
-        { recipients: userId },
-        { recipientType: "everyone", sender: { $ne: userId } },
-        { recipientType: { $in: roleWideTypes }, sender: { $ne: userId } },
-        { recipientType: "university_students", university: req.user.university, sender: { $ne: userId } },
-      ],
-    };
-  } else {
-    baseQuery = {
-      $or: [
-        { recipientType: "everyone" },
-        { recipientType: { $in: roleWideTypes } },
-        { recipientType: "university_students", university: req.user.university },
-      ],
-    };
+  const audience = [
+    { recipientType: "everyone" },
+    { recipientType: { $in: roleWideTypes } },
+    { recipientType: "university_students", university: req.user.university },
+  ];
+  if (userObjectId) {
+    audience.unshift({ recipients: userObjectId });
   }
+
+  const baseQuery = { $or: audience };
 
   if (req.user.createdAt) {
     baseQuery.createdAt = { $gte: req.user.createdAt };
@@ -44,10 +35,13 @@ const buildVisibilityQuery = (req) => {
 export const getNotifications = async (req, res) => {
   try {
     const userId = req.user._id;
+    const userObjectId = mongoose.Types.ObjectId.isValid(userId) ? new mongoose.Types.ObjectId(userId) : null;
     const baseQuery = buildVisibilityQuery(req);
 
     // Exclude items the user deleted/hidden
-    baseQuery.isDeleted = { $not: { $elemMatch: { user: userId } } };
+    if (userObjectId) {
+      baseQuery.isDeleted = { $not: { $elemMatch: { user: userObjectId } } };
+    }
 
     const { before, limit } = req.query;
     const pageLimit = Math.min(Number(limit) || 50, 100);
@@ -67,18 +61,14 @@ export const getNotifications = async (req, res) => {
 export const getSentNotifications = async (req, res) => {
   try {
     const userId = req.user._id;
-    const isValidObjectId = typeof userId === 'string' && /^[a-fA-F0-9]{24}$/.test(userId);
-    let query;
-    if (isValidObjectId) {
-      query = { sender: userId };
-    } else {
-      query = { senderRole: req.user.role };
-      if (req.user.name) query.senderName = req.user.name;
-    }
+    const uid = String(userId);
+    const query = { sender: uid };
     const { before, limit } = req.query;
     const pageLimit = Math.min(Number(limit) || 100, 100);
     const cursorFilter = before ? { _id: { $lt: before } } : {};
     const notifications = await Notification.find({ ...query, ...cursorFilter })
+      .populate("sender", "name email role")
+      .populate("recipients", "name email role")
       .sort({ createdAt: -1 })
       .limit(pageLimit);
     res.json(notifications);
@@ -90,21 +80,24 @@ export const getSentNotifications = async (req, res) => {
 export const getUnreadCount = async (req, res) => {
   try {
     const userId = req.user._id;
+    const userObjectId = mongoose.Types.ObjectId.isValid(userId) ? new mongoose.Types.ObjectId(userId) : null;
     const role = req.user.role;
     const roleWideTypes = [];
     if (role === "student") roleWideTypes.push("all_students");
     if (role === "admin") roleWideTypes.push("all_admins");
     if (role === "donor") roleWideTypes.push("all_donors");
-    const query = {
-      $or: [
-        { recipients: userId },
-        { recipientType: "everyone", sender: { $ne: userId } },
-        { recipientType: { $in: roleWideTypes }, sender: { $ne: userId } },
-        { recipientType: "university_students", university: req.user.university, sender: { $ne: userId } }
-      ],
-      isDeleted: { $not: { $elemMatch: { user: userId } } },
-      isRead: { $not: { $elemMatch: { user: userId } } }
-    };
+    const audience = [
+      { recipientType: "everyone" },
+      { recipientType: { $in: roleWideTypes } },
+      { recipientType: "university_students", university: req.user.university }
+    ];
+    if (userObjectId) audience.unshift({ recipients: userObjectId });
+
+    const query = { $or: audience };
+    if (userObjectId) {
+      query.isDeleted = { $not: { $elemMatch: { user: userObjectId } } };
+      query.isRead = { $not: { $elemMatch: { user: userObjectId } } };
+    }
     const count = await Notification.countDocuments(query);
     res.json({ count });
   } catch (err) {

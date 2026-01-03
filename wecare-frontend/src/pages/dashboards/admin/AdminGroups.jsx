@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
-import { listGroups, createGroup, renameGroup, deleteGroup, getGroup, removeMember, postMessage, deleteMessage } from "../../../services/groupService";
+import { listGroups, createGroup, renameGroup, deleteGroup, getGroup, removeMember, postMessage, deleteMessage, editMessage } from "../../../services/groupService";
 
 const AdminGroups = () => {
   const { user } = useAuth();
@@ -14,6 +14,8 @@ const AdminGroups = () => {
   const [newName, setNewName] = useState("");
   const [newScope, setNewScope] = useState("uni");
   const [messageText, setMessageText] = useState("");
+  const [editingMessageId, setEditingMessageId] = useState(null);
+  const [editingMessageText, setEditingMessageText] = useState("");
   const [showOptions, setShowOptions] = useState(false);
   const [showMembers, setShowMembers] = useState(false);
   // removed private group UI
@@ -106,6 +108,24 @@ const AdminGroups = () => {
     }
   };
 
+  const startEditMessage = (message) => {
+    setEditingMessageId(message._id);
+    setEditingMessageText(message.text);
+  };
+
+  const saveEditMessage = async (messageId) => {
+    if (!editingMessageText.trim()) return;
+    try {
+      await editMessage(user?.token, selected._id, messageId, editingMessageText.trim());
+      const details = await getGroup(user?.token, selected._id);
+      setSelected(details);
+      setEditingMessageId(null);
+      setEditingMessageText("");
+    } catch (e) {
+      alert(e?.response?.data?.message || "Failed to edit message");
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2 space-y-6">
@@ -152,7 +172,17 @@ const AdminGroups = () => {
 
       <div className="space-y-4">
         <div className="rounded-2xl border border-amber-200 bg-white dark:bg-slate-800 p-5 shadow-sm">
-          <h4 className="font-semibold text-slate-800 mb-2">Group Details</h4>
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="font-semibold text-slate-800">Group Details</h4>
+            {selected && (
+              <button 
+                onClick={() => { setSelected(null); setSelectedId(null); }} 
+                className="text-slate-400 hover:text-slate-600 text-xl font-bold"
+              >
+                ×
+              </button>
+            )}
+          </div>
           {error && <p className="text-sm text-rose-600 mb-2">{error}</p>}
           {!selected ? (
             <p className="text-sm text-slate-600">Select a group to manage</p>
@@ -205,14 +235,65 @@ const AdminGroups = () => {
                     {selected.messages?.length ? selected.messages.map(msg => {
                       const mine = !msg.isAIGenerated && String(msg.sender) === String(user?._id);
                       const isAI = msg.isAIGenerated;
+                      const isAdmin = String(msg.sender) === String(selected.createdBy);
+                      const canModerate = !selected.isGlobal && String(selected.createdBy) === String(user?._id);
+                      const canEdit = !isAI && (mine || canModerate);
+                      const canDelete = isAI || mine || canModerate;
+                      const isEditing = editingMessageId === msg._id;
+
                       return (
                         <div key={msg._id} className={`flex ${mine? 'justify-end' : 'justify-start'}`}>
                           <div className={`max-w-[80%] rounded-2xl px-3 py-2 ${mine? 'bg-gradient-to-r from-amber-600 to-amber-700 text-white rounded-br-sm' : 'bg-amber-50 text-slate-800 border border-amber-200 rounded-bl-sm'}`}>
-                            <p className="text-[11px] opacity-80 mb-0.5">{isAI ? 'AI Assistant' : (msg.senderName || 'Member')} • {new Date(msg.createdAt).toLocaleTimeString()}</p>
-                            <p className="text-sm leading-relaxed">{msg.text}</p>
-                            <div className="text-[10px] mt-1 flex justify-between items-center opacity-70">
-                              <span></span>
-                              {(mine || isAI || !selected.isGlobal) && (
+                            <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
+                              <p className="text-[11px] opacity-80">{isAI ? 'AI Assistant' : (msg.senderName || 'Member')}</p>
+                              {isAdmin && !isAI && (
+                                <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500 text-white font-semibold">ADMIN</span>
+                              )}
+                              <p className="text-[11px] opacity-80">• {new Date(msg.createdAt).toLocaleTimeString()}</p>
+                              {msg.isEdited && (
+                                <span className={`text-[10px] uppercase tracking-wide font-semibold ${mine ? 'text-amber-100' : 'text-amber-700'}`}>
+                                  (edited)
+                                </span>
+                              )}
+                            </div>
+
+                            {isEditing ? (
+                              <div className="space-y-1">
+                                <textarea
+                                  value={editingMessageText}
+                                  onChange={(e) => setEditingMessageText(e.target.value)}
+                                  rows={2}
+                                  className="w-full text-sm rounded-xl border border-amber-300 bg-white text-slate-800 px-2 py-1 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                                />
+                                <div className="flex gap-2 text-[11px]">
+                                  <button
+                                    onClick={() => saveEditMessage(msg._id)}
+                                    className="px-2 py-1 rounded-lg bg-amber-600 text-white font-semibold hover:bg-amber-700"
+                                  >
+                                    Save
+                                  </button>
+                                  <button
+                                    onClick={() => { setEditingMessageId(null); setEditingMessageText(""); }}
+                                    className={`${mine ? 'text-white' : 'text-amber-700'} px-2 py-1 rounded-lg border border-amber-200 hover:bg-amber-50`}
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+                            )}
+
+                            <div className="text-[10px] mt-1 flex justify-end items-center gap-2 opacity-80">
+                              {canEdit && !isEditing && (
+                                <button
+                                  onClick={() => startEditMessage(msg)}
+                                  className={`hover:underline ${mine? 'text-white' : 'text-amber-700'}`}
+                                >
+                                  Edit
+                                </button>
+                              )}
+                              {canDelete && (
                                 <button onClick={async()=>{ try{ await deleteMessage(user?.token, selected._id, msg._id); const d=await getGroup(user?.token, selected._id); setSelected(d);}catch(e){alert('Failed to delete');}}} className={`hover:underline ${mine? 'text-white' : 'text-amber-700'}`}>Delete</button>
                               )}
                             </div>

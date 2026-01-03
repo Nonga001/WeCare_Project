@@ -56,4 +56,9 @@ export const deleteMessage = async (token, groupId, messageId) => {
   return res.data;
 };
 
+export const editMessage = async (token, groupId, messageId, text) => {
+  const res = await axios.patch(`${API_URL}/${groupId}/messages/${messageId}`, { text }, auth(token));
+  return res.data;
+};
+
 // removed private-group join-requests APIs
