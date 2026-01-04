@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
-import { changePassword as changePasswordApi, updateDonorProfile } from "../../../services/userService";
+import { changePassword as changePasswordApi, updateDonorProfile, getProfile } from "../../../services/userService";
 
 const DonorProfile = () => {
-  const { user } = useAuth();
+  const { user, login } = useAuth();
   const [type, setType] = useState("individual");
   const [form, setForm] = useState({
     org: "",
@@ -31,7 +31,7 @@ const DonorProfile = () => {
     if (user?.organization) setForm(f => ({ ...f, org: user.organization }));
     if (user?.contactPerson) setForm(f => ({ ...f, contact: user.contactPerson }));
     if (user?.csrFocus) setForm(f => ({ ...f, csr: user.csrFocus }));
-  }, [user]);
+  }, [user?.donorType, user?.donorPreference, user?.organization, user?.contactPerson, user?.csrFocus]);
   
   useEffect(() => {
     // If donor profile phone is stored on user, seed it here (fallback empty)
@@ -54,18 +54,25 @@ const DonorProfile = () => {
   const [phoneSuccess, setPhoneSuccess] = useState("");
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileMessage, setProfileMessage] = useState("");
+  const refreshProfile = async () => {
+    if (!user?.token) return null;
+    const refreshed = await getProfile(user.token);
+    login({ token: user.token, user: refreshed });
+    return refreshed;
+  };
   
   const handleSaveProfile = async () => {
     setProfileSaving(true);
     setProfileMessage("");
     try {
-      const payload = { donorPreference: form.preference };
+      const payload = { donorPreference: form.preference, donorType: type };
       if (type === "corporate") {
         payload.organization = form.org;
         payload.contactPerson = form.contact;
         payload.csrFocus = form.csr;
       }
       await updateDonorProfile(user?.token, payload);
+      await refreshProfile();
       setProfileMessage("Profile saved successfully");
       setInitialPreference(form.preference);
       setTimeout(() => setProfileMessage(""), 3000);
@@ -107,6 +114,7 @@ const DonorProfile = () => {
       setType(pendingType);
       try {
         await updateDonorProfile(user?.token, { donorType: pendingType });
+        await refreshProfile();
       } catch (err) {
         console.error("Failed to save donor type", err);
       }
@@ -138,6 +146,7 @@ const DonorProfile = () => {
     }
     try {
       await updateDonorProfile(user?.token, { phone: combined });
+      await refreshProfile();
       setPhoneSuccess("Phone number updated");
       setInitialPhoneDigits(combined);
     } catch (err) {

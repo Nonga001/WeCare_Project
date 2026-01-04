@@ -11,10 +11,10 @@ const Donations = () => {
     amount: "", 
     items: [{ name: "", quantity: "" }],
     paymentMethod: "mpesa",
-    organization: "",
     notes: "" 
   });
   const [history, setHistory] = useState([]);
+  const [showAllHistory, setShowAllHistory] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -99,8 +99,7 @@ const Donations = () => {
       const payload = {
         type: form.type,
         paymentMethod: form.paymentMethod,
-        notes: form.notes,
-        organization: form.organization || undefined
+        notes: form.notes
       };
 
       if (form.type === "financial") {
@@ -118,7 +117,6 @@ const Donations = () => {
         amount: "", 
         items: [{ name: "", quantity: "" }],
         paymentMethod: "mpesa",
-        organization: "",
         notes: "" 
       });
 
@@ -242,42 +240,7 @@ const Donations = () => {
             {/* Payment Method */}
             <div>
               <label className="label">Payment Method</label>
-              <div className="grid grid-cols-3 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setForm({ ...form, paymentMethod: "mpesa" })}
-                  className={`btn ${form.paymentMethod === 'mpesa' ? 'btn-primary' : 'btn-ghost border'}`}
-                >
-                  M-Pesa
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setForm({ ...form, paymentMethod: "bank_transfer" })}
-                  className={`btn ${form.paymentMethod === 'bank_transfer' ? 'btn-primary' : 'btn-ghost border'}`}
-                >
-                  Bank Transfer
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setForm({ ...form, paymentMethod: "card" })}
-                  className={`btn ${form.paymentMethod === 'card' ? 'btn-primary' : 'btn-ghost border'}`}
-                >
-                  Card
-                </button>
-              </div>
-            </div>
-
-            {/* Organization (optional) */}
-            <div>
-              <label className="label">Organization (Optional)</label>
-              <input
-                type="text"
-                name="organization"
-                value={form.organization}
-                onChange={handle}
-                placeholder="Your organization name"
-                className="input"
-              />
+              <p className="text-sm text-slate-600">M-Pesa (only available method for now)</p>
             </div>
 
             {/* Notes */}
@@ -307,11 +270,11 @@ const Donations = () => {
       <div className="space-y-4">
         <div className="card p-5">
           <h4 className="font-semibold text-slate-800 mb-3">Donation History</h4>
-          <div className="space-y-3">
+          <div className={`space-y-3 ${showAllHistory && history.length > 5 ? 'max-h-96 overflow-y-auto pr-1' : ''}`}>
             {history.length === 0 ? (
               <p className="text-sm text-slate-500">No donations yet.</p>
             ) : (
-              history.map((donation) => (
+              (showAllHistory ? history : history.slice(0,5)).map((donation) => (
                 <div key={donation._id} className="card p-3">
                   <p className="text-slate-700 text-sm">
                     <span className="font-medium">{donation.type}:</span> {
@@ -334,6 +297,17 @@ const Donations = () => {
               ))
             )}
           </div>
+          {history.length > 5 && (
+            <div className="mt-3 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowAllHistory((v) => !v)}
+                className="text-sm font-semibold text-stone-800 hover:text-stone-900 dark:text-stone-100"
+              >
+                {showAllHistory ? 'Show less' : `View more (${history.length - 5})`}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

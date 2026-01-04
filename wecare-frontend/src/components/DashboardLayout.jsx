@@ -495,7 +495,10 @@ const DashboardLayout = ({ title, children }) => {
                 </div>
               )}
               </div>
-              <button onClick={toggleTheme} className="btn btn-ghost">
+              <button
+                onClick={toggleTheme}
+                className={`${isDonorDashboard ? 'px-3 py-2 rounded-lg bg-gradient-to-r from-stone-700 to-stone-800 text-white text-sm font-semibold shadow hover:from-stone-800 hover:to-stone-900' : 'btn btn-ghost'}`}
+              >
                 {isDark ? 'Light Mode' : 'Dark Mode'}
               </button>
               {/* Compact hamburger to open side nav (placed to the right of theme toggle) */}
@@ -642,8 +645,11 @@ const DashboardLayout = ({ title, children }) => {
 
                 {/* Footer section - fixed at bottom of sidebar */}
                 <div className="p-6 border-t border-slate-100 dark:border-slate-800 flex-shrink-0">
-                  <button onClick={toggleTheme} className="w-full px-3 py-2 rounded-lg bg-amber-700 hover:bg-amber-800 text-white text-sm flex items-center justify-center gap-2 transition-colors">
-                    {isDark ? '☀️ Light Mode' : '🌙 Dark Mode'}
+                  <button
+                    onClick={toggleTheme}
+                    className={`w-full px-3 py-2 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-colors ${isDonorDashboard ? 'bg-gradient-to-r from-stone-700 to-stone-800 text-white hover:from-stone-800 hover:to-stone-900' : 'bg-amber-700 hover:bg-amber-800 text-white'}`}
+                  >
+                    {isDark ? 'Light Mode' : 'Dark Mode'}
                   </button>
                 </div>
               </aside>
