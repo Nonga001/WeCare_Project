@@ -146,25 +146,48 @@ export const login = async (req, res) => {
       return res.status(400).json({ message: "Email, password, and role are required" });
     }
 
-    // Super Admin: fixed credentials can log in from any page
-    if (email === "wecare@admin.com" && password === "admin1234") {
-      const superAdminUser = {
-        _id: "superadmin-fixed-id",
-        name: "Super Admin",
-        email: "wecare@admin.com",
-        role: "superadmin",
-      };
-      const token = generateToken(superAdminUser);
-      return res.json({
-        message: "superadmin login successful",
-        token,
-        user: {
-          id: superAdminUser._id,
-          name: superAdminUser.name,
-          email: superAdminUser.email,
-          role: superAdminUser.role,
-        },
-      });
+    // Super Admin: Check for custom password first, then default
+    if (email === "wecare@admin.com" && role === "superadmin") {
+      let isValid = false;
+      
+      // Try to load custom password from database
+      try {
+        const SuperAdminConfig = await import("../models/SuperAdminConfig.js").then(m => m.default);
+        const config = await SuperAdminConfig.findOne({ key: "password" });
+        
+        if (config && config.value) {
+          // Custom password exists, verify against it
+          isValid = await bcrypt.compare(password, config.value);
+        } else {
+          // No custom password, use default
+          isValid = password === "admin1234";
+        }
+      } catch (err) {
+        // Fallback to default if model doesn't exist or error
+        isValid = password === "admin1234";
+      }
+
+      if (isValid) {
+        const superAdminUser = {
+          _id: "superadmin-fixed-id",
+          name: "Super Admin",
+          email: "wecare@admin.com",
+          role: "superadmin",
+        };
+        const token = generateToken(superAdminUser);
+        return res.json({
+          message: "superadmin login successful",
+          token,
+          user: {
+            id: superAdminUser._id,
+            name: superAdminUser.name,
+            email: superAdminUser.email,
+            role: superAdminUser.role,
+          },
+        });
+      } else {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
     }
 
     // Find user by email
@@ -224,6 +247,88 @@ export const login = async (req, res) => {
         organization: user.organization,
       },
     });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+// ---------------- SUPER ADMIN PASSWORD MANAGEMENT ----------------
+
+// Change Super Admin Password
+export const changeSuperAdminPassword = async (req, res) => {
+  try {
+    if (req.user.role !== "superadmin") {
+      return res.status(403).json({ message: "Only super admin can change this password" });
+    }
+
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: "Current and new passwords are required" });
+    }
+
+    // Check current password
+    let isCurrentPasswordValid = false;
+    
+    try {
+      const SuperAdminConfig = await import("../models/SuperAdminConfig.js").then(m => m.default);
+      const config = await SuperAdminConfig.findOne({ key: "password" });
+      
+      if (config && config.value) {
+        // Custom password exists, verify against it
+        isCurrentPasswordValid = await bcrypt.compare(currentPassword, config.value);
+      } else {
+        // No custom password, check against default
+        isCurrentPasswordValid = currentPassword === "admin1234";
+      }
+    } catch (err) {
+      // Fallback to default if model doesn't exist
+      isCurrentPasswordValid = currentPassword === "admin1234";
+    }
+
+    if (!isCurrentPasswordValid) {
+      return res.status(401).json({ message: "Current password is incorrect" });
+    }
+
+    // Validate new password strength
+    if (!isStrongPassword(newPassword)) {
+      return res.status(400).json({
+        message: "Password must be at least 8 chars and include uppercase, lowercase, number, and special character",
+      });
+    }
+
+    // Hash and store new password in database
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    
+    const SuperAdminConfig = await import("../models/SuperAdminConfig.js").then(m => m.default);
+    await SuperAdminConfig.findOneAndUpdate(
+      { key: "password" },
+      { key: "password", value: hashedPassword },
+      { upsert: true }
+    );
+
+    res.json({ message: "Password changed successfully" });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+// Get System Information
+export const getSystemInfo = async (req, res) => {
+  try {
+    if (req.user.role !== "superadmin") {
+      return res.status(403).json({ message: "Only super admin can view system info" });
+    }
+
+    const info = {
+      currentSession: new Date().toLocaleString(),
+      databaseStatus: "Connected",
+      lastBackup: "Not configured",
+      serverUptime: process.uptime(),
+      nodeVersion: process.version,
+    };
+
+    res.json(info);
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
   }

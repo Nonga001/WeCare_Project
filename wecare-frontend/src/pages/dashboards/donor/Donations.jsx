@@ -9,10 +9,12 @@ const Donations = () => {
   const [form, setForm] = useState({ 
     type: "financial", 
     amount: "", 
+    phoneNumber: "",
     items: [{ name: "", quantity: "" }],
     paymentMethod: "mpesa",
     notes: "" 
   });
+  const [showModal, setShowModal] = useState(false);
   const [history, setHistory] = useState([]);
   const [showAllHistory, setShowAllHistory] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -20,6 +22,10 @@ const Donations = () => {
   const [success, setSuccess] = useState("");
 
   const handle = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const handlePhone = (e) => {
+    const digitsOnly = (e.target.value || "").replace(/\D/g, "").slice(0, 12);
+    setForm({ ...form, phoneNumber: digitsOnly });
+  };
 
   const location = useLocation();
   useEffect(() => {
@@ -31,7 +37,7 @@ const Donations = () => {
     setForm((prev) => ({
       ...prev,
       type: type || prev.type,
-      amount: amount || prev.amount,
+      amount: amount && Number(amount) > 0 ? amount : "",
     }));
     if (type === 'essentials' && items) {
       const parsed = items.split(";").map(p => {
@@ -60,6 +66,8 @@ const Donations = () => {
   }, [user?.token]);
 
   const addItem = () => {
+    const allValid = form.items.every(item => item.name && item.quantity && Number(item.quantity) > 0);
+    if (!allValid) return; // prevent adding blanks/duplicates when current items invalid
     setForm({ ...form, items: [...form.items, { name: "", quantity: "" }] });
   };
 
@@ -82,8 +90,15 @@ const Donations = () => {
 
     // Validation
     if (form.type === "financial") {
-      if (!form.amount || isNaN(Number(form.amount)) || Number(form.amount) <= 0) {
-        setError("Please enter a valid amount");
+      const numericAmount = Number(form.amount);
+      if (!form.amount || isNaN(numericAmount) || numericAmount <= 0) {
+        setError("Amount must be greater than 0");
+        return;
+      }
+      const phoneDigits = (form.phoneNumber || "").replace(/\D/g, "");
+      const phoneRegex = /^254[71]\d{8}$/; // exactly 12 digits total
+      if (!phoneDigits || !phoneRegex.test(phoneDigits)) {
+        setError("Enter a valid phone starting with 2547 or 2541 (12 digits)");
         return;
       }
     } else {
@@ -104,30 +119,21 @@ const Donations = () => {
 
       if (form.type === "financial") {
         payload.amount = Number(form.amount);
+        payload.phoneNumber = (form.phoneNumber || "").replace(/\D/g, "");
       } else {
         payload.items = form.items.filter(item => item.name && item.quantity && Number(item.quantity) > 0);
       }
 
       await createDonation(user?.token, payload);
-      setSuccess("Donation submitted successfully! Thank you for your support.");
-      
-      // Reset form
-      setForm({ 
-        type: "financial", 
-        amount: "", 
-        items: [{ name: "", quantity: "" }],
-        paymentMethod: "mpesa",
-        notes: "" 
-      });
-
-      // Removed local hidden fallback for donated request; rely on server state
-
-      // Reload history
-      const data = await getMyDonations(user?.token);
-      setHistory(data);
+      // Show API error instead of success per request, and do not mutate history
+      setSuccess("");
+      setError("Error calling API");
+      setShowModal(false);
+      // keep form values and history unchanged
 
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to submit donation");
+      setError(err.response?.data?.message || "Error calling API");
+      setShowModal(false);
     } finally {
       setLoading(false);
     }
@@ -149,121 +155,15 @@ const Donations = () => {
         )}
 
         <div className="card p-5">
-          <h3 className="mb-4">Make a Donation</h3>
-          
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Donation Type */}
-            <div>
-              <label className="label">Donation Type</label>
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setForm({ ...form, type: "financial" })}
-                  className={`btn ${form.type === "financial" ? 'btn-primary' : 'btn-ghost border'}`}
-                >
-                  Financial
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setForm({ ...form, type: "essentials" })}
-                  className={`btn ${form.type === "essentials" ? 'btn-primary' : 'btn-ghost border'}`}
-                >
-                  Essentials
-                </button>
-              </div>
-            </div>
-
-            {/* Financial Donation */}
-            {form.type === "financial" && (
-              <div>
-                <label className="label">Amount (KES)</label>
-                <input
-                  type="number"
-                  name="amount"
-                  value={form.amount}
-                  onChange={handle}
-                  placeholder="Enter amount"
-                  className="input"
-                  min={1}
-                  required
-                />
-              </div>
-            )}
-
-            {/* Essentials Donation */}
-            {form.type === "essentials" && (
-              <div>
-                <label className="label">Essential Items</label>
-                {form.items.map((item, index) => (
-                  <div key={index} className="flex gap-3 mb-3">
-                    <select
-                      value={item.name}
-                      onChange={(e) => updateItem(index, "name", e.target.value)}
-                      className="input flex-1"
-                      required
-                    >
-                      <option value="">Select item</option>
-                      {ESSENTIAL_ITEMS.map(essential => (
-                        <option key={essential} value={essential}>{essential}</option>
-                      ))}
-                    </select>
-                    <input
-                      type="number"
-                      placeholder="Qty"
-                      value={item.quantity}
-                      onChange={(e) => updateItem(index, "quantity", e.target.value)}
-                      className="input w-24"
-                      min={1}
-                      required
-                    />
-                    {form.items.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeItem(index)}
-                        className="btn btn-ghost text-rose-600 hover:text-rose-700"
-                      >
-                        ✕
-                      </button>
-                    )}
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={addItem}
-                  className="btn btn-ghost text-brand-600"
-                >
-                  + Add another item
-                </button>
-              </div>
-            )}
-
-            {/* Payment Method */}
-            <div>
-              <label className="label">Payment Method</label>
-              <p className="text-sm text-slate-600">M-Pesa (only available method for now)</p>
-            </div>
-
-            {/* Notes */}
-            <div>
-              <label className="label">Notes (Optional)</label>
-              <textarea
-                name="notes"
-                value={form.notes}
-                onChange={handle}
-                placeholder="Any additional notes..."
-                rows={3}
-                className="input"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn btn-primary w-full"
-            >
-              {loading ? "Processing..." : "Donate Now"}
-            </button>
-          </form>
+          <h3 className="mb-2">Make a Donation</h3>
+          <p className="text-sm text-slate-600 mb-4">Click donate to enter your amount and details in a quick popup.</p>
+          <button
+            type="button"
+            onClick={() => setShowModal(true)}
+            className="btn btn-primary w-full"
+          >
+            Donate
+          </button>
         </div>
       </div>
 
@@ -310,6 +210,149 @@ const Donations = () => {
           )}
         </div>
       </div>
+
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="bg-white dark:bg-slate-900 rounded-xl shadow-xl w-full max-w-2xl p-6 border border-stone-200 dark:border-stone-700">
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-stone-900 dark:text-stone-100">Complete Your Donation</h3>
+                <p className="text-sm text-slate-600 dark:text-stone-300">Add your amount or items and confirm.</p>
+              </div>
+              <button onClick={() => setShowModal(false)} className="text-stone-500 hover:text-stone-700">✕</button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="label">Donation Type</label>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, type: "financial" })}
+                    className={`btn ${form.type === "financial" ? 'btn-primary' : 'btn-ghost border'}`}
+                  >
+                    Financial
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, type: "essentials" })}
+                    className={`btn ${form.type === "essentials" ? 'btn-primary' : 'btn-ghost border'}`}
+                  >
+                    Essentials
+                  </button>
+                </div>
+              </div>
+
+              {form.type === "financial" && (
+                <div>
+                  <label className="label">Phone Number (Mpesa)</label>
+                  <input
+                    type="tel"
+                    name="phoneNumber"
+                    value={form.phoneNumber}
+                    onChange={handlePhone}
+                    placeholder="2547XXXXXXXX or 2541XXXXXXXX"
+                    className="input mb-3"
+                    inputMode="numeric"
+                    maxLength={12}
+                    title="Enter 12 digits starting with 2547 or 2541"
+                    required
+                  />
+                  <label className="label">Amount (KES)</label>
+                  <input
+                    type="number"
+                    name="amount"
+                    value={form.amount}
+                    onChange={handle}
+                    placeholder="Enter amount"
+                    className="input"
+                    min={1}
+                    required
+                  />
+                </div>
+              )}
+
+              {form.type === "essentials" && (
+                <div>
+                  <label className="label">Essential Items</label>
+                  {form.items.map((item, index) => (
+                    <div key={index} className="flex gap-3 mb-3">
+                      <select
+                        value={item.name}
+                        onChange={(e) => updateItem(index, "name", e.target.value)}
+                        className="input flex-1"
+                        required
+                      >
+                        <option value="">Select item</option>
+                        {ESSENTIAL_ITEMS.map(essential => (
+                          <option key={essential} value={essential}>{essential}</option>
+                        ))}
+                      </select>
+                      <input
+                        type="number"
+                        placeholder="Qty"
+                        value={item.quantity}
+                        onChange={(e) => updateItem(index, "quantity", e.target.value)}
+                        className="input w-24"
+                        min={1}
+                        required
+                      />
+                      {form.items.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeItem(index)}
+                          className="btn btn-ghost text-rose-600 hover:text-rose-700"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={addItem}
+                    className="btn btn-ghost text-brand-600"
+                  >
+                    + Add another item
+                  </button>
+                </div>
+              )}
+
+              <div>
+                <label className="label">Payment Method</label>
+                <p className="text-sm text-slate-600">M-Pesa (only available method for now)</p>
+              </div>
+
+              <div>
+                <label className="label">Notes (Optional)</label>
+                <textarea
+                  name="notes"
+                  value={form.notes}
+                  onChange={handle}
+                  placeholder="Any additional notes..."
+                  rows={3}
+                  className="input resize-none"
+                />
+              </div>
+
+              <div className="flex gap-3 justify-end">
+                <button type="button" onClick={() => setShowModal(false)} className="btn btn-ghost">Cancel</button>
+                <button
+                  type="submit"
+                  disabled={
+                    loading ||
+                    (form.type === "financial" && ((form.phoneNumber || "").replace(/\D/g, "").length !== 12)) ||
+                    (form.type === "essentials" && !form.items.every(it => it.name && it.quantity && Number(it.quantity) > 0))
+                  }
+                  className="btn btn-primary"
+                >
+                  {loading ? "Processing..." : "Make Donation"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

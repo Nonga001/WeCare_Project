@@ -8,7 +8,8 @@ const Card = ({ title, children }) => (
 import { useEffect, useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import { getAidStats } from "../../../services/aidService";
-import { getDonorStats, getGlobalAidRequests } from "../../../services/donationService";
+import { getDonorStats } from "../../../services/donationService";
+import BrowseRequests from "./BrowseRequests";
 
 const DonorHome = () => {
   const { user } = useAuth();
@@ -25,10 +26,9 @@ const DonorHome = () => {
     const load = async () => {
       try {
         setLoading(true);
-        const [aidStats, donorStats, globalRequests] = await Promise.all([
+        const [aidStats, donorStats] = await Promise.all([
           getAidStats(user?.token),
-          getDonorStats(user?.token),
-          getGlobalAidRequests(user?.token)
+          getDonorStats(user?.token)
         ]);
         
         setNeeds({ 
@@ -104,13 +104,11 @@ const DonorHome = () => {
             >
               Essentials
             </a>
-            <a
-              href="/dashboard/donor/browse"
-              className="px-4 py-2 rounded-xl border border-stone-300 dark:border-stone-500 text-stone-800 dark:text-stone-100 text-sm font-semibold hover:bg-stone-50 dark:hover:bg-slate-800 transition"
-            >
-              Browse Requests
-            </a>
           </div>
+        </Card>
+
+        <Card title="Browse Requests">
+          <BrowseRequests initialLimit={2} />
         </Card>
       </div>
 

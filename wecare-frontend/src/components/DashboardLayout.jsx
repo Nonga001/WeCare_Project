@@ -400,27 +400,27 @@ const DashboardLayout = ({ title, children }) => {
                   <NavLink
                     to="/dashboard/superadmin"
                     end
-                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-gradient-to-r from-red-500 to-rose-600 text-white shadow' : 'text-slate-700 dark:text-slate-200 hover:bg-red-50 dark:hover:bg-red-900/20'}`}
                   >Home</NavLink>
                   <NavLink
                     to="/dashboard/superadmin/profile"
-                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-gradient-to-r from-red-500 to-rose-600 text-white shadow' : 'text-slate-700 dark:text-slate-200 hover:bg-red-50 dark:hover:bg-red-900/20'}`}
                   >Profile</NavLink>
                   <NavLink
                     to="/dashboard/superadmin/users"
-                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-gradient-to-r from-red-500 to-rose-600 text-white shadow' : 'text-slate-700 dark:text-slate-200 hover:bg-red-50 dark:hover:bg-red-900/20'}`}
                   >Users</NavLink>
                   <NavLink
                     to="/dashboard/superadmin/settings"
-                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-gradient-to-r from-red-500 to-rose-600 text-white shadow' : 'text-slate-700 dark:text-slate-200 hover:bg-red-50 dark:hover:bg-red-900/20'}`}
                   >Settings</NavLink>
                   <NavLink
                     to="/dashboard/superadmin/analytics"
-                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-gradient-to-r from-red-500 to-rose-600 text-white shadow' : 'text-slate-700 dark:text-slate-200 hover:bg-red-50 dark:hover:bg-red-900/20'}`}
                   >Analytics</NavLink>
                   <NavLink
                     to="/dashboard/superadmin/notifications"
-                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-gradient-to-r from-red-500 to-rose-600 text-white shadow' : 'text-slate-700 dark:text-slate-200 hover:bg-red-50 dark:hover:bg-red-900/20'}`}
                   >Notifications</NavLink>
                 </nav>
               )}
@@ -621,22 +621,22 @@ const DashboardLayout = ({ title, children }) => {
                   {/* SuperAdmin Navigation */}
                   {isSuperAdminDashboard && user?.role === 'superadmin' && (
                     <>
-                      <NavLink to="/dashboard/superadmin" end onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-indigo-600 to-red-700 text-white shadow' : 'text-slate-800 hover:bg-indigo-50 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                      <NavLink to="/dashboard/superadmin" end onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-red-500 to-rose-600 text-white shadow' : 'text-slate-800 hover:bg-red-50 dark:text-slate-200 dark:hover:bg-red-900/20'}`}>
                         <span className="text-sm font-medium">Home</span>
                       </NavLink>
-                      <NavLink to="/dashboard/superadmin/profile" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-indigo-600 to-red-700 text-white shadow' : 'text-slate-800 hover:bg-indigo-50 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                      <NavLink to="/dashboard/superadmin/profile" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-red-500 to-rose-600 text-white shadow' : 'text-slate-800 hover:bg-red-50 dark:text-slate-200 dark:hover:bg-red-900/20'}`}>
                         <span className="text-sm font-medium">Profile</span>
                       </NavLink>
-                      <NavLink to="/dashboard/superadmin/users" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-indigo-600 to-red-700 text-white shadow' : 'text-slate-800 hover:bg-indigo-50 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                      <NavLink to="/dashboard/superadmin/users" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-red-500 to-rose-600 text-white shadow' : 'text-slate-800 hover:bg-red-50 dark:text-slate-200 dark:hover:bg-red-900/20'}`}>
                         <span className="text-sm font-medium">Users</span>
                       </NavLink>
-                      <NavLink to="/dashboard/superadmin/settings" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-indigo-600 to-red-700 text-white shadow' : 'text-slate-800 hover:bg-indigo-50 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                      <NavLink to="/dashboard/superadmin/settings" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-red-500 to-rose-600 text-white shadow' : 'text-slate-800 hover:bg-red-50 dark:text-slate-200 dark:hover:bg-red-900/20'}`}>
                         <span className="text-sm font-medium">Settings</span>
                       </NavLink>
-                      <NavLink to="/dashboard/superadmin/analytics" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-indigo-600 to-red-700 text-white shadow' : 'text-slate-800 hover:bg-indigo-50 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                      <NavLink to="/dashboard/superadmin/analytics" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-red-500 to-rose-600 text-white shadow' : 'text-slate-800 hover:bg-red-50 dark:text-slate-200 dark:hover:bg-red-900/20'}`}>
                         <span className="text-sm font-medium">Analytics</span>
                       </NavLink>
-                      <NavLink to="/dashboard/superadmin/notifications" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-indigo-600 to-red-700 text-white shadow' : 'text-slate-800 hover:bg-indigo-50 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                      <NavLink to="/dashboard/superadmin/notifications" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-red-500 to-rose-600 text-white shadow' : 'text-slate-800 hover:bg-red-50 dark:text-slate-200 dark:hover:bg-red-900/20'}`}>
                         <span className="text-sm font-medium">Notifications</span>
                       </NavLink>
                     </>
@@ -647,7 +647,7 @@ const DashboardLayout = ({ title, children }) => {
                 <div className="p-6 border-t border-slate-100 dark:border-slate-800 flex-shrink-0">
                   <button
                     onClick={toggleTheme}
-                    className={`w-full px-3 py-2 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-colors ${isDonorDashboard ? 'bg-gradient-to-r from-stone-700 to-stone-800 text-white hover:from-stone-800 hover:to-stone-900' : 'bg-amber-700 hover:bg-amber-800 text-white'}`}
+                    className={`w-full px-3 py-2 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-colors ${isDonorDashboard ? 'bg-gradient-to-r from-stone-700 to-stone-800 text-white hover:from-stone-800 hover:to-stone-900' : isSuperAdminDashboard ? 'bg-gradient-to-r from-red-500 to-rose-600 text-white hover:from-red-600 hover:to-rose-700' : 'bg-amber-700 hover:bg-amber-800 text-white'}`}
                   >
                     {isDark ? 'Light Mode' : 'Dark Mode'}
                   </button>

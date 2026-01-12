@@ -84,7 +84,6 @@ const AppRoutes = () => {
           <Route path="profile" element={<DonorProfile />} />
           <Route path="donations" element={<Donations />} />
           <Route path="reports" element={<DonorReports />} />
-          <Route path="browse" element={<BrowseRequests />} />
           <Route path="notifications" element={<DonorNotifications />} />
         </Route>
         <Route

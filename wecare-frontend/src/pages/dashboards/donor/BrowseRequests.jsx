@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../context/AuthContext";
 import { getGlobalAidRequests } from "../../../services/donationService";
 
-const BrowseRequests = () => {
+const BrowseRequests = ({ initialLimit = 6 }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [type, setType] = useState("");
@@ -80,55 +80,46 @@ const BrowseRequests = () => {
         <div></div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="space-y-2">
         {filtered.length === 0 ? (
-          <div className="col-span-2 text-center py-8 text-slate-500">
+          <div className="text-center py-8 text-slate-500">
             No requests found matching your criteria.
           </div>
         ) : (
-          (showAll ? filtered : filtered.slice(0, 6)).map((r) => (
-            <div key={r._id} className="card p-5 flex flex-col gap-2">
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="font-semibold text-slate-800">{r.student?.name || `Person ${r.student?._id?.slice(-4) || 'X'}`}</p>
-                  <span className="text-xs text-slate-500">{r.student?.university || 'Unknown University'}</span>
-                </div>
-                <span className="text-xs font-semibold px-2 py-1 rounded-full bg-stone-100 text-stone-700">
+          (showAll ? filtered : filtered.slice(0, initialLimit)).map((r) => (
+            <div key={r._id} className="flex items-center justify-between p-3 border border-stone-200 dark:border-stone-700 rounded-lg bg-stone-50 dark:bg-slate-800/50 hover:bg-stone-100 dark:hover:bg-slate-800 transition cursor-pointer" onClick={()=>donate(r)}>
+              <div className="flex-1 flex items-center gap-4 text-sm">
+                <span className="font-semibold text-stone-800 dark:text-stone-100 min-w-fit">
                   {r.type === 'financial' ? 'Financial' : 'Essentials'}
                 </span>
+                <span className="text-slate-700 dark:text-stone-200 min-w-fit">
+                  {r.type === "financial" 
+                    ? `KES ${r.amount?.toLocaleString() || '—'}` 
+                    : `${r.items?.map(i => `${i.name} x${i.quantity}`).join(', ') || '—'}`
+                  }
+                </span>
+                <span className="text-slate-600 dark:text-stone-300 text-xs min-w-fit">
+                  {new Date(r.createdAt).toLocaleDateString()}
+                </span>
               </div>
-
-              <p className="text-sm text-slate-700">
-                {r.reason || 'Request details not provided.'}
-              </p>
-
-              <p className="text-xs text-slate-600">
-                {r.type === "financial" 
-                  ? `Requested: KES ${r.amount?.toLocaleString() || '—'}` 
-                  : `Items: ${r.items?.map(i => `${i.name} x${i.quantity}`).join(', ') || '—'}`
-                }
-              </p>
-
-              <p className="text-[11px] text-slate-400">
-                Requested on {new Date(r.createdAt).toLocaleDateString()}
-              </p>
-
-              <div className="mt-2">
-                <button onClick={()=>donate(r)} className="btn btn-primary w-full">Donate</button>
-              </div>
+              {r.status === 'pending' && (
+                <span className="text-xs font-semibold px-2 py-1 rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300">
+                  Pending
+                </span>
+              )}
             </div>
           ))
         )}
       </div>
 
-      {filtered.length > 6 && (
-        <div className="flex justify-center">
+      {filtered.length > initialLimit && (
+        <div className="flex justify-center mt-3">
           <button
             type="button"
             onClick={()=>setShowAll((v)=>!v)}
             className="px-4 py-2 text-sm font-semibold text-stone-800 hover:text-stone-900 dark:text-stone-100"
           >
-            {showAll ? 'Show less' : `View more (${filtered.length - 6})`}
+            {showAll ? 'Show less' : `Show more (${filtered.length - initialLimit})`}
           </button>
         </div>
       )}
