@@ -38,9 +38,13 @@ const PORT = process.env.PORT || 5000;
 import http from "http";
 import { Server as SocketIOServer } from "socket.io";
 const httpServer = http.createServer(app);
+const allowedOrigins = process.env.NODE_ENV === "production" 
+  ? ["https://your-vercel-domain.vercel.app"] 
+  : ["http://localhost:5173", "http://localhost:5174", "http://127.0.0.1:5173"];
+
 export const io = new SocketIOServer(httpServer, {
   cors: {
-    origin: ["http://localhost:5173", "http://localhost:5174", "http://127.0.0.1:5173"],
+    origin: allowedOrigins,
     credentials: true
   }
 });
