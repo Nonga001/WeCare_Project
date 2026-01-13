@@ -1,6 +1,7 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:5000/api/auth"; // backend endpoint
+// Choose backend URL from env, fall back to local dev
+const API_URL = `${import.meta.env.VITE_API_URL || "http://localhost:5000"}/api/auth`;
 
 // Register user
 export const register = async (role, userData) => {

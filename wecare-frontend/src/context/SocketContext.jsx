@@ -11,7 +11,7 @@ export const SocketProvider = ({ children }) => {
   const [status, setStatus] = useState("disconnected");
 
   const url = useMemo(() => {
-    return "http://localhost:5000";
+    return import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_API_URL || "http://localhost:5000";
   }, []);
 
   useEffect(() => {

@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import { updateStudentProfile, submitProfileForApproval, getProfileCompletion, changePassword as changePasswordApi } from "../../../services/userService";
 
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const UPLOAD_BASE = import.meta.env.VITE_SOCKET_URL || API_BASE;
+
 const MiniBadge = ({ status }) => {
   const map = {
     verified: "bg-amber-100 text-amber-800 border-amber-200",
@@ -41,7 +44,7 @@ const StudentProfile = () => {
       try {
         const [completionData, profileData] = await Promise.all([
           getProfileCompletion(user?.token),
-          fetch('http://localhost:5000/api/users/profile', { headers: { Authorization: `Bearer ${user?.token}` } }).then((r) => r.json()),
+          fetch(`${API_BASE}/api/users/profile`, { headers: { Authorization: `Bearer ${user?.token}` } }).then((r) => r.json()),
         ]);
         setUserProfile(profileData);
         setCompletion(completionData);
@@ -127,7 +130,7 @@ const StudentProfile = () => {
         else setSuccess('Student email updated'); setTimeout(() => setSuccess(''), 3500);
         const [completionData, profileData] = await Promise.all([
           getProfileCompletion(user?.token),
-          fetch('http://localhost:5000/api/users/profile', { headers: { Authorization: `Bearer ${user?.token}` } }).then(r => r.json()),
+          fetch(`${API_BASE}/api/users/profile`, { headers: { Authorization: `Bearer ${user?.token}` } }).then(r => r.json()),
         ]);
         setUserProfile(profileData); setCompletion(completionData);
         setForm((p) => ({ ...p, ...(profileData || {}) }));
@@ -149,7 +152,7 @@ const StudentProfile = () => {
         else setSuccess('Phone updated'); setTimeout(() => setSuccess(''), 3500);
         const [completionData, profileData] = await Promise.all([
           getProfileCompletion(user?.token),
-          fetch('http://localhost:5000/api/users/profile', { headers: { Authorization: `Bearer ${user?.token}` } }).then(r => r.json()),
+          fetch(`${API_BASE}/api/users/profile`, { headers: { Authorization: `Bearer ${user?.token}` } }).then(r => r.json()),
         ]);
         setUserProfile(profileData); setCompletion(completionData);
         // update states to reflect persisted value
@@ -188,7 +191,7 @@ const StudentProfile = () => {
               setTimeout(() => setSuccess(''), 3500);
               const [completionData, profileData] = await Promise.all([
                 getProfileCompletion(user?.token),
-                fetch('http://localhost:5000/api/users/profile', { headers: { Authorization: `Bearer ${user?.token}` } }).then(r => r.json()),
+                fetch(`${API_BASE}/api/users/profile`, { headers: { Authorization: `Bearer ${user?.token}` } }).then(r => r.json()),
               ]);
               setUserProfile(profileData); setCompletion(completionData);
               setForm((p) => ({ ...p, documents: profileData.documents || '' }));
@@ -219,7 +222,7 @@ const StudentProfile = () => {
       else setSuccess('Updated'); setTimeout(() => setSuccess(''), 3500);
       const [completionData, profileData] = await Promise.all([
         getProfileCompletion(user?.token),
-        fetch('http://localhost:5000/api/users/profile', { headers: { Authorization: `Bearer ${user?.token}` } }).then(r => r.json()),
+        fetch(`${API_BASE}/api/users/profile`, { headers: { Authorization: `Bearer ${user?.token}` } }).then(r => r.json()),
       ]);
       setUserProfile(profileData); setCompletion(completionData);
       setForm((p) => ({ ...p, ...(profileData || {}) }));
@@ -249,7 +252,7 @@ const StudentProfile = () => {
     if (typeof form.documents === 'string') {
       const fileName = form.documents;
       // attempt common upload path; if your backend uses another path adjust accordingly
-      setPreviewUrl(fileName.startsWith('http') ? fileName : `http://localhost:5000/uploads/${fileName}`);
+      setPreviewUrl(fileName.startsWith('http') ? fileName : `${UPLOAD_BASE}/uploads/${fileName}`);
     }
   }, [form.documents]);
 
