@@ -1,0 +1,30 @@
+# Test & Build Reports
+PRODUCTION_REPORT.md
+DEPLOYMENT_GUIDE.md
+production-test.sh
+build.log
+
+# Environment files
+.env
+.env.production
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Temporary files
+tmp/
+temp/

@@ -12,6 +12,17 @@ dist
 dist-ssr
 *.local
 
+# Environment files - keep only .env.example
+.env
+.env.production
+.env.local
+
+# Reports and test files
+PRODUCTION_REPORT.md
+DEPLOYMENT_GUIDE.md
+production-test.sh
+*.log
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
