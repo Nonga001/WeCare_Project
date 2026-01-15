@@ -140,6 +140,7 @@ const RegisterDonor = () => {
             value={form.email}
             onChange={handleChange}
             className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-300 focus:border-transparent transition"
+            autoComplete="email"
             required
           />
         </div>
@@ -155,6 +156,7 @@ const RegisterDonor = () => {
               value={form.password}
               onChange={handleChange}
               className="w-full px-4 py-3 pr-12 border rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-300 focus:border-transparent transition"
+              autoComplete="new-password"
               required
             />
             <button type="button" onClick={() => setShowPassword((s) => !s)} className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-500 hover:text-gray-700" aria-label={showPassword ? "Hide password" : "Show password"}>
@@ -185,6 +187,7 @@ const RegisterDonor = () => {
               value={form.confirmPassword}
               onChange={handleChange}
               className="w-full px-4 py-3 pr-12 border rounded-xl focus:outline-none focus:ring-2 focus:ring-stone-300 focus:border-transparent transition"
+              autoComplete="new-password"
               required
             />
             <button type="button" onClick={() => setShowConfirmPassword((s) => !s)} className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-500 hover:text-gray-700" aria-label={showConfirmPassword ? "Hide password" : "Show password"}>

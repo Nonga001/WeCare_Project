@@ -57,6 +57,7 @@ const LoginAdmin = () => {
             value={form.email}
             onChange={handleChange}
               className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-transparent transition"
+            autoComplete="email"
             required
           />
         </div>
@@ -72,6 +73,7 @@ const LoginAdmin = () => {
               value={form.password}
               onChange={handleChange}
                 className="w-full px-4 py-3 pr-12 border rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-transparent transition"
+              autoComplete="current-password"
               required
             />
             <button

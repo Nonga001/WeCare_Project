@@ -48,6 +48,7 @@ const RegisterSuperAdmin = () => {
           value={form.email}
           onChange={handleChange}
           className="w-full mb-2 p-2 border rounded"
+          autoComplete="email"
           required
         />
 
@@ -58,6 +59,7 @@ const RegisterSuperAdmin = () => {
           value={form.phone}
           onChange={handleChange}
           className="w-full mb-2 p-2 border rounded"
+          autoComplete="tel"
           required
         />
 
@@ -68,6 +70,7 @@ const RegisterSuperAdmin = () => {
           value={form.password}
           onChange={handleChange}
           className="w-full mb-4 p-2 border rounded"
+          autoComplete="new-password"
           required
         />
 
