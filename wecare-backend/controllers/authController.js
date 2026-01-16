@@ -192,16 +192,16 @@ export const login = async (req, res) => {
 
     // Find user by email
     const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ message: "User not found" });
+    if (!user) return res.status(401).json({ message: "Invalid credentials" });
 
     // Check if role matches (except superadmin handled above)
     if (user.role !== role) {
-      return res.status(403).json({ message: `This account is not a ${role}` });
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
     // Compare password
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ message: "Invalid password" });
+    if (!isMatch) return res.status(401).json({ message: "Invalid credentials" });
 
     // Suspension check for all roles except superadmin
     if (user.isSuspended) {
