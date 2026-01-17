@@ -1,5 +1,6 @@
 import User from "../models/User.js";
 import bcrypt from "bcryptjs";
+import EthicalFeedback from "../models/EthicalFeedback.js";
 
 // Example user profile route
 export const getProfile = async (req, res) => {
@@ -23,6 +24,15 @@ export const getProfile = async (req, res) => {
       donorPreference: user.donorPreference,
       contactPerson: user.contactPerson,
       csrFocus: user.csrFocus,
+      // Student profile fields
+      studentId: user.studentId,
+      studentEmail: user.studentEmail,
+      course: user.course,
+      yearOfStudy: user.yearOfStudy,
+      childDetails: user.childDetails,
+      documents: user.documents,
+      profileSubmitted: user.profileSubmitted,
+      profileApproved: user.profileApproved,
     });
   } catch (err) {
     res.status(500).json({ message: "Something went wrong" });
@@ -462,5 +472,91 @@ export const getAdminStats = async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+// Submit ethical feedback
+export const submitEthicalFeedback = async (req, res) => {
+  try {
+    const { ratings, openEnded } = req.body;
+    
+    if (!ratings || !openEnded) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    if (!openEnded.ethicalConcern?.trim() || !openEnded.realWorldTrust?.trim()) {
+      return res.status(400).json({ message: "Please answer both open-ended questions" });
+    }
+
+    const feedback = new EthicalFeedback({
+      userId: req.user._id,
+      userRole: req.user.role,
+      ratings,
+      openEnded,
+    });
+
+    await feedback.save();
+
+    res.status(201).json({
+      message: "Ethical feedback submitted successfully",
+      feedback,
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to submit feedback", error: err.message });
+  }
+};
+
+// Get ethical feedback stats (for superadmin/admin)
+export const getEthicalFeedbackStats = async (req, res) => {
+  try {
+    if (!["admin", "superadmin"].includes(req.user.role)) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    const feedbacks = await EthicalFeedback.find().populate("userId", "name email role");
+    
+    if (feedbacks.length === 0) {
+      return res.json({ message: "No feedback received yet", feedbacks: [] });
+    }
+
+    // Calculate category averages
+    const categories = {
+      dataPrivacy: [],
+      transparency: [],
+      fairness: [],
+      accessibility: [],
+      security: [],
+      userControl: [],
+      socialImpact: [],
+    };
+
+    feedbacks.forEach((f) => {
+      categories.dataPrivacy.push((f.ratings.dataCollectionClarity + f.ratings.necessaryDataOnly) / 2);
+      categories.transparency.push((f.ratings.dataStorageTransparency + f.ratings.informedConsent) / 2);
+      categories.fairness.push((f.ratings.fairTreatment + f.ratings.noBias) / 2);
+      categories.accessibility.push((f.ratings.easyToUse + f.ratings.considerDisabilities) / 2);
+      categories.security.push((f.ratings.dataSecurityConfidence + f.ratings.preventMisuse) / 2);
+      categories.userControl.push((f.ratings.userControl + f.ratings.noPressure) / 2);
+      categories.socialImpact.push((f.ratings.addressesProblem + f.ratings.benefitsOutweighHarms) / 2);
+    });
+
+    const stats = {
+      totalResponses: feedbacks.length,
+      overallAverage: (feedbacks.reduce((sum, f) => sum + parseFloat(f.averageScore), 0) / feedbacks.length).toFixed(2),
+      byCategory: {
+        dataPrivacy: (categories.dataPrivacy.reduce((a, b) => a + b) / categories.dataPrivacy.length).toFixed(2),
+        transparency: (categories.transparency.reduce((a, b) => a + b) / categories.transparency.length).toFixed(2),
+        fairness: (categories.fairness.reduce((a, b) => a + b) / categories.fairness.length).toFixed(2),
+        accessibility: (categories.accessibility.reduce((a, b) => a + b) / categories.accessibility.length).toFixed(2),
+        security: (categories.security.reduce((a, b) => a + b) / categories.security.length).toFixed(2),
+        userControl: (categories.userControl.reduce((a, b) => a + b) / categories.userControl.length).toFixed(2),
+        socialImpact: (categories.socialImpact.reduce((a, b) => a + b) / categories.socialImpact.length).toFixed(2),
+      },
+      feedbacks,
+    };
+
+    res.json(stats);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to get feedback stats", error: err.message });
   }
 };

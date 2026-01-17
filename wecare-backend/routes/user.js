@@ -1,6 +1,6 @@
 import express from "express";
 import multer from "multer";
-import { getProfile, approveAdmin, approveStudent, listUsers, setSuspended, listStudentsForAdmin, rejectStudent, getAdminStats, updateStudentProfile, updateDonorProfile, submitProfileForApproval, getProfileCompletion, updateAdminProfile, changePassword, resetAdminDepartment } from "../controllers/userController.js";
+import { getProfile, approveAdmin, approveStudent, listUsers, setSuspended, listStudentsForAdmin, rejectStudent, getAdminStats, updateStudentProfile, updateDonorProfile, submitProfileForApproval, getProfileCompletion, updateAdminProfile, changePassword, resetAdminDepartment, submitEthicalFeedback, getEthicalFeedbackStats } from "../controllers/userController.js";
 import { protect, requireAdminDepartment } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
@@ -38,5 +38,9 @@ router.patch("/profile", protect, upload.single('documents'), (req, res, next) =
 });
 router.post("/profile/submit", protect, submitProfileForApproval);
 router.get("/profile/completion", protect, getProfileCompletion);
+
+// Ethical feedback
+router.post("/ethical-feedback", protect, submitEthicalFeedback);
+router.get("/ethical-feedback/stats", protect, getEthicalFeedbackStats);
 
 export default router;

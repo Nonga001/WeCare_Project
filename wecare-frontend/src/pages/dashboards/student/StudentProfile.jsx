@@ -163,47 +163,48 @@ const StudentProfile = () => {
         } else {
           setPhoneLocal(rawPhone || ''); setOriginalPhone(rawPhone || '');
         }
-
-          if (field === 'documents') {
-            // determine file name (if file) or string
-            const newDoc = form.documents;
-            const newName = newDoc && typeof newDoc === 'object' ? newDoc.name : (newDoc || '');
-            const oldName = originalProfile.documents || '';
-            if (!newName) return setError('Please choose a document before uploading');
-            if (newName === oldName) return setError('No changes detected');
-            const confirmed = window.confirm('Confirm upload of new document?'); if (!confirmed) return;
-            try {
-              setLoading(true); setError('');
-              // if we have a File object, send as FormData so backend can accept multipart
-              if (typeof newDoc === 'object' && newDoc instanceof File) {
-                const fd = new FormData();
-                fd.append('documents', newDoc);
-                // updateStudentProfile will pass FormData through axios
-                const resp = await updateStudentProfile(user?.token, fd);
-                if (resp?.autoSubmitted) setSuccess('🎉 Profile completed and auto-submitted for approval');
-                else setSuccess('Document uploaded');
-              } else {
-                // fallback: send filename string
-                const resp = await updateStudentProfile(user?.token, { documents: newName });
-                if (resp?.autoSubmitted) setSuccess('🎉 Profile completed and auto-submitted for approval');
-                else setSuccess('Document reference updated');
-              }
-              setTimeout(() => setSuccess(''), 3500);
-              const [completionData, profileData] = await Promise.all([
-                getProfileCompletion(user?.token),
-                fetch(`${API_BASE}/api/users/profile`, { headers: { Authorization: `Bearer ${user?.token}` } }).then(r => r.json()),
-              ]);
-              setUserProfile(profileData); setCompletion(completionData);
-              setForm((p) => ({ ...p, documents: profileData.documents || '' }));
-              setOriginalProfile((op) => ({ ...op, documents: profileData.documents || '' }));
-              // clear preview URL if any
-              setPreviewUrl('');
-            } catch (err) { setError(err.response?.data?.message || 'Failed to upload document'); }
-            finally { setLoading(false); }
-            return;
-          }
         setForm((p) => ({ ...p, phone: rawPhone }));
       } catch (err) { setError(err.response?.data?.message || 'Failed to update'); }
+      finally { setLoading(false); }
+      return;
+    }
+
+    // special handling for documents (file upload)
+    if (field === 'documents') {
+      // determine file name (if file) or string
+      const newDoc = form.documents;
+      const newName = newDoc && typeof newDoc === 'object' ? newDoc.name : (newDoc || '');
+      const oldName = originalProfile.documents || '';
+      if (!newName) return setError('Please choose a document before uploading');
+      if (newName === oldName) return setError('No changes detected');
+      const confirmed = window.confirm('Confirm upload of new document?'); if (!confirmed) return;
+      try {
+        setLoading(true); setError('');
+        // if we have a File object, send as FormData so backend can accept multipart
+        if (typeof newDoc === 'object' && newDoc instanceof File) {
+          const fd = new FormData();
+          fd.append('documents', newDoc);
+          // updateStudentProfile will pass FormData through axios
+          const resp = await updateStudentProfile(user?.token, fd);
+          if (resp?.autoSubmitted) setSuccess('🎉 Profile completed and auto-submitted for approval');
+          else setSuccess('Document uploaded');
+        } else {
+          // fallback: send filename string
+          const resp = await updateStudentProfile(user?.token, { documents: newName });
+          if (resp?.autoSubmitted) setSuccess('🎉 Profile completed and auto-submitted for approval');
+          else setSuccess('Document reference updated');
+        }
+        setTimeout(() => setSuccess(''), 3500);
+        const [completionData, profileData] = await Promise.all([
+          getProfileCompletion(user?.token),
+          fetch(`${API_BASE}/api/users/profile`, { headers: { Authorization: `Bearer ${user?.token}` } }).then(r => r.json()),
+        ]);
+        setUserProfile(profileData); setCompletion(completionData);
+        setForm((p) => ({ ...p, documents: profileData.documents || '' }));
+        setOriginalProfile((op) => ({ ...op, documents: profileData.documents || '' }));
+        // clear preview URL if any
+        setPreviewUrl('');
+      } catch (err) { setError(err.response?.data?.message || 'Failed to upload document'); }
       finally { setLoading(false); }
       return;
     }
@@ -375,25 +376,78 @@ const StudentProfile = () => {
             {/* Documents */}
             <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm">
               <h4 className="font-semibold text-slate-800 dark:text-slate-100 mb-3">Documents</h4>
-              <div className="space-y-2">
-                <label className="block text-sm text-slate-600">Student card / Admission letter</label>
-                <div className="flex gap-2 items-center">
-                  <input type="file" name="documents" onChange={handleChange} accept=".pdf,.jpg,.jpeg,.png" className="text-sm" />
-                  <button type="button" onClick={() => handleUpdate('documents')} disabled={loading || !form.documents || ((typeof form.documents === 'string' ? form.documents : form.documents.name) === (originalProfile.documents || ''))} className="px-4 py-2 rounded-xl bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50">Upload</button>
-                </div>
-                {form.documents && (
-                  <div className="mt-2">
-                    <div className="text-xs text-slate-700 dark:text-slate-300">Preview:</div>
-                    {previewUrl && (
-                      isPreviewImage ? (
-                        <img src={previewUrl} alt="document preview" className="mt-2 max-h-48 rounded-md border" />
-                      ) : isPreviewPdf ? (
-                        <a href={previewUrl} target="_blank" rel="noreferrer" className="mt-2 inline-block text-sm text-amber-700">Open PDF</a>
-                      ) : (
-                        <a href={previewUrl} target="_blank" rel="noreferrer" className="mt-2 inline-block text-sm text-amber-700">Open document</a>
-                      )
+              <div className="space-y-3">
+                <label className="block text-sm text-slate-600 dark:text-slate-400">Student card / Admission letter</label>
+                
+                {/* Show currently uploaded document */}
+                {originalProfile.documents && (
+                  <div className="p-3 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700">
+                    <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">Currently Uploaded:</div>
+                    {/\.(jpe?g|png)$/i.test(originalProfile.documents) ? (
+                      <img 
+                        src={`${UPLOAD_BASE}/uploads/${originalProfile.documents}`} 
+                        alt="Uploaded document" 
+                        className="max-h-48 rounded-md border border-slate-300"
+                        onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }}
+                      />
+                    ) : /\.pdf$/i.test(originalProfile.documents) ? (
+                      <a 
+                        href={`${UPLOAD_BASE}/uploads/${originalProfile.documents}`} 
+                        target="_blank" 
+                        rel="noreferrer" 
+                        className="inline-flex items-center gap-2 px-3 py-2 bg-red-100 text-red-700 rounded-md text-sm hover:bg-red-200"
+                      >
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/></svg>
+                        View PDF Document
+                      </a>
+                    ) : (
+                      <a 
+                        href={`${UPLOAD_BASE}/uploads/${originalProfile.documents}`} 
+                        target="_blank" 
+                        rel="noreferrer" 
+                        className="inline-flex items-center gap-2 px-3 py-2 bg-slate-100 text-slate-700 rounded-md text-sm hover:bg-slate-200"
+                      >
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd"/></svg>
+                        View Document
+                      </a>
                     )}
-                    <div className="text-xs text-amber-600 mt-1">Current: {originalProfile.documents || 'Not set'}</div>
+                    <div style={{display: 'none'}} className="text-xs text-amber-600">Filename: {originalProfile.documents}</div>
+                  </div>
+                )}
+                
+                {/* Upload new document */}
+                <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+                  <input 
+                    type="file" 
+                    name="documents" 
+                    onChange={handleChange} 
+                    accept=".pdf,.jpg,.jpeg,.png" 
+                    className="text-sm flex-1"
+                  />
+                  <button 
+                    type="button" 
+                    onClick={() => handleUpdate('documents')} 
+                    disabled={loading || !form.documents || ((typeof form.documents === 'string' ? form.documents : form.documents.name) === (originalProfile.documents || ''))} 
+                    className="px-4 py-2 rounded-xl bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50 text-sm font-medium whitespace-nowrap"
+                  >
+                    Upload
+                  </button>
+                </div>
+                
+                {/* Preview of newly selected file (before upload) */}
+                {form.documents && typeof form.documents === 'object' && form.documents instanceof File && (
+                  <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-700">
+                    <div className="text-xs font-semibold text-amber-700 dark:text-amber-400 mb-2">Preview (not yet uploaded):</div>
+                    {isPreviewImage ? (
+                      <img src={previewUrl} alt="document preview" className="max-h-48 rounded-md border border-amber-300" />
+                    ) : isPreviewPdf ? (
+                      <div className="flex items-center gap-2 text-sm text-amber-700 dark:text-amber-400">
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/></svg>
+                        PDF ready to upload: {form.documents.name}
+                      </div>
+                    ) : (
+                      <div className="text-sm text-amber-700 dark:text-amber-400">File ready: {form.documents.name}</div>
+                    )}
                   </div>
                 )}
               </div>

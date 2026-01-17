@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { register } from "../../services/authService";
+import DataHandlingModal from "../../components/DataHandlingModal";
 
 const RegisterDonor = () => {
   const [form, setForm] = useState({
@@ -14,6 +15,9 @@ const RegisterDonor = () => {
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [dataConsent, setDataConsent] = useState(false);
+  const [showDataInfo, setShowDataInfo] = useState(false);
+  const [showDataHandlingModal, setShowDataHandlingModal] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -39,6 +43,10 @@ const RegisterDonor = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!dataConsent) {
+      setError("You must consent to data collection to proceed");
+      return;
+    }
     if (form.phone.length !== 10) {
       setError("Phone number must be exactly 10 digits");
       return;
@@ -200,7 +208,65 @@ const RegisterDonor = () => {
           </div>
         </div>
 
-        <button className="w-full py-3 bg-stone-800 text-white font-semibold rounded-xl shadow-md hover:bg-stone-900 transition transform hover:-translate-y-1">
+        {/* Data Collection Disclosure */}
+        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <h3 className="text-sm font-semibold text-blue-900 flex items-center gap-2">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 5v8a2 2 0 01-2 2h-5l-5 4v-4H4a2 2 0 01-2-2V5a2 2 0 012-2h12a2 2 0 012 2zm-11-1a1 1 0 11-2 0 1 1 0 012 0z" clipRule="evenodd"/></svg>
+                Data We Collect
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowDataInfo(!showDataInfo)}
+                className="text-xs text-blue-600 hover:text-blue-800 mt-1 underline"
+              >
+                {showDataInfo ? "Hide details" : "Show details"}
+              </button>
+            </div>
+          </div>
+          
+          {showDataInfo && (
+            <div className="mt-3 text-xs text-blue-900 space-y-2 border-t border-blue-200 pt-3">
+              <p><strong>Full Name:</strong> For donor recognition and official communications</p>
+              <p><strong>Organization:</strong> To verify your entity and maintain donor records</p>
+              <p><strong>Email:</strong> For account access, password recovery, and donation receipts</p>
+              <p><strong>Phone:</strong> For donation inquiries and coordination</p>
+              <p><strong>Password:</strong> Securely encrypts your account to prevent unauthorized access</p>
+              <p className="pt-2 italic">We only collect what's necessary to process donations and maintain donor relationships.</p>
+            </div>
+          )}
+        </div>
+
+        {/* Consent Checkbox */}
+        <div className="mb-5 p-3 bg-stone-100 border border-stone-300 rounded-lg">
+          <label className="flex items-start gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={dataConsent}
+              onChange={(e) => setDataConsent(e.target.checked)}
+              className="mt-1 w-4 h-4 text-stone-600 rounded focus:ring-2 focus:ring-stone-500"
+            />
+            <span className="text-sm text-gray-700">
+              I understand that WeCare collects my name, organization, email, and phone information to process donations and provide receipts. 
+              <button
+                type="button"
+                onClick={() => setShowDataHandlingModal(true)}
+                className="text-stone-600 hover:text-stone-700 font-semibold underline ml-1"
+              >
+                View data handling details →
+              </button>
+              <br/>
+              <span className="font-semibold">I consent to this data collection.</span>
+            </span>
+          </label>
+        </div>
+
+        <button
+          type="submit"
+          disabled={!dataConsent}
+          className="w-full py-3 bg-stone-800 text-white font-semibold rounded-xl shadow-md hover:bg-stone-900 transition transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
           Register
         </button>
 
@@ -220,6 +286,17 @@ const RegisterDonor = () => {
           </Link>
         </p>
       </form>
+
+      {/* Data Handling Modal */}
+      {showDataHandlingModal && (
+        <DataHandlingModal
+          onAccept={() => {
+            setDataConsent(true);
+            setShowDataHandlingModal(false);
+          }}
+          onReject={() => setShowDataHandlingModal(false)}
+        />
+      )}
     </div>
   );
 };

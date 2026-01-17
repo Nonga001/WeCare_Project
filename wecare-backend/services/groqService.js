@@ -59,7 +59,7 @@ Analyze the conversation and provide a helpful, empathetic response using statem
 };
 
 /**
- * Check if a group needs an AI response (no activity for 3 minutes)
+ * Check if a group needs an AI response (no activity for 1 minute)
  * @param {Date} lastMessageTime - Timestamp of last message
  * @returns {Boolean}
  */
@@ -68,5 +68,5 @@ export const shouldTriggerAIResponse = (lastMessageTime) => {
   const now = new Date();
   const diffMs = now - new Date(lastMessageTime);
   const diffMinutes = diffMs / (1000 * 60);
-  return diffMinutes >= 3;
+  return diffMinutes >= 1;
 };
