@@ -7,7 +7,10 @@ import {
   setAidStatus,
   disburseAid,
   moveToWaiting,
+  secondApproveAid,
+  recheckFunds,
   getAidStats,
+  getAidLimitsForStudent,
   getAdminReports
 } from "../controllers/aidController.js";
 
@@ -18,10 +21,13 @@ router.use(protect);
 // Student
 router.post("/", createAidRequest);
 router.get("/mine", listMyAidRequests);
+router.get("/limits/mine", getAidLimitsForStudent);
 
 // Admin - require department assignment
 router.get("/university", requireAdminDepartment, listUniversityAidRequests);
 router.patch("/:id/status", requireAdminDepartment, setAidStatus);
+router.patch("/:id/second-approve", requireAdminDepartment, secondApproveAid);
+router.patch("/:id/recheck-funds", requireAdminDepartment, recheckFunds);
 router.patch("/:id/waiting", requireAdminDepartment, moveToWaiting);
 router.post("/:id/disburse", requireAdminDepartment, disburseAid);
 

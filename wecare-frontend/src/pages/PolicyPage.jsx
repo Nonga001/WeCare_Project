@@ -1,4 +1,4 @@
-const PrivacyPolicy = () => {
+const PolicyPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 px-4 py-12">
       <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-8">
@@ -10,7 +10,7 @@ const PrivacyPolicy = () => {
           <section>
             <h2 className="text-2xl font-bold text-slate-800 mb-4">1. Personal Data We Collect</h2>
             <p className="text-slate-700 mb-4">WeCare collects and processes the following personal data:</p>
-            
+
             <div className="bg-amber-50 border-l-4 border-amber-600 p-4 mb-4">
               <h3 className="font-semibold text-slate-800 mb-2">For All Users (Students, Donors, Admins):</h3>
               <ul className="list-disc list-inside space-y-1 text-slate-700">
@@ -158,4 +158,4 @@ const PrivacyPolicy = () => {
   );
 };
 
-export default PrivacyPolicy;
+export default PolicyPage;

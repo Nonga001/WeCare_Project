@@ -27,6 +27,7 @@ const userSchema = new mongoose.Schema(
     course: { type: String },
     yearOfStudy: { type: String },
     childDetails: { type: String },
+    studentMom: { type: Boolean, default: false },
     documents: { type: String }, // file path or URL for uploaded documents
     profileSubmitted: { type: Boolean, default: false },
     profileSubmittedAt: { type: Date },

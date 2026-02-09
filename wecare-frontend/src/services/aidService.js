@@ -20,8 +20,18 @@ export const uniAidRequests = async (token) => {
   return res.data;
 };
 
-export const setAidStatus = async (token, id, status) => {
-  const res = await axios.patch(`${API_URL}/${id}/status`, { status }, auth(token));
+export const setAidStatus = async (token, id, status, reason, override) => {
+  const res = await axios.patch(`${API_URL}/${id}/status`, { status, reason, override }, auth(token));
+  return res.data;
+};
+
+export const secondApproveAid = async (token, id) => {
+  const res = await axios.patch(`${API_URL}/${id}/second-approve`, {}, auth(token));
+  return res.data;
+};
+
+export const recheckFunds = async (token, id) => {
+  const res = await axios.patch(`${API_URL}/${id}/recheck-funds`, {}, auth(token));
   return res.data;
 };
 
@@ -37,6 +47,11 @@ export const disburseAid = async (token, id) => {
 
 export const getAidStats = async (token) => {
   const res = await axios.get(`${API_URL}/stats`, auth(token));
+  return res.data;
+};
+
+export const getAidLimits = async (token) => {
+  const res = await axios.get(`${API_URL}/limits/mine`, auth(token));
   return res.data;
 };
 

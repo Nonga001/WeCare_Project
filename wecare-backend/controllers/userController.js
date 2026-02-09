@@ -30,6 +30,7 @@ export const getProfile = async (req, res) => {
       course: user.course,
       yearOfStudy: user.yearOfStudy,
       childDetails: user.childDetails,
+      studentMom: user.studentMom,
       documents: user.documents,
       profileSubmitted: user.profileSubmitted,
       profileApproved: user.profileApproved,
@@ -285,7 +286,10 @@ export const updateStudentProfile = async (req, res) => {
     if (studentEmail !== undefined) user.studentEmail = studentEmail;
     if (course !== undefined) user.course = course;
     if (yearOfStudy !== undefined) user.yearOfStudy = yearOfStudy;
-    if (childDetails !== undefined) user.childDetails = childDetails;
+    if (childDetails !== undefined) {
+      user.childDetails = childDetails;
+      user.studentMom = Boolean(String(childDetails || "").trim());
+    }
   if (documents !== undefined) user.documents = documents;
 
     // Check if profile is now 100% complete and auto-submit if so

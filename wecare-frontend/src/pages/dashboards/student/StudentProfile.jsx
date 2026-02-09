@@ -38,6 +38,42 @@ const StudentProfile = () => {
   const [userProfile, setUserProfile] = useState(null);
   const [pwd, setPwd] = useState({ currentPassword: "", newPassword: "", confirmNewPassword: "" });
   const [showPwd, setShowPwd] = useState({ next: false, confirm: false });
+  const fileObject = form.documents instanceof File ? form.documents : null;
+  const fileName = typeof form.documents === "string" ? form.documents : "";
+  const isImageName = (name) => /\.(jpe?g|png)$/i.test(name || "");
+  const isPdfName = (name) => /\.pdf$/i.test(name || "");
+  const lockedStudentId = Boolean(originalProfile.studentId);
+  const lockedStudentEmail = Boolean(originalEmail);
+  const lockedCourse = Boolean(originalProfile.course);
+  const lockedDocuments = Boolean(originalProfile.documents);
+
+  const normalizeValue = (name, value) => {
+    const raw = (value || "").toString();
+    const trimmed = raw.trim();
+    if (name === "studentEmail") return trimmed.toLowerCase();
+    if (name === "course" || name === "childDetails") return trimmed.replace(/\s+/g, " ");
+    if (name === "yearOfStudy" || name === "studentId") return trimmed;
+    return trimmed;
+  };
+
+  const buildExtendedChanges = () => {
+    const changes = {};
+    const normalized = {
+      studentId: normalizeValue("studentId", form.studentId),
+      studentEmail: normalizeValue("studentEmail", form.studentEmail),
+      course: normalizeValue("course", form.course),
+      yearOfStudy: normalizeValue("yearOfStudy", form.yearOfStudy),
+      childDetails: normalizeValue("childDetails", form.childDetails),
+    };
+
+    if (!lockedStudentId && normalized.studentId !== (originalProfile.studentId || "")) changes.studentId = normalized.studentId;
+    if (!lockedStudentEmail && normalized.studentEmail !== (originalEmail || "")) changes.studentEmail = normalized.studentEmail;
+    if (!lockedCourse && normalized.course !== (originalProfile.course || "")) changes.course = normalized.course;
+    if (normalized.yearOfStudy !== (originalProfile.yearOfStudy || "")) changes.yearOfStudy = normalized.yearOfStudy;
+    if (normalized.childDetails !== (originalProfile.childDetails || "")) changes.childDetails = normalized.childDetails;
+
+    return changes;
+  };
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -227,8 +263,105 @@ const StudentProfile = () => {
       ]);
       setUserProfile(profileData); setCompletion(completionData);
       setForm((p) => ({ ...p, ...(profileData || {}) }));
+      setOriginalProfile((op) => ({
+        ...op,
+        studentId: profileData.studentId || "",
+        course: profileData.course || "",
+        yearOfStudy: profileData.yearOfStudy || "",
+        childDetails: profileData.childDetails || "",
+        documents: profileData.documents || "",
+      }));
     } catch (err) { setError(err.response?.data?.message || 'Failed to update'); }
     finally { setLoading(false); }
+  };
+
+  const handleSaveExtended = async () => {
+    setError("");
+    const changes = buildExtendedChanges();
+    if (Object.keys(changes).length === 0) return setError("No changes detected");
+
+    if (changes.studentEmail && !changes.studentEmail.endsWith(".ac.ke")) {
+      return setError("Student email must end with .ac.ke");
+    }
+
+    const summaryLines = Object.entries(changes)
+      .map(([key, value]) => `${key}: ${value || "(empty)"}`)
+      .join("\n");
+    const lockNotice = [
+      changes.studentId ? "- Student ID becomes locked after saving." : "",
+      changes.studentEmail ? "- Student email becomes locked after saving." : "",
+      changes.course ? "- Course becomes locked after saving." : "",
+    ].filter(Boolean).join("\n");
+    const confirmText = `Save these changes?\n\n${summaryLines}${lockNotice ? `\n\n${lockNotice}` : ""}`;
+    if (!window.confirm(confirmText)) return;
+
+    try {
+      setLoading(true);
+      const resp = await updateStudentProfile(user?.token, changes);
+      if (resp?.autoSubmitted) setSuccess("🎉 Profile completed and auto-submitted for approval");
+      else setSuccess("Profile details updated");
+      setTimeout(() => setSuccess(""), 3500);
+      const [completionData, profileData] = await Promise.all([
+        getProfileCompletion(user?.token),
+        fetch(`${API_BASE}/api/users/profile`, { headers: { Authorization: `Bearer ${user?.token}` } }).then(r => r.json()),
+      ]);
+      setUserProfile(profileData);
+      setCompletion(completionData);
+      setForm((p) => ({ ...p, ...(profileData || {}) }));
+      setOriginalEmail(profileData.studentEmail || "");
+      setOriginalProfile((op) => ({
+        ...op,
+        studentId: profileData.studentId || "",
+        course: profileData.course || "",
+        yearOfStudy: profileData.yearOfStudy || "",
+        childDetails: profileData.childDetails || "",
+        documents: profileData.documents || "",
+      }));
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to update details");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveDocuments = async () => {
+    setError("");
+    if (lockedDocuments) return setError("Documents are locked after first upload");
+    const newDoc = form.documents;
+    const newName = newDoc && typeof newDoc === "object" ? newDoc.name : (newDoc || "");
+    if (!newName) return setError("Please choose a document before uploading");
+
+    const confirmText = `Upload this document?\n\nDocument: ${newName}\n\n- Documents cannot be deleted after upload.\n- Documents are retained for 90 days. Safe to upload.`;
+    if (!window.confirm(confirmText)) return;
+
+    try {
+      setLoading(true);
+      if (typeof newDoc === "object" && newDoc instanceof File) {
+        const fd = new FormData();
+        fd.append("documents", newDoc);
+        const resp = await updateStudentProfile(user?.token, fd);
+        if (resp?.autoSubmitted) setSuccess("🎉 Profile completed and auto-submitted for approval");
+        else setSuccess("Document uploaded");
+      } else {
+        const resp = await updateStudentProfile(user?.token, { documents: newName });
+        if (resp?.autoSubmitted) setSuccess("🎉 Profile completed and auto-submitted for approval");
+        else setSuccess("Document uploaded");
+      }
+      setTimeout(() => setSuccess(""), 3500);
+      const [completionData, profileData] = await Promise.all([
+        getProfileCompletion(user?.token),
+        fetch(`${API_BASE}/api/users/profile`, { headers: { Authorization: `Bearer ${user?.token}` } }).then(r => r.json()),
+      ]);
+      setUserProfile(profileData);
+      setCompletion(completionData);
+      setForm((p) => ({ ...p, documents: profileData.documents || "" }));
+      setOriginalProfile((op) => ({ ...op, documents: profileData.documents || "" }));
+      setPreviewUrl("");
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to upload document");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmitForApproval = async (e) => {
@@ -251,14 +384,22 @@ const StudentProfile = () => {
     }
     // if it's a filename string, try to construct backend URL for preview
     if (typeof form.documents === 'string') {
-      const fileName = form.documents;
+      const storedName = form.documents;
       // attempt common upload path; if your backend uses another path adjust accordingly
-      setPreviewUrl(fileName.startsWith('http') ? fileName : `${UPLOAD_BASE}/uploads/${fileName}`);
+      setPreviewUrl(storedName.startsWith('http') ? storedName : `${UPLOAD_BASE}/uploads/${storedName}`);
     }
   }, [form.documents]);
 
-  const isPreviewImage = previewUrl ? /\.(jpe?g|png)$/i.test(previewUrl) : false;
-  const isPreviewPdf = previewUrl ? previewUrl.toLowerCase().endsWith('.pdf') : false;
+  const isPreviewImage = fileObject
+    ? (fileObject.type || "").startsWith("image/") || isImageName(fileObject.name)
+    : isImageName(previewUrl) || isImageName(fileName);
+  const isPreviewPdf = fileObject
+    ? fileObject.type === "application/pdf" || isPdfName(fileObject.name)
+    : isPdfName(fileName) || isPdfName(previewUrl);
+  const currentDocName = originalProfile.documents || "";
+  const currentDocUrl = currentDocName ? `${UPLOAD_BASE}/uploads/${currentDocName}` : "";
+  const currentIsImage = isImageName(currentDocName);
+  const currentIsPdf = isPdfName(currentDocName);
 
   return (
     <div className="space-y-6">
@@ -335,41 +476,29 @@ const StudentProfile = () => {
               <h4 className="font-semibold text-slate-800 dark:text-slate-100 mb-3">Extended Details</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <ProfileField label="Student ID">
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <input name="studentId" value={form.studentId} onChange={handleChange} placeholder="Student ID" className="flex-1 min-w-0 px-4 py-3 rounded-xl border text-sm" />
-                    <button type="button" onClick={() => handleUpdate('studentId')} disabled={loading || (form.studentId||'').trim() === (originalProfile.studentId||'').trim()} className="w-full sm:w-auto px-4 py-3 rounded-xl bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50 text-sm font-medium whitespace-nowrap">Update</button>
-                  </div>
-                  <div className="text-xs text-slate-500 mt-1 break-words">Current: {originalProfile.studentId || 'Not set'}</div>
+                  <input name="studentId" value={form.studentId} onChange={handleChange} placeholder="Student ID" disabled={lockedStudentId} className="w-full px-4 py-3 rounded-xl border text-sm disabled:bg-slate-50 disabled:text-slate-500" />
+                  <div className="text-xs text-slate-500 mt-1 break-words">{lockedStudentId ? "Locked after first save" : "Current: " + (originalProfile.studentId || "Not set")}</div>
                 </ProfileField>
                 <ProfileField label="Student email">
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <input name="studentEmail" value={form.studentEmail} onChange={handleChange} placeholder="Student email (must end with .ac.ke)" className="flex-1 min-w-0 px-4 py-3 rounded-xl border text-sm" />
-                    <button type="button" onClick={() => handleUpdate('studentEmail')} disabled={loading || (form.studentEmail||'').trim() === originalEmail || !((form.studentEmail||'').trim().toLowerCase().endsWith('.ac.ke'))} className="w-full sm:w-auto px-4 py-3 rounded-xl bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50 text-sm font-medium whitespace-nowrap">Update</button>
-                  </div>
-                  <div className="text-xs text-slate-500 mt-1 break-words">Academic emails must end with <code>.ac.ke</code>. Current: {originalEmail || 'Not set'}</div>
+                  <input name="studentEmail" value={form.studentEmail} onChange={handleChange} placeholder="Student email (must end with .ac.ke)" disabled={lockedStudentEmail} className="w-full px-4 py-3 rounded-xl border text-sm disabled:bg-slate-50 disabled:text-slate-500" />
+                  <div className="text-xs text-slate-500 mt-1 break-words">{lockedStudentEmail ? "Locked after first save" : "Academic emails must end with .ac.ke. Current: " + (originalEmail || "Not set")}</div>
                 </ProfileField>
                 <ProfileField label="Course">
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <input name="course" value={form.course} onChange={handleChange} placeholder="Course" className="flex-1 min-w-0 px-4 py-3 rounded-xl border text-sm" />
-                    <button type="button" onClick={() => handleUpdate('course')} disabled={loading || (form.course||'').trim() === (originalProfile.course||'').trim()} className="w-full sm:w-auto px-4 py-3 rounded-xl bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50 text-sm font-medium whitespace-nowrap">Update</button>
-                  </div>
-                  <div className="text-xs text-slate-500 mt-1 break-words">Current: {originalProfile.course || 'Not set'}</div>
+                  <input name="course" value={form.course} onChange={handleChange} placeholder="Course" disabled={lockedCourse} className="w-full px-4 py-3 rounded-xl border text-sm disabled:bg-slate-50 disabled:text-slate-500" />
+                  <div className="text-xs text-slate-500 mt-1 break-words">{lockedCourse ? "Locked after first save" : "Current: " + (originalProfile.course || "Not set")}</div>
                 </ProfileField>
                 <ProfileField label="Year of study">
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <input name="yearOfStudy" value={form.yearOfStudy} onChange={handleChange} placeholder="Year of study" className="flex-1 min-w-0 px-4 py-3 rounded-xl border text-sm" />
-                    <button type="button" onClick={() => handleUpdate('yearOfStudy')} disabled={loading || (form.yearOfStudy||'').trim() === (originalProfile.yearOfStudy||'').trim()} className="w-full sm:w-auto px-4 py-3 rounded-xl bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50 text-sm font-medium whitespace-nowrap">Update</button>
-                  </div>
+                  <input name="yearOfStudy" value={form.yearOfStudy} onChange={handleChange} placeholder="Year of study" className="w-full px-4 py-3 rounded-xl border text-sm" />
                   <div className="text-xs text-slate-500 mt-1 break-words">Current: {originalProfile.yearOfStudy || 'Not set'}</div>
                 </ProfileField>
 
                 <ProfileField label="Child details">
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <textarea name="childDetails" value={form.childDetails} onChange={handleChange} placeholder="Child details" className="flex-1 min-w-0 px-4 py-3 rounded-xl border text-sm" rows="3" />
-                    <button type="button" onClick={() => handleUpdate('childDetails')} disabled={loading || (form.childDetails||'').trim() === (originalProfile.childDetails||'').trim()} className="w-full sm:w-auto px-4 py-3 rounded-xl bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50 text-sm font-medium whitespace-nowrap self-start">Update</button>
-                  </div>
+                  <textarea name="childDetails" value={form.childDetails} onChange={handleChange} placeholder="Child details" className="w-full px-4 py-3 rounded-xl border text-sm" rows="3" />
                   <div className="text-xs text-slate-500 mt-1 break-words">Current: {originalProfile.childDetails || 'Not set'}</div>
                 </ProfileField>
+              </div>
+              <div className="mt-4 flex justify-end">
+                <button type="button" onClick={handleSaveExtended} disabled={loading} className="px-5 py-2.5 rounded-xl bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50 text-sm font-medium">Save changes</button>
               </div>
             </div>
 
@@ -378,21 +507,22 @@ const StudentProfile = () => {
               <h4 className="font-semibold text-slate-800 dark:text-slate-100 mb-3">Documents</h4>
               <div className="space-y-3">
                 <label className="block text-sm text-slate-600 dark:text-slate-400">Student card / Admission letter</label>
+                <div className="text-xs text-slate-500">Documents are retained for 90 days and cannot be deleted once uploaded.</div>
                 
                 {/* Show currently uploaded document */}
                 {originalProfile.documents && (
                   <div className="p-3 bg-slate-50 dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700">
                     <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">Currently Uploaded:</div>
-                    {/\.(jpe?g|png)$/i.test(originalProfile.documents) ? (
+                    {currentIsImage ? (
                       <img 
-                        src={`${UPLOAD_BASE}/uploads/${originalProfile.documents}`} 
+                        src={currentDocUrl} 
                         alt="Uploaded document" 
                         className="max-h-48 rounded-md border border-slate-300"
                         onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }}
                       />
-                    ) : /\.pdf$/i.test(originalProfile.documents) ? (
+                    ) : currentIsPdf ? (
                       <a 
-                        href={`${UPLOAD_BASE}/uploads/${originalProfile.documents}`} 
+                        href={currentDocUrl} 
                         target="_blank" 
                         rel="noreferrer" 
                         className="inline-flex items-center gap-2 px-3 py-2 bg-red-100 text-red-700 rounded-md text-sm hover:bg-red-200"
@@ -402,7 +532,7 @@ const StudentProfile = () => {
                       </a>
                     ) : (
                       <a 
-                        href={`${UPLOAD_BASE}/uploads/${originalProfile.documents}`} 
+                        href={currentDocUrl} 
                         target="_blank" 
                         rel="noreferrer" 
                         className="inline-flex items-center gap-2 px-3 py-2 bg-slate-100 text-slate-700 rounded-md text-sm hover:bg-slate-200"
@@ -423,16 +553,20 @@ const StudentProfile = () => {
                     onChange={handleChange} 
                     accept=".pdf,.jpg,.jpeg,.png" 
                     className="text-sm flex-1"
+                    disabled={lockedDocuments}
                   />
                   <button 
                     type="button" 
-                    onClick={() => handleUpdate('documents')} 
-                    disabled={loading || !form.documents || ((typeof form.documents === 'string' ? form.documents : form.documents.name) === (originalProfile.documents || ''))} 
+                    onClick={handleSaveDocuments} 
+                    disabled={loading || lockedDocuments || !form.documents || ((typeof form.documents === 'string' ? form.documents : form.documents.name) === (originalProfile.documents || ''))} 
                     className="px-4 py-2 rounded-xl bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50 text-sm font-medium whitespace-nowrap"
                   >
                     Upload
                   </button>
                 </div>
+                {lockedDocuments && (
+                  <div className="text-xs text-rose-600">Document upload is locked after the first upload.</div>
+                )}
                 
                 {/* Preview of newly selected file (before upload) */}
                 {form.documents && typeof form.documents === 'object' && form.documents instanceof File && (

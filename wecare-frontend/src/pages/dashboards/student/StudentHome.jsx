@@ -64,6 +64,7 @@ const StudentHome = () => {
   const { user } = useAuth();
   const verified = user?.role === "superadmin" ? true : user?.isApproved || false;
   const status = verified ? "verified" : "pending";
+  const isDedanKimathi = user?.university?.toLowerCase().includes("dedan kimathi");
   const [requests, setRequests] = useState([]);
   const [stats, setStats] = useState({ financialPending: 0, essentialsPending: 0 });
   const [notifications, setNotifications] = useState([]);
@@ -175,12 +176,15 @@ const StudentHome = () => {
           </div>
 
           {/* Emergency Button */}
-          <button
-            className="w-full bg-amber-700 hover:bg-amber-800 text-white font-semibold py-4 rounded-2xl shadow-md hover:shadow-lg transition-all"
-          >
-            <span className="text-lg">🆘 Emergency Help</span>
-            <p className="text-xs opacity-90 mt-1">Campus Support Line</p>
-          </button>
+          {isDedanKimathi && (
+            <a
+              href="tel:+254743150434"
+              className="w-full bg-amber-700 hover:bg-amber-800 text-white font-semibold py-4 rounded-2xl shadow-md hover:shadow-lg transition-all text-center block"
+            >
+              <span className="text-lg">🆘 Emergency Help</span>
+              <p className="text-xs opacity-90 mt-1">Campus Support Line</p>
+            </a>
+          )}
 
           {/* Quick Links */}
           <div className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-600">

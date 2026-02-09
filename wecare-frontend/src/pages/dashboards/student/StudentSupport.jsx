@@ -6,6 +6,7 @@ import { useSocket } from "../../../context/SocketContext";
 const StudentSupport = () => {
   const { user } = useAuth();
   const { socketRef } = useSocket();
+  const isDedanKimathi = user?.university?.toLowerCase().includes("dedan kimathi");
   const [uniGroups, setUniGroups] = useState([]);
   const [globalGroups, setGlobalGroups] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -218,9 +219,23 @@ const StudentSupport = () => {
           )}
         </div>
 
-        <a href="#emergency" className="block text-center rounded-xl bg-rose-600 text-white font-semibold py-3 shadow hover:bg-rose-700">
-          Emergency: Call Campus Help
-        </a>
+        {isDedanKimathi && (
+          <a href="tel:+254743150434" className="block text-center rounded-xl bg-rose-600 text-white font-semibold py-3 shadow hover:bg-rose-700">
+            Emergency: Call Campus Help
+          </a>
+        )}
+
+        {isDedanKimathi && (
+          <div id="emergency" className="card p-5">
+            <h4 className="font-semibold text-slate-800 mb-3">SOS Contacts</h4>
+            <ul className="space-y-2 text-sm text-slate-700">
+              <li className="flex items-center justify-between gap-3">
+                <span>Dedan Kimathi Medical</span>
+                <a href="tel:+254743150434" className="text-rose-700 font-semibold hover:underline">+254743150434</a>
+              </li>
+            </ul>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
-import { disburseAid, setAidStatus, moveToWaiting, uniAidRequests, getAidStats } from "../../../services/aidService";
+import { setAidStatus, uniAidRequests, getAidStats, secondApproveAid, recheckFunds } from "../../../services/aidService";
 import { getAvailableBalances } from "../../../services/disbursementService";
 
 const AdminAid = () => {
@@ -17,11 +17,16 @@ const AdminAid = () => {
       const data = await uniAidRequests(user?.token);
       const normalized = data.map(d => ({
         _id: d._id,
-        type: d.type === 'financial' ? 'Financial' : 'Essentials',
-        detail: d.type === 'financial' ? `KES ${d.amount}` : (d.items?.map(i=>`${i.name} x${i.quantity}`).join(', ') || d.reason),
+        requestId: d.requestId || d._id,
+        type: d.aidCategory || (d.type === 'financial' ? 'Financial' : 'Essentials'),
+        detail: d.amountRange ? `${d.amountRange} KES` : (d.type === 'financial' ? `KES ${d.amount}` : (d.items?.map(i=>`${i.name} x${i.quantity}`).join(', ') || d.reason)),
         requester: d.student?.name || 'Unknown',
         status: d.status,
         reason: d.reason,
+        explanation: d.explanation,
+        rejectedReason: d.rejectedReason,
+        clarificationNote: d.clarificationNote,
+        emergencyOverrideRequired: d.emergencyOverrideRequired,
         createdAt: d.createdAt,
         approvedAt: d.approvedAt,
         disbursedAt: d.disbursedAt,
@@ -46,52 +51,56 @@ const AdminAid = () => {
     ));
   }, [requests, typeFilter]);
 
-  const approve = async (id) => { 
+  const verify = async (id, requiresOverride = false) => { 
     try {
-      await setAidStatus(user?.token, id, 'approved'); 
+      const override = requiresOverride ? window.confirm("Emergency override required. Approve override?") : false;
+      if (requiresOverride && !override) return;
+      await setAidStatus(user?.token, id, 'verified', undefined, override); 
       await load(); 
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to approve request');
+      setError(err.response?.data?.message || 'Failed to verify request');
     }
   };
   
   const reject = async (id) => { 
+    const reason = window.prompt("Reason for rejection?") || "Rejected";
     try {
-      await setAidStatus(user?.token, id, 'rejected'); 
+      await setAidStatus(user?.token, id, 'rejected', reason); 
       await load(); 
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to reject request');
     }
   };
-  
-  const moveToWaitingStatus = async (id) => {
+
+  const clarify = async (id) => {
+    const note = window.prompt("What clarification is needed?") || "Please provide clarification";
     try {
-      await moveToWaiting(user?.token, id);
+      await setAidStatus(user?.token, id, 'clarification_required', note);
       await load();
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to move to waiting');
-    }
-  };
-  
-  const disburse = async (id) => { 
-    try {
-      await disburseAid(user?.token, id); 
-      await load(); 
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to disburse');
+      setError(err.response?.data?.message || 'Failed to request clarification');
     }
   };
 
-  const disburseWithExactMatch = async (aidRequestId, donationId) => {
+  const secondApprove = async (id) => {
     try {
-      await disburseWithMatch(user?.token, aidRequestId, donationId);
+      await secondApproveAid(user?.token, id);
       await load();
-      await loadAvailableDonations();
-      setError("");
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to disburse with exact match');
+      setError(err.response?.data?.message || 'Failed to finalize approval');
     }
   };
+
+  const recheck = async (id) => {
+    try {
+      await recheckFunds(user?.token, id);
+      await load();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to recheck funds');
+    }
+  };
+  
+  
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -129,8 +138,12 @@ const AdminAid = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
           <select value={typeFilter} onChange={(e)=>setTypeFilter(e.target.value)} className="px-4 py-2 border border-amber-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-300">
             <option value="">All Types</option>
-            <option value="Financial">Financial</option>
-            <option value="Essentials">Essentials</option>
+            <option value="food">Food</option>
+            <option value="childcare">Childcare</option>
+            <option value="transport">Transport</option>
+            <option value="emergency">Emergency</option>
+            <option value="Financial">Financial (legacy)</option>
+            <option value="Essentials">Essentials (legacy)</option>
           </select>
           <div></div>
         </div>
@@ -142,14 +155,16 @@ const AdminAid = () => {
                   <span className="font-medium text-slate-800 px-3 py-1 rounded-lg bg-amber-50 whitespace-nowrap">{r.type}</span>
                   <p className="text-slate-700 font-medium">{r.requester}</p>
                   <p className="text-xs px-2 py-1 rounded-lg font-medium whitespace-nowrap" style={{
-                    backgroundColor: r.status === 'pending' ? '#fef3c7' :
-                      r.status === 'approved' ? '#dbeafe' :
-                      r.status === 'waiting' ? '#fed7aa' :
+                    backgroundColor: r.status === 'pending_admin' ? '#fef3c7' :
+                      r.status === 'clarification_required' ? '#fee2e2' :
+                      r.status === 'second_approval_pending' ? '#dbeafe' :
+                      r.status === 'waiting_funds' ? '#fed7aa' :
                       r.status === 'disbursed' ? '#dcfce7' :
                       r.status === 'rejected' ? '#fee2e2' : '#f3f4f6',
-                    color: r.status === 'pending' ? '#92400e' :
-                      r.status === 'approved' ? '#1e40af' :
-                      r.status === 'waiting' ? '#92400e' :
+                    color: r.status === 'pending_admin' ? '#92400e' :
+                      r.status === 'clarification_required' ? '#991b1b' :
+                      r.status === 'second_approval_pending' ? '#1e40af' :
+                      r.status === 'waiting_funds' ? '#92400e' :
                       r.status === 'disbursed' ? '#166534' :
                       r.status === 'rejected' ? '#991b1b' : '#374151'
                   }}>{r.status}</p>
@@ -165,8 +180,13 @@ const AdminAid = () => {
               {expandedRequests[r._id] && (
                 <div className="mt-4 pt-4 border-t border-amber-100">
                   <div className="space-y-2 mb-4 text-sm">
+                    <p className="text-slate-600"><strong>Request ID:</strong> {r.requestId}</p>
                     <p className="text-slate-600"><strong>Details:</strong> {r.detail}</p>
                     <p className="text-slate-600"><strong>Reason:</strong> {r.reason}</p>
+                    {r.explanation && <p className="text-slate-600"><strong>Explanation:</strong> {r.explanation}</p>}
+                    {r.clarificationNote && <p className="text-slate-600"><strong>Clarification:</strong> {r.clarificationNote}</p>}
+                    {r.rejectedReason && <p className="text-slate-600"><strong>Rejection reason:</strong> {r.rejectedReason}</p>}
+                    {r.emergencyOverrideRequired && <p className="text-slate-600"><strong>Emergency override:</strong> Required</p>}
                     <p className="text-xs text-slate-500"><strong>Created:</strong> {new Date(r.createdAt).toLocaleString()}</p>
                     {r.approvedAt && <p className="text-xs text-slate-500"><strong>Approved:</strong> {new Date(r.approvedAt).toLocaleString()}</p>}
                     {r.disbursedAt && <p className="text-xs text-slate-500"><strong>Disbursed:</strong> {new Date(r.disbursedAt).toLocaleString()}</p>}
@@ -184,17 +204,21 @@ const AdminAid = () => {
               )}
               
               <div className="mt-3 flex flex-wrap gap-2">
-                {r.status === 'pending' && (
+                {r.status === 'pending_admin' && (
                   <>
-                    <button onClick={()=>approve(r._id)} className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 text-white text-sm font-medium hover:from-amber-700 hover:to-amber-800 transition-all">Approve</button>
+                    <button onClick={()=>verify(r._id, r.emergencyOverrideRequired)} className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 text-white text-sm font-medium hover:from-amber-700 hover:to-amber-800 transition-all">Verify</button>
+                    <button onClick={()=>clarify(r._id)} className="px-4 py-2 rounded-xl bg-slate-700 text-white text-sm font-medium hover:bg-slate-800">Request Clarification</button>
                     <button onClick={()=>reject(r._id)} className="px-4 py-2 rounded-xl bg-rose-600 text-white text-sm font-medium hover:bg-rose-700">Reject</button>
                   </>
                 )}
-                {r.status === 'approved' && (
-                  <button onClick={()=>moveToWaitingStatus(r._id)} className="px-4 py-2 rounded-xl bg-gradient-to-r from-orange-600 to-amber-600 text-white text-sm font-medium hover:from-orange-700 hover:to-amber-700 transition-all">Move to Waiting</button>
+                {r.status === 'clarification_required' && (
+                  <button onClick={()=>verify(r._id)} className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 text-white text-sm font-medium hover:from-amber-700 hover:to-amber-800 transition-all">Verify After Clarification</button>
                 )}
-                {r.status === 'waiting' && (
-                  <button onClick={()=>disburse(r._id)} className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 text-white text-sm font-medium hover:from-emerald-700 hover:to-emerald-800 transition-all">Disburse</button>
+                {r.status === 'second_approval_pending' && (
+                  <button onClick={()=>secondApprove(r._id)} className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 text-white text-sm font-medium hover:from-emerald-700 hover:to-emerald-800 transition-all">Final Approve & Disburse</button>
+                )}
+                {r.status === 'waiting_funds' && (
+                  <button onClick={()=>recheck(r._id)} className="px-4 py-2 rounded-xl bg-gradient-to-r from-orange-600 to-amber-600 text-white text-sm font-medium hover:from-orange-700 hover:to-amber-700 transition-all">Recheck Funds</button>
                 )}
                 {r.status === 'rejected' && (
                   <span className="px-4 py-2 rounded-xl bg-amber-50 text-amber-700 text-sm font-medium border border-amber-200">No actions available</span>

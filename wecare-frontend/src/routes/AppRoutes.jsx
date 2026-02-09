@@ -4,7 +4,7 @@ import ProtectedRoute from "./ProtectedRoute";
 import Landing from "../pages/Landing";
 import PendingApproval from "../pages/PendingApproval";
 import EthicalFeedback from "../pages/EthicalFeedback";
-import PrivacyPolicy from "../pages/PrivacyPolicy";
+import PolicyPage from "../pages/PolicyPage";
 import TermsAndConditions from "../pages/TermsAndConditions";
 import RegisterStudent from "../pages/auth/RegisterStudent";
 import RegisterDonor from "../pages/auth/RegisterDonor";
@@ -56,7 +56,7 @@ const AppRoutes = () => {
         <Route path="/login/superadmin" element={<LoginSuperAdmin />} />
         <Route path="/pending-approval" element={<PendingApproval />} />
         <Route path="/ethical-feedback" element={<EthicalFeedback />} />
-        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/privacy-policy" element={<PolicyPage />} />
         <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
 
         <Route path="/register/student" element={<RegisterStudent />} />

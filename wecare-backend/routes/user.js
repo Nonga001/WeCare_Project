@@ -1,12 +1,22 @@
 import express from "express";
 import multer from "multer";
+import path from "path";
 import { getProfile, approveAdmin, approveStudent, listUsers, setSuspended, listStudentsForAdmin, rejectStudent, getAdminStats, updateStudentProfile, updateDonorProfile, submitProfileForApproval, getProfileCompletion, updateAdminProfile, changePassword, resetAdminDepartment, submitEthicalFeedback, getEthicalFeedbackStats } from "../controllers/userController.js";
 import { protect, requireAdminDepartment } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// configure multer to store in backend/uploads
-const upload = multer({ dest: 'uploads/' });
+// configure multer to store in backend/uploads with original extension
+const storage = multer.diskStorage({
+  destination: "uploads/",
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname || "").toLowerCase();
+    const safeExt = ext || (file.mimetype === "application/pdf" ? ".pdf" : "");
+    const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    cb(null, `${unique}${safeExt}`);
+  },
+});
+const upload = multer({ storage });
 
 router.get("/profile", protect, getProfile);
 router.patch("/profile/admin", protect, updateAdminProfile);
