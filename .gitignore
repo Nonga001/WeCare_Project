@@ -28,3 +28,11 @@ coverage/
 # Temporary files
 tmp/
 temp/
+
+# Root-level artifacts
+node_modules/
+package.json
+package-lock.json
+
+# Backend uploads
+wecare-backend/uploads/
