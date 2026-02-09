@@ -32,7 +32,6 @@ import DonorHome from "../pages/dashboards/donor/DonorHome";
 import DonorProfile from "../pages/dashboards/donor/DonorProfile";
 import Donations from "../pages/dashboards/donor/Donations";
 import DonorReports from "../pages/dashboards/donor/DonorReports";
-import BrowseRequests from "../pages/dashboards/donor/BrowseRequests";
 import DonorNotifications from "../pages/dashboards/donor/DonorNotifications";
 import AdminHome from "../pages/dashboards/admin/AdminHome";
 import AdminProfile from "../pages/dashboards/admin/AdminProfile";

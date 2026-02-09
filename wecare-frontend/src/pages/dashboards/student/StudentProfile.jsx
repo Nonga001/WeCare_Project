@@ -7,9 +7,9 @@ const UPLOAD_BASE = import.meta.env.VITE_SOCKET_URL || API_BASE;
 
 const MiniBadge = ({ status }) => {
   const map = {
-    verified: "bg-amber-100 text-amber-800 border-amber-200",
-    pending: "bg-amber-100 text-amber-800 border-amber-200",
-    rejected: "bg-rose-100 text-rose-700 border-rose-200",
+    verified: "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-200 dark:border-amber-700",
+    pending: "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-200 dark:border-amber-700",
+    rejected: "bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-200 dark:border-rose-700",
   };
   const label = status === "verified" ? "Verified" : status === "rejected" ? "Rejected" : "Pending";
   return <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${map[status] || map.pending}`}>{label}</span>;
@@ -17,7 +17,7 @@ const MiniBadge = ({ status }) => {
 
 const ProfileField = ({ label, children }) => (
   <div>
-    <label className="block text-sm text-slate-500 mb-1">{label}</label>
+    <label className="block text-sm text-slate-500 dark:text-slate-300 mb-1">{label}</label>
     {children}
   </div>
 );
@@ -403,8 +403,8 @@ const StudentProfile = () => {
 
   return (
     <div className="space-y-6">
-      {error && <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 px-4 py-3">{error}</div>}
-      {success && <div className="rounded-lg bg-amber-50 border border-amber-200 text-amber-700 px-4 py-3">{success}</div>}
+      {error && <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 dark:bg-rose-950/40 dark:border-rose-800 dark:text-rose-200 px-4 py-3">{error}</div>}
+      {success && <div className="rounded-lg bg-amber-50 border border-amber-200 text-amber-700 dark:bg-amber-950/40 dark:border-amber-800 dark:text-amber-200 px-4 py-3">{success}</div>}
 
       {/* Header / Hero */}
       <div className="bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 rounded-2xl p-6 text-white shadow-md">
@@ -445,16 +445,16 @@ const StudentProfile = () => {
               <h4 className="font-semibold text-slate-800 dark:text-slate-100 mb-3">Basic Information</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <ProfileField label="Full name">
-                  <input value={user?.name || ''} disabled className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900 border" />
+                  <input value={user?.name || ''} disabled className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200" />
                 </ProfileField>
                 <ProfileField label="University">
-                  <input value={userProfile?.university || ''} disabled className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900 border" />
+                  <input value={userProfile?.university || ''} disabled className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200" />
                 </ProfileField>
 
                 <ProfileField label="Phone number">
                   <div className="flex flex-col sm:flex-row gap-2">
                     <div className="flex gap-2 flex-1">
-                      <select name="countryCode" value={countryCode} onChange={handleChange} className="w-24 sm:w-28 px-2 sm:px-3 py-3 rounded-xl border bg-white text-sm">
+                      <select name="countryCode" value={countryCode} onChange={handleChange} className="w-24 sm:w-28 px-2 sm:px-3 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-100 text-sm">
                         <option value="+254">+254</option>
                         <option value="+1">+1</option>
                         <option value="+44">+44</option>
@@ -462,11 +462,11 @@ const StudentProfile = () => {
                         <option value="+255">+255</option>
                         <option value="+92">+92</option>
                       </select>
-                      <input name="phoneLocal" value={phoneLocal} onChange={handleChange} placeholder="Local number" className="flex-1 min-w-0 px-3 sm:px-4 py-3 rounded-xl border focus:ring-2 focus:ring-slate-300 text-sm" />
+                      <input name="phoneLocal" value={phoneLocal} onChange={handleChange} placeholder="Local number" className="flex-1 min-w-0 px-3 sm:px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-100 focus:ring-2 focus:ring-slate-300 dark:focus:ring-slate-600 text-sm" />
                     </div>
                     <button type="button" onClick={() => handleUpdate('phone')} disabled={loading || `${countryCode} ${phoneLocal}`.trim() === originalPhone} className="w-full sm:w-auto px-4 py-3 rounded-xl bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50 text-sm font-medium">Update</button>
                   </div>
-                  <div className="text-xs text-slate-500 mt-1">Current: {originalPhone || 'Not set'}</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Current: {originalPhone || 'Not set'}</div>
                 </ProfileField>
               </div>
             </div>

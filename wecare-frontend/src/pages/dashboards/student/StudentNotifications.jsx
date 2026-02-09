@@ -164,7 +164,7 @@ const StudentNotifications = () => {
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-slate-200 p-6 space-y-4">
+      <div className="rounded-xl border border-slate-200 p-6 space-y-4 dark:border-slate-700 dark:bg-slate-900">
         {[...Array(3)].map((_,i)=>(
           <div key={i} className="animate-pulse space-y-3">
             <div className="h-3 w-24 bg-slate-200 rounded"></div>
@@ -178,31 +178,31 @@ const StudentNotifications = () => {
 
   return (
     <div className="space-y-4">
-      {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">{error}</div>}
+      {error && <div className="bg-red-50 border border-red-200 text-red-700 dark:bg-rose-950/40 dark:border-rose-800 dark:text-rose-200 px-4 py-3 rounded">{error}</div>}
       
-      <div className="rounded-xl border border-slate-200 p-0 overflow-hidden">
-        <div className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b border-slate-200 px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="rounded-xl border border-slate-200 p-0 overflow-hidden dark:border-slate-700 dark:bg-slate-900">
+        <div className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b border-slate-200 px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 dark:bg-slate-900/90 dark:border-slate-700">
           <div className="flex items-center gap-2">
-            <h3 className="text-lg font-semibold text-slate-800">Recent Notifications</h3>
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">
+            <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Recent Notifications</h3>
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200 dark:bg-amber-900/40 dark:text-amber-200 dark:border-amber-800">
               {unreadCount} unread
             </span>
           </div>
           <div className="flex items-center gap-2 sm:justify-end">
-            <button onClick={markAllAsReadNow} className="text-sm text-amber-700 hover:text-amber-800 font-medium">Mark all as read</button>
+            <button onClick={markAllAsReadNow} className="text-sm text-amber-700 hover:text-amber-800 dark:text-amber-300 dark:hover:text-amber-200 font-medium">Mark all as read</button>
             {hasMore && (
-              <button onClick={loadMore} className="text-sm text-amber-700 hover:text-amber-800 font-medium">Load older</button>
+              <button onClick={loadMore} className="text-sm text-amber-700 hover:text-amber-800 dark:text-amber-300 dark:hover:text-amber-200 font-medium">Load older</button>
             )}
           </div>
         </div>
 
         {notifications.length === 0 ? (
-          <div className="py-10 text-center text-slate-500">No notifications yet. Check your profile or aid status for updates.</div>
+          <div className="py-10 text-center text-slate-500 dark:text-slate-400">No notifications yet. Check your profile or aid status for updates.</div>
         ) : (
           <div className="max-h-[70vh] overflow-y-auto px-6 py-4 space-y-5">
             {Object.entries(grouped).map(([day, list]) => (
               <div key={day} className="space-y-3">
-                <div className="text-xs font-semibold text-slate-500 tracking-wide">{day}</div>
+                <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 tracking-wide">{day}</div>
                 <div className="space-y-3">
                   {list.map((notification) => (
                     <div
@@ -210,20 +210,20 @@ const StudentNotifications = () => {
                       onClick={() => { if (!isRead(notification)) handleMarkAsRead(notification._id); }}
                       className={`border rounded-lg p-4 cursor-pointer transition hover:shadow-sm ${
                         isRead(notification)
-                          ? "border-slate-200 bg-white"
-                          : "border-amber-200 bg-amber-50"
+                          ? "border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900"
+                          : "border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/30"
                       }`}
                     >
                       <div className="flex justify-between items-start gap-3">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <h4 className="font-semibold text-slate-800 truncate">{notification.title}</h4>
+                            <h4 className="font-semibold text-slate-800 dark:text-slate-100 truncate">{notification.title}</h4>
                             {!isRead(notification) && (
                               <span className="px-2 py-0.5 bg-amber-700 text-white text-[11px] rounded-full">New</span>
                             )}
                           </div>
-                          <p className="text-slate-600 mt-1 text-sm line-clamp-3">{notification.message}</p>
-                          <div className="flex flex-wrap gap-3 mt-2 text-xs text-slate-500">
+                          <p className="text-slate-600 dark:text-slate-300 mt-1 text-sm line-clamp-3">{notification.message}</p>
+                          <div className="flex flex-wrap gap-3 mt-2 text-xs text-slate-500 dark:text-slate-400">
                             <span>From: {notification.sender?.name || notification.senderName || notification.senderRole || 'System'}</span>
                             <span>{formatDateTime(notification.createdAt)}</span>
                           </div>
@@ -232,20 +232,20 @@ const StudentNotifications = () => {
                           {!isRead(notification) && (
                             <button
                               onClick={(e) => { e.stopPropagation(); handleMarkAsRead(notification._id); }}
-                              className="px-3 py-1 rounded-lg border border-amber-300 text-amber-700 hover:bg-amber-50 text-xs font-medium"
+                              className="px-3 py-1 rounded-lg border border-amber-300 text-amber-700 hover:bg-amber-50 text-xs font-medium dark:border-amber-800 dark:text-amber-300 dark:hover:bg-amber-900/30"
                             >
                               Mark read
                             </button>
                           )}
                           <button
                             onClick={(e) => { e.stopPropagation(); handleHide(notification._id); }}
-                            className="px-3 py-1 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 text-xs font-medium"
+                            className="px-3 py-1 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 text-xs font-medium dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                           >
                             Hide
                           </button>
                           <button
                             onClick={(e) => { e.stopPropagation(); handleDelete(notification._id); }}
-                            className="px-3 py-1 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-xs font-medium"
+                            className="px-3 py-1 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-xs font-medium dark:border-rose-800 dark:text-rose-300 dark:hover:bg-rose-900/30"
                           >
                             Delete
                           </button>
@@ -261,30 +261,30 @@ const StudentNotifications = () => {
       </div>
 
       {/* Hidden */}
-      <div className="rounded-xl border border-slate-200">
+      <div className="rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-900">
         <button
           onClick={toggleHidden}
           className="w-full px-6 py-4 flex items-center justify-between text-left"
         >
           <div>
-            <h3 className="text-lg font-semibold text-slate-800">Hidden</h3>
-            <p className="text-xs text-slate-500">Notifications you removed from your feed</p>
+            <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Hidden</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Notifications you removed from your feed</p>
           </div>
-          <span className="text-sm text-slate-500">{showHidden ? "Hide" : "Show"}</span>
+          <span className="text-sm text-slate-500 dark:text-slate-400">{showHidden ? "Hide" : "Show"}</span>
         </button>
         {showHidden && (
-          <div className="border-t border-slate-200 p-6">
+          <div className="border-t border-slate-200 p-6 dark:border-slate-700">
             {(hiddenList || []).length === 0 ? (
-              <p className="text-slate-500">No hidden notifications.</p>
+              <p className="text-slate-500 dark:text-slate-400">No hidden notifications.</p>
             ) : (
               <div className="space-y-3">
                 {hiddenList.map((n) => (
-                  <div key={n._id} className="border rounded-lg p-4 bg-slate-50">
+                  <div key={n._id} className="border rounded-lg p-4 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/60">
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
-                        <h4 className="font-semibold text-slate-800 truncate">{n.title}</h4>
-                        <p className="text-slate-600 mt-1 text-sm line-clamp-3">{n.message}</p>
-                        <div className="flex flex-wrap gap-3 mt-2 text-xs text-slate-500">
+                        <h4 className="font-semibold text-slate-800 dark:text-slate-100 truncate">{n.title}</h4>
+                        <p className="text-slate-600 dark:text-slate-300 mt-1 text-sm line-clamp-3">{n.message}</p>
+                        <div className="flex flex-wrap gap-3 mt-2 text-xs text-slate-500 dark:text-slate-400">
                           <span>From: {n.sender?.name || n.senderName || n.senderRole || 'System'}</span>
                           <span>{formatDateTime(n.createdAt)}</span>
                         </div>
@@ -292,13 +292,13 @@ const StudentNotifications = () => {
                       <div className="flex gap-2 ml-4">
                         <button
                           onClick={() => handleUnhide(n._id)}
-                          className="px-3 py-1 rounded-lg border border-amber-300 text-amber-700 hover:bg-amber-50 text-xs font-medium"
+                          className="px-3 py-1 rounded-lg border border-amber-300 text-amber-700 hover:bg-amber-50 text-xs font-medium dark:border-amber-800 dark:text-amber-300 dark:hover:bg-amber-900/30"
                         >
                           Unhide
                         </button>
                         <button
                           onClick={() => handleDelete(n._id)}
-                          className="px-3 py-1 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-xs font-medium"
+                          className="px-3 py-1 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-xs font-medium dark:border-rose-800 dark:text-rose-300 dark:hover:bg-rose-900/30"
                         >
                           Delete
                         </button>

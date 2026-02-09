@@ -298,26 +298,26 @@ const DashboardLayout = ({ title, children }) => {
                     to="/dashboard/student"
                     end
                     onClick={(e) => { if (!isVerifiedStudent) e.preventDefault(); }}
-                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : `${!isVerifiedStudent ? 'text-slate-400 bg-slate-100 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50'}`}`}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : `${!isVerifiedStudent ? 'text-slate-400 bg-slate-100 cursor-not-allowed dark:text-slate-500 dark:bg-slate-800' : 'text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800/60'}`}`}
                   >Home</NavLink>
                   <NavLink
                     to="/dashboard/student/profile"
                     onClick={(e) => { if (!isVerifiedStudent) e.preventDefault(); }}
-                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : `${!isVerifiedStudent ? 'text-slate-400 bg-slate-100 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50'}`}`}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : `${!isVerifiedStudent ? 'text-slate-400 bg-slate-100 cursor-not-allowed dark:text-slate-500 dark:bg-slate-800' : 'text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800/60'}`}`}
                   >Profile</NavLink>
                   <NavLink
                     to="/dashboard/student/aid"
                     onClick={(e) => { if (!isVerifiedStudent) e.preventDefault(); }}
-                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : `${!isVerifiedStudent ? 'text-slate-400 bg-slate-100 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50'}`}`}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : `${!isVerifiedStudent ? 'text-slate-400 bg-slate-100 cursor-not-allowed dark:text-slate-500 dark:bg-slate-800' : 'text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800/60'}`}`}
                   >Aid</NavLink>
                   <NavLink
                     to="/dashboard/student/support"
                     onClick={(e) => { if (!isVerifiedStudent) e.preventDefault(); }}
-                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : `${!isVerifiedStudent ? 'text-slate-400 bg-slate-100 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50'}`}`}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : `${!isVerifiedStudent ? 'text-slate-400 bg-slate-100 cursor-not-allowed dark:text-slate-500 dark:bg-slate-800' : 'text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800/60'}`}`}
                   >Support</NavLink>
                   <NavLink
                     to="/dashboard/student/notifications"
-                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : 'text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800/60'}`}
                   >Notifications</NavLink>
                 </nav>
               )}
@@ -436,7 +436,7 @@ const DashboardLayout = ({ title, children }) => {
               <div className="relative" ref={bellRef}>
               <button
                 onClick={() => setShowDropdown(!showDropdown)}
-                className={`relative inline-flex items-center justify-center px-2.5 py-2 rounded-lg transition border ${hasUnread ? 'bg-amber-50 border-amber-200 text-amber-800 shadow-sm' : 'border-transparent text-slate-700 hover:bg-slate-100'} `}
+                className={`relative inline-flex items-center justify-center px-2.5 py-2 rounded-lg transition border ${hasUnread ? 'bg-amber-50 border-amber-200 text-amber-800 shadow-sm dark:bg-amber-900/40 dark:border-amber-800 dark:text-amber-200' : 'border-transparent text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800'} `}
                 title="Notifications"
               >
                 <span className="relative inline-flex items-center">
@@ -450,14 +450,14 @@ const DashboardLayout = ({ title, children }) => {
                 )}
               </button>
               {showDropdown && (
-                <div className="absolute right-0 mt-2 w-80 rounded-xl border border-slate-200 bg-white shadow-lg z-50">
-                  <div className="p-3 border-b border-slate-100 flex items-center justify-between">
-                    <span className="text-sm font-semibold text-slate-700">Notifications</span>
-                    <button onClick={markAllAsRead} className="text-xs text-blue-600 hover:underline">Mark all as read</button>
+                <div className="absolute right-0 mt-2 w-80 rounded-xl border border-slate-200 bg-white shadow-lg z-50 dark:border-slate-700 dark:bg-slate-900">
+                  <div className="p-3 border-b border-slate-100 flex items-center justify-between dark:border-slate-800">
+                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">Notifications</span>
+                    <button onClick={markAllAsRead} className="text-xs text-blue-600 hover:underline dark:text-blue-300">Mark all as read</button>
                   </div>
                   <div className="max-h-80 overflow-auto">
                     {dropdownItems.length === 0 ? (
-                      <div className="p-4 text-sm text-slate-500">No recent notifications</div>
+                      <div className="p-4 text-sm text-slate-500 dark:text-slate-400">No recent notifications</div>
                     ) : (
                       dropdownItems.map((n) => (
                         <button key={n._id} onClick={() => {
@@ -467,22 +467,22 @@ const DashboardLayout = ({ title, children }) => {
                           else if (role === 'admin') navigate('/dashboard/admin/notifications');
                           else if (role === 'superadmin') navigate('/dashboard/superadmin/notifications');
                           setShowDropdown(false);
-                        }} className="w-full text-left p-3 hover:bg-slate-50">
+                        }} className="w-full text-left p-3 hover:bg-slate-50 dark:hover:bg-slate-800">
                           <div className="flex items-start gap-2">
                             {!((n.isRead||[]).some(r => (r.user === (user?._id||user?.id)) || (r.user?._id === (user?._id||user?.id)) || (String(r.user)===String(user?._id||user?.id)))) && (
                               <span className="mt-1 inline-block w-2 h-2 rounded-full bg-amber-700"></span>
                             )}
                             <div className="flex-1">
-                              <div className="text-sm font-medium text-slate-800 truncate">{n.title}</div>
-                              <div className="text-xs text-slate-600 truncate">{n.message}</div>
-                              <div className="text-[11px] text-slate-400">{new Date(n.createdAt).toLocaleString()}</div>
+                              <div className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">{n.title}</div>
+                              <div className="text-xs text-slate-600 dark:text-slate-300 truncate">{n.message}</div>
+                              <div className="text-[11px] text-slate-400 dark:text-slate-500">{new Date(n.createdAt).toLocaleString()}</div>
                             </div>
                           </div>
                         </button>
                       ))
                     )}
                   </div>
-                  <div className="p-2 border-t border-slate-100 text-right">
+                  <div className="p-2 border-t border-slate-100 text-right dark:border-slate-800">
                     <button onClick={() => {
                       const role = user?.role;
                       if (role === 'student') navigate('/dashboard/student/notifications');
@@ -490,7 +490,7 @@ const DashboardLayout = ({ title, children }) => {
                       else if (role === 'admin') navigate('/dashboard/admin/notifications');
                       else if (role === 'superadmin') navigate('/dashboard/superadmin/notifications');
                       setShowDropdown(false);
-                    }} className="text-sm text-blue-600 hover:underline">View all</button>
+                    }} className="text-sm text-blue-600 hover:underline dark:text-blue-300">View all</button>
                   </div>
                 </div>
               )}

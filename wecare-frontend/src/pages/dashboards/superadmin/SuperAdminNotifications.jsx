@@ -249,13 +249,13 @@ const SuperAdminNotifications = () => {
 
   return (
     <div className="space-y-6">
-      {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">{error}</div>}
-      {success && <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded">{success}</div>}
+      {error && <div className="bg-red-50 dark:bg-rose-950/40 border border-red-200 dark:border-rose-800 text-red-700 dark:text-rose-200 px-4 py-3 rounded">{error}</div>}
+      {success && <div className="bg-green-50 dark:bg-emerald-950/40 border border-green-200 dark:border-emerald-800 text-green-700 dark:text-emerald-200 px-4 py-3 rounded">{success}</div>}
       
       {/* Send Notification Form */}
-      <div className="rounded-xl border border-slate-200 p-6">
+      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-slate-800">Send System Notification</h3>
+          <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Send System Notification</h3>
           <button
             onClick={() => setShowSendForm(!showSendForm)}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
@@ -267,33 +267,33 @@ const SuperAdminNotifications = () => {
         {showSendForm && (
           <form onSubmit={handleSendNotification} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Title</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Title</label>
               <input
                 type="text"
                 value={sendForm.title}
                 onChange={(e) => setSendForm({...sendForm, title: e.target.value})}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Message</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Message</label>
               <textarea
                 value={sendForm.message}
                 onChange={(e) => setSendForm({...sendForm, message: e.target.value})}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 rows="3"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Recipients</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Recipients</label>
               <select
                 value={sendForm.recipientType}
                 onChange={(e) => setSendForm({...sendForm, recipientType: e.target.value})}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="everyone">Everyone</option>
                 <option value="all_students">All Students</option>
@@ -307,11 +307,11 @@ const SuperAdminNotifications = () => {
 
             {sendForm.recipientType === "single_admin" && (
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Select Admin</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Select Admin</label>
                 <select
                   value={sendForm.recipientId}
                   onChange={(e) => setSendForm({...sendForm, recipientId: e.target.value})}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 >
                   <option value="">Select an admin</option>
@@ -324,11 +324,11 @@ const SuperAdminNotifications = () => {
 
             {sendForm.recipientType === "single_donor" && (
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Select Donor</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Select Donor</label>
                 <select
                   value={sendForm.recipientId}
                   onChange={(e) => setSendForm({...sendForm, recipientId: e.target.value})}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 >
                   <option value="">Select a donor</option>
@@ -350,29 +350,29 @@ const SuperAdminNotifications = () => {
       </div>
 
       {/* Notifications List - show only items sent by current super admin */}
-      <div className="rounded-xl border border-slate-200 p-6">
+      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-slate-800">System Notifications</h3>
+          <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">System Notifications</h3>
         </div>
         
         {sent.filter(isSender).length === 0 ? (
-          <p className="text-slate-500 text-center py-8">No notifications sent yet.</p>
+          <p className="text-slate-500 dark:text-slate-400 text-center py-8">No notifications sent yet.</p>
         ) : (
           <div className="space-y-4">
             {sent.filter(isSender).map((notification) => (
-              <div key={notification._id} onClick={() => { if (!isRead(notification)) handleMarkAsRead(notification._id); }} className={`border rounded-lg p-4 ${isRead(notification) ? "border-slate-200 bg-slate-50" : "border-blue-200 bg-blue-50"}`}>
+              <div key={notification._id} onClick={() => { if (!isRead(notification)) handleMarkAsRead(notification._id); }} className={`border rounded-lg p-4 ${isRead(notification) ? "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50" : "border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20"}`}>
                 {editingNotification?._id === notification._id ? (
                   <form onSubmit={handleEditNotification} className="space-y-3">
                     <input
                       type="text"
                       value={editingNotification.title}
                       onChange={(e) => setEditingNotification({...editingNotification, title: e.target.value})}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                     <textarea
                       value={editingNotification.message}
                       onChange={(e) => setEditingNotification({...editingNotification, message: e.target.value})}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       rows="2"
                     />
                     <div className="flex gap-2">
@@ -384,9 +384,9 @@ const SuperAdminNotifications = () => {
                   <>
                     <div className="flex justify-between items-start">
                       <div>
-                        <h4 className="font-medium text-slate-800">{notification.title}</h4>
-                        <p className="text-slate-600 mt-1">{notification.message}</p>
-                        <div className="flex gap-4 mt-2 text-sm text-slate-500">
+                        <h4 className="font-medium text-slate-800 dark:text-slate-100">{notification.title}</h4>
+                        <p className="text-slate-600 dark:text-slate-300 mt-1">{notification.message}</p>
+                        <div className="flex gap-4 mt-2 text-sm text-slate-500 dark:text-slate-400">
                           <span>To: {getRecipientText(notification)}</span>
                           <span>Sent: {formatDate(notification.createdAt)}</span>
                           <span>By: {notification.sender?.name || notification.senderName || notification.senderRole || 'System'}</span>
@@ -417,7 +417,7 @@ const SuperAdminNotifications = () => {
             ))}
             <div className="mt-3 text-center">
               {sentHasMore && (
-                <button onClick={loadMoreSent} className="px-3 py-1 text-sm text-blue-600 hover:underline">Load older</button>
+                <button onClick={loadMoreSent} className="px-3 py-1 text-sm text-blue-600 dark:text-blue-300 hover:underline">Load older</button>
               )}
             </div>
           </div>
@@ -425,19 +425,19 @@ const SuperAdminNotifications = () => {
       </div>
 
       {/* Hidden */}
-      <div className="rounded-xl border border-slate-200 p-6">
-        <h3 className="text-lg font-semibold text-slate-800 mb-4">Hidden</h3>
+      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6">
+        <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4">Hidden</h3>
         {(hiddenList || []).length === 0 ? (
-          <p className="text-slate-500">No hidden notifications.</p>
+          <p className="text-slate-500 dark:text-slate-400">No hidden notifications.</p>
         ) : (
           <div className="space-y-4">
             {hiddenList.map((n) => (
-              <div key={n._id} className="border border-slate-200 rounded-lg p-4 bg-slate-50">
+              <div key={n._id} className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 bg-slate-50 dark:bg-slate-800/50">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h4 className="font-medium text-slate-800">{n.title}</h4>
-                    <p className="text-slate-600 mt-1">{n.message}</p>
-                    <div className="flex gap-4 mt-2 text-sm text-slate-500">
+                    <h4 className="font-medium text-slate-800 dark:text-slate-100">{n.title}</h4>
+                    <p className="text-slate-600 dark:text-slate-300 mt-1">{n.message}</p>
+                    <div className="flex gap-4 mt-2 text-sm text-slate-500 dark:text-slate-400">
                       <span>To: {getRecipientText(n)}</span>
                       <span>Sent: {formatDate(n.createdAt)}</span>
                       <span>By: {n.sender?.name || n.senderName || n.senderRole || 'System'}</span>

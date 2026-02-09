@@ -3,10 +3,10 @@ import { useAuth } from "../../../context/AuthContext";
 import { getAdminReports } from "../../../services/aidService";
 
 const ReportCard = ({ title, value, trend }) => (
-  <div className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-amber-100 p-5 shadow-sm hover:shadow-md transition-shadow">
-    <p className="text-sm text-amber-700">{title}</p>
-    <p className="mt-1 text-2xl font-bold text-amber-900">{value}</p>
-    {trend && <p className="text-xs text-amber-600">{trend}</p>}
+  <div className="rounded-2xl border border-amber-200 dark:border-slate-700 bg-gradient-to-br from-amber-50 to-amber-100 dark:from-slate-900 dark:to-slate-800 p-5 shadow-sm hover:shadow-md transition-shadow">
+    <p className="text-sm text-amber-700 dark:text-slate-300">{title}</p>
+    <p className="mt-1 text-2xl font-bold text-amber-900 dark:text-slate-100">{value}</p>
+    {trend && <p className="text-xs text-amber-600 dark:text-slate-400">{trend}</p>}
   </div>
 );
 
@@ -34,8 +34,8 @@ const AdminReports = () => {
     if (user?.token) load();
   }, [user?.token]);
 
-  if (loading) return <div className="py-8 text-center">Loading reports...</div>;
-  if (error) return <div className="py-8 text-center text-red-600">{error}</div>;
+  if (loading) return <div className="py-8 text-center text-slate-600 dark:text-slate-300">Loading reports...</div>;
+  if (error) return <div className="py-8 text-center text-red-600 dark:text-rose-300">{error}</div>;
 
   const vm = data?.verifiedMoms || { currentTotal: 0, currentMonth: 0, previousMonth: 0 };
   const fa = data?.financialAid || { currentMonth: 0, previousMonth: 0 };
@@ -54,83 +54,83 @@ const AdminReports = () => {
         <ReportCard title="Retention Rate" value={`${retention}%`} trend="" />
       </div>
 
-      <div className="rounded-2xl border border-amber-200 bg-white dark:bg-slate-800 p-5 shadow-sm">
-        <h3 className="font-semibold text-slate-800 mb-3">Visualizations</h3>
+      <div className="rounded-2xl border border-amber-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm">
+        <h3 className="font-semibold text-slate-800 dark:text-slate-100 mb-3">Visualizations</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <p className="text-sm text-slate-600 mb-2">Verified Moms (Prev vs Current)</p>
+            <p className="text-sm text-slate-600 dark:text-slate-300 mb-2">Verified Moms (Prev vs Current)</p>
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <span className="w-24 text-xs text-slate-500">Previous</span>
-                <div className="h-3 bg-amber-200 rounded w-full">
+                <span className="w-24 text-xs text-slate-500 dark:text-slate-400">Previous</span>
+                <div className="h-3 bg-amber-200 dark:bg-amber-900/40 rounded w-full">
                   <div className="h-3 bg-amber-500 rounded" style={{ width: `${Math.max(5, Math.min(100, ((vm.previousMonth || 0) / Math.max(1, vm.currentTotal || 1)) * 100))}%` }} />
                 </div>
-                <span className="w-16 text-right text-xs text-slate-600">{vm.previousMonth}</span>
+                <span className="w-16 text-right text-xs text-slate-600 dark:text-slate-300">{vm.previousMonth}</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-24 text-xs text-slate-500">Current</span>
-                <div className="h-3 bg-amber-200 rounded w-full">
+                <span className="w-24 text-xs text-slate-500 dark:text-slate-400">Current</span>
+                <div className="h-3 bg-amber-200 dark:bg-amber-900/40 rounded w-full">
                   <div className="h-3 bg-amber-700 rounded" style={{ width: `${Math.max(5, Math.min(100, ((vm.currentTotal || 0) / Math.max(1, vm.currentTotal || 1)) * 100))}%` }} />
                 </div>
-                <span className="w-16 text-right text-xs text-slate-600">{vm.currentTotal}</span>
+                <span className="w-16 text-right text-xs text-slate-600 dark:text-slate-300">{vm.currentTotal}</span>
               </div>
             </div>
           </div>
 
           <div>
-            <p className="text-sm text-slate-600 mb-2">Financial Aid (KES)</p>
+            <p className="text-sm text-slate-600 dark:text-slate-300 mb-2">Financial Aid (KES)</p>
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <span className="w-24 text-xs text-slate-500">Previous</span>
-                <div className="h-3 bg-amber-200 rounded w-full">
+                <span className="w-24 text-xs text-slate-500 dark:text-slate-400">Previous</span>
+                <div className="h-3 bg-amber-200 dark:bg-amber-900/40 rounded w-full">
                   <div className="h-3 bg-amber-500 rounded" style={{ width: `${Math.max(5, Math.min(100, ((fa.previousMonth || 0) / Math.max(1, fa.currentMonth || 1)) * 100))}%` }} />
                 </div>
-                <span className="w-20 text-right text-xs text-slate-600">{fa.previousMonth.toLocaleString()}</span>
+                <span className="w-20 text-right text-xs text-slate-600 dark:text-slate-300">{fa.previousMonth.toLocaleString()}</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-24 text-xs text-slate-500">Current</span>
-                <div className="h-3 bg-amber-200 rounded w-full">
+                <span className="w-24 text-xs text-slate-500 dark:text-slate-400">Current</span>
+                <div className="h-3 bg-amber-200 dark:bg-amber-900/40 rounded w-full">
                   <div className="h-3 bg-amber-700 rounded" style={{ width: `${Math.max(5, Math.min(100, ((fa.currentMonth || 0) / Math.max(1, fa.currentMonth || 1)) * 100))}%` }} />
                 </div>
-                <span className="w-20 text-right text-xs text-slate-600">{fa.currentMonth.toLocaleString()}</span>
+                <span className="w-20 text-right text-xs text-slate-600 dark:text-slate-300">{fa.currentMonth.toLocaleString()}</span>
               </div>
             </div>
           </div>
 
           <div>
-            <p className="text-sm text-slate-600 mb-2">Essentials Items (Prev vs Current)</p>
+            <p className="text-sm text-slate-600 dark:text-slate-300 mb-2">Essentials Items (Prev vs Current)</p>
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <span className="w-24 text-xs text-slate-500">Previous</span>
-                <div className="h-3 bg-amber-200 rounded w-full">
+                <span className="w-24 text-xs text-slate-500 dark:text-slate-400">Previous</span>
+                <div className="h-3 bg-amber-200 dark:bg-amber-900/40 rounded w-full">
                   <div className="h-3 bg-amber-500 rounded" style={{ width: `${Math.max(5, Math.min(100, ((ed.previousMonthItems || 0) / Math.max(1, ed.currentMonthItems || 1)) * 100))}%` }} />
                 </div>
-                <span className="w-16 text-right text-xs text-slate-600">{ed.previousMonthItems.toLocaleString()}</span>
+                <span className="w-16 text-right text-xs text-slate-600 dark:text-slate-300">{ed.previousMonthItems.toLocaleString()}</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-24 text-xs text-slate-500">Current</span>
-                <div className="h-3 bg-amber-200 rounded w-full">
+                <span className="w-24 text-xs text-slate-500 dark:text-slate-400">Current</span>
+                <div className="h-3 bg-amber-200 dark:bg-amber-900/40 rounded w-full">
                   <div className="h-3 bg-amber-700 rounded" style={{ width: `${Math.max(5, Math.min(100, ((ed.currentMonthItems || 0) / Math.max(1, ed.currentMonthItems || 1)) * 100))}%` }} />
                 </div>
-                <span className="w-16 text-right text-xs text-slate-600">{ed.currentMonthItems.toLocaleString()}</span>
+                <span className="w-16 text-right text-xs text-slate-600 dark:text-slate-300">{ed.currentMonthItems.toLocaleString()}</span>
               </div>
             </div>
           </div>
 
           <div>
-            <p className="text-sm text-slate-600 mb-2">Retention</p>
+            <p className="text-sm text-slate-600 dark:text-slate-300 mb-2">Retention</p>
             <div className="flex items-center gap-2">
-              <div className="h-3 bg-amber-200 rounded w-full">
+              <div className="h-3 bg-amber-200 dark:bg-amber-900/40 rounded w-full">
                 <div className="h-3 bg-amber-600 rounded" style={{ width: `${Math.max(5, Math.min(100, retention))}%` }} />
               </div>
-              <span className="w-12 text-right text-xs text-slate-600">{retention}%</span>
+              <span className="w-12 text-right text-xs text-slate-600 dark:text-slate-300">{retention}%</span>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-amber-200 bg-white dark:bg-slate-800 p-5 shadow-sm">
-        <h3 className="font-semibold text-slate-800 mb-3">Downloads</h3>
+      <div className="rounded-2xl border border-amber-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm">
+        <h3 className="font-semibold text-slate-800 dark:text-slate-100 mb-3">Downloads</h3>
         <div className="flex flex-wrap gap-3">
           <button onClick={() => {
             const rows = [

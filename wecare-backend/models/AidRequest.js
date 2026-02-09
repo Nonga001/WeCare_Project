@@ -33,6 +33,7 @@ const aidRequestSchema = new mongoose.Schema(
     },
     student: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     university: { type: String, required: true },
+    shareWithDonors: { type: Boolean, default: false },
     precheckPassed: { type: Boolean, default: false },
     precheckReason: { type: String },
     precheckAt: { type: Date },

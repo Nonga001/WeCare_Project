@@ -3,6 +3,8 @@ import { protect } from "../middleware/authMiddleware.js";
 import {
   createDonation,
   getMyDonations,
+  deleteMyDonations,
+  queryDonationStatus,
   getGlobalAidRequests,
   getDonorStats,
   getAllDonations,
@@ -17,6 +19,8 @@ router.use(protect);
 // Donor routes
 router.post("/", createDonation);
 router.get("/mine", getMyDonations);
+router.delete("/mine", deleteMyDonations);
+router.get("/:donationId/status", queryDonationStatus);
 router.get("/global-requests", getGlobalAidRequests);
 router.get("/stats", getDonorStats);
 

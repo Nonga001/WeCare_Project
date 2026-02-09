@@ -5,7 +5,7 @@ import { getProfileCompletion } from "../../../services/userService";
 
 const StudentAid = () => {
   const { user } = useAuth();
-  const [request, setRequest] = useState({ aidCategory: "food", amountRange: "", explanation: "" });
+  const [request, setRequest] = useState({ aidCategory: "food", amountRange: "", explanation: "", shareWithDonors: false });
   const [history, setHistory] = useState([]);
   const [error, setError] = useState("");
   const [profileComplete, setProfileComplete] = useState(false);
@@ -52,9 +52,10 @@ const StudentAid = () => {
       await createAid(user?.token, {
         aidCategory: request.aidCategory,
         amountRange: request.amountRange,
-        explanation: request.explanation.trim()
+        explanation: request.explanation.trim(),
+        shareWithDonors: request.shareWithDonors
       });
-      setRequest({ aidCategory: "food", amountRange: "", explanation: "" });
+      setRequest({ aidCategory: "food", amountRange: "", explanation: "", shareWithDonors: false });
       await load();
     } catch (err) {
       setError(err.response?.data?.message || "Failed to submit");
@@ -65,18 +66,18 @@ const StudentAid = () => {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2 space-y-6">
         {error && (
-          <div className="rounded-xl border border-red-200 bg-red-50 p-4">
-            <p className="text-red-600 text-sm">{error}</p>
+          <div className="rounded-xl border border-red-200 bg-red-50 p-4 dark:border-rose-800 dark:bg-rose-950/40">
+            <p className="text-red-600 dark:text-rose-200 text-sm">{error}</p>
           </div>
         )}
         
-        <div className="rounded-xl border border-slate-200 p-5">
-          <h3 className="font-semibold text-slate-800 mb-3">Request Aid</h3>
+        <div className="rounded-xl border border-slate-200 p-5 dark:border-slate-700 dark:bg-slate-900">
+          <h3 className="font-semibold text-slate-800 dark:text-slate-100 mb-3">Request Aid</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <select 
               value={request.aidCategory} 
               onChange={(e)=>setRequest((p)=>({ ...p, aidCategory:e.target.value, amountRange: "" }))} 
-              className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300"
+              className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
             >
               <option value="food">Food</option>
               <option value="childcare">Childcare</option>
@@ -87,7 +88,7 @@ const StudentAid = () => {
             <select
               value={request.amountRange}
               onChange={(e)=>setRequest((p)=>({...p, amountRange:e.target.value}))}
-              className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300"
+              className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
             >
               <option value="">Select amount range (KES)</option>
               {request.aidCategory === "food" && (
@@ -135,10 +136,26 @@ const StudentAid = () => {
               value={request.explanation}
               maxLength={explanationMax}
               onChange={(e)=>setRequest((p)=>({ ...p, explanation:e.target.value }))}
-              className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300"
+              className="w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
               rows="3"
             />
-            <div className="text-xs text-slate-500 mt-1">{request.explanation.length}/{explanationMax} characters</div>
+            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">{request.explanation.length}/{explanationMax} characters</div>
+          </div>
+          <div className="mt-3 rounded-lg border border-slate-200 p-3 dark:border-slate-700 dark:bg-slate-900/60">
+            <label className="flex items-start gap-2 text-sm text-slate-700 dark:text-slate-200">
+              <input
+                type="checkbox"
+                checked={request.shareWithDonors}
+                onChange={(e) => setRequest((p) => ({ ...p, shareWithDonors: e.target.checked }))}
+                className="mt-1"
+              />
+              <span>
+                I consent to showing an anonymized version of this request to donors to help fund it.
+              </span>
+            </label>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              No personal identifiers will be shown. You can still receive aid even if you do not consent.
+            </p>
           </div>
           <div className="mt-3">
             <button 
@@ -153,41 +170,41 @@ const StudentAid = () => {
       </div>
 
       <div className="space-y-4">
-        <div className="rounded-xl border border-slate-200 p-5">
-          <h4 className="font-semibold text-slate-800 mb-3">Your Limits & Remaining</h4>
+        <div className="rounded-xl border border-slate-200 p-5 dark:border-slate-700 dark:bg-slate-900">
+          <h4 className="font-semibold text-slate-800 dark:text-slate-100 mb-3">Your Limits & Remaining</h4>
           {limits.length === 0 ? (
-            <p className="text-sm text-slate-500">Loading limits...</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Loading limits...</p>
           ) : (
             <div className="space-y-3">
               {limits.filter(l => l.category === (request.aidCategory || "food")).map((l) => (
-                <div key={l.category} className="rounded-lg border border-slate-200 p-3">
+                <div key={l.category} className="rounded-lg border border-slate-200 p-3 dark:border-slate-700 dark:bg-slate-900/60">
                   <div className="flex items-center justify-between">
-                    <p className="font-medium text-slate-800 capitalize">{l.category}</p>
-                    <span className="text-xs text-slate-500">per {l.period}</span>
+                    <p className="font-medium text-slate-800 dark:text-slate-100 capitalize">{l.category}</p>
+                    <span className="text-xs text-slate-500 dark:text-slate-400">per {l.period}</span>
                   </div>
-                  <div className="text-xs text-slate-600 mt-1">Range: {l.rangeLabels.join(", ")} KES</div>
-                  <div className="text-xs text-slate-600">Max amount: KES {l.maxAmountPerPeriod.toLocaleString()}</div>
-                  <div className="text-xs text-slate-600">Max requests: {l.maxRequestsPerPeriod}</div>
-                  <div className="text-xs text-slate-600">Used amount: KES {l.usedAmount.toLocaleString()}</div>
-                  <div className="text-xs text-slate-600">Used requests: {l.usedRequests}</div>
-                  <div className="text-xs text-amber-700 mt-1">Remaining amount: KES {l.remainingAmount.toLocaleString()}</div>
-                  <div className="text-xs text-amber-700">Remaining requests: {l.remainingRequests}</div>
-                  {l.requiresOverride && <div className="text-xs text-rose-600 mt-1">Emergency override required when limits exceeded</div>}
+                  <div className="text-xs text-slate-600 dark:text-slate-300 mt-1">Range: {l.rangeLabels.join(", ")} KES</div>
+                  <div className="text-xs text-slate-600 dark:text-slate-300">Max amount: KES {l.maxAmountPerPeriod.toLocaleString()}</div>
+                  <div className="text-xs text-slate-600 dark:text-slate-300">Max requests: {l.maxRequestsPerPeriod}</div>
+                  <div className="text-xs text-slate-600 dark:text-slate-300">Used amount: KES {l.usedAmount.toLocaleString()}</div>
+                  <div className="text-xs text-slate-600 dark:text-slate-300">Used requests: {l.usedRequests}</div>
+                  <div className="text-xs text-amber-700 dark:text-amber-300 mt-1">Remaining amount: KES {l.remainingAmount.toLocaleString()}</div>
+                  <div className="text-xs text-amber-700 dark:text-amber-300">Remaining requests: {l.remainingRequests}</div>
+                  {l.requiresOverride && <div className="text-xs text-rose-600 dark:text-rose-300 mt-1">Emergency override required when limits exceeded</div>}
                 </div>
               ))}
             </div>
           )}
         </div>
-        <div className="rounded-xl border border-slate-200 p-5">
-          <h4 className="font-semibold text-slate-800 mb-3">Request History</h4>
+        <div className="rounded-xl border border-slate-200 p-5 dark:border-slate-700 dark:bg-slate-900">
+          <h4 className="font-semibold text-slate-800 dark:text-slate-100 mb-3">Request History</h4>
           <div className="space-y-2">
             {history.length === 0 ? (
-              <p className="text-sm text-slate-500">No requests yet.</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">No requests yet.</p>
             ) : (
               history.map((h)=> (
-                <div key={h._id} className="rounded-lg border border-slate-200 p-3">
-                  <p className="text-slate-700 text-sm"><span className="font-medium">{h.aidCategory || h.type}:</span> {h.amountRange ? `${h.amountRange} KES` : (h.type === 'financial' ? `KES ${h.amount}` : (h.items?.map(i=>`${i.name} x${i.quantity}`).join(', ') || h.reason))}</p>
-                  <p className="text-slate-500 text-xs">
+                <div key={h._id} className="rounded-lg border border-slate-200 p-3 dark:border-slate-700 dark:bg-slate-900/60">
+                  <p className="text-slate-700 dark:text-slate-200 text-sm"><span className="font-medium">{h.aidCategory || h.type}:</span> {h.amountRange ? `${h.amountRange} KES` : (h.type === 'financial' ? `KES ${h.amount}` : (h.items?.map(i=>`${i.name} x${i.quantity}`).join(', ') || h.reason))}</p>
+                  <p className="text-slate-500 dark:text-slate-400 text-xs">
                     Status: <span className={`font-medium ${
                       h.status === 'pending_admin' ? 'text-yellow-600' :
                       h.status === 'clarification_required' ? 'text-rose-600' :
@@ -200,13 +217,13 @@ const StudentAid = () => {
                       h.status === 'rejected' ? 'text-red-600' : 'text-gray-600'
                     }`}>{h.status}</span>
                   </p>
-                  {h.clarificationNote && <p className="text-slate-500 text-xs">Clarification: {h.clarificationNote}</p>}
-                  {h.rejectedReason && <p className="text-slate-500 text-xs">Rejection: {h.rejectedReason}</p>}
-                  {h.precheckReason && <p className="text-slate-500 text-xs">Pre-check: {h.precheckReason}</p>}
-                  <p className="text-slate-400 text-xs">Created: {new Date(h.createdAt).toLocaleString()}</p>
-                  {h.requestId && <p className="text-slate-400 text-xs">Request ID: {h.requestId}</p>}
-                  {h.approvedAt && <p className="text-slate-400 text-xs">Approved: {new Date(h.approvedAt).toLocaleString()}</p>}
-                  {h.disbursedAt && <p className="text-slate-400 text-xs">Disbursed: {new Date(h.disbursedAt).toLocaleString()}</p>}
+                  {h.clarificationNote && <p className="text-slate-500 dark:text-slate-400 text-xs">Clarification: {h.clarificationNote}</p>}
+                  {h.rejectedReason && <p className="text-slate-500 dark:text-slate-400 text-xs">Rejection: {h.rejectedReason}</p>}
+                  {h.precheckReason && <p className="text-slate-500 dark:text-slate-400 text-xs">Pre-check: {h.precheckReason}</p>}
+                  <p className="text-slate-400 dark:text-slate-500 text-xs">Created: {new Date(h.createdAt).toLocaleString()}</p>
+                  {h.requestId && <p className="text-slate-400 dark:text-slate-500 text-xs">Request ID: {h.requestId}</p>}
+                  {h.approvedAt && <p className="text-slate-400 dark:text-slate-500 text-xs">Approved: {new Date(h.approvedAt).toLocaleString()}</p>}
+                  {h.disbursedAt && <p className="text-slate-400 dark:text-slate-500 text-xs">Disbursed: {new Date(h.disbursedAt).toLocaleString()}</p>}
                 </div>
               ))
             )}

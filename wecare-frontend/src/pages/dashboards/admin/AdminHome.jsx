@@ -5,9 +5,9 @@ import { getNotifications } from "../../../services/notificationService";
 import { useSocket } from "../../../context/SocketContext";
 
 const StatCard = ({ label, value }) => (
-  <div className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-amber-100 p-5 text-center hover:shadow-lg transition-shadow">
-    <p className="text-sm text-amber-700">{label}</p>
-    <p className="mt-1 text-2xl font-bold text-amber-900">{value}</p>
+  <div className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-amber-100 dark:border-slate-700 dark:from-slate-900 dark:to-slate-800 p-5 text-center hover:shadow-lg transition-shadow">
+    <p className="text-sm text-amber-700 dark:text-slate-300">{label}</p>
+    <p className="mt-1 text-2xl font-bold text-amber-900 dark:text-slate-100">{value}</p>
   </div>
 );
 
@@ -94,28 +94,28 @@ const AdminHome = () => {
   }, [socketRef?.current]);
 
   if (loading) {
-    return <div className="text-center py-8 text-slate-600">Loading stats...</div>;
+    return <div className="text-center py-8 text-slate-600 dark:text-slate-300">Loading stats...</div>;
   }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2 space-y-6">
         {departmentError && (
-          <div className="rounded-2xl border-2 border-red-300 bg-red-50 p-5">
-            <h3 className="font-bold text-red-800 mb-2">⚠️ Action Required</h3>
-            <p className="text-red-700 text-sm mb-3">
+          <div className="rounded-2xl border-2 border-red-300 dark:border-rose-800 bg-red-50 dark:bg-rose-950/40 p-5">
+            <h3 className="font-bold text-red-800 dark:text-rose-200 mb-2">⚠️ Action Required</h3>
+            <p className="text-red-700 dark:text-rose-200 text-sm mb-3">
               You must assign yourself a department (Welfare, Gender, or Health) before you can perform administrative activities.
             </p>
-            <p className="text-red-600 text-sm font-medium">
+            <p className="text-red-600 dark:text-rose-200 text-sm font-medium">
               Please go to your profile and select a department to continue.
             </p>
           </div>
         )}
         
         <div>
-          <h2 className="text-xl font-semibold text-slate-800">Dashboard Overview</h2>
+          <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-100">Dashboard Overview</h2>
           {lastUpdated && (
-            <p className="text-sm text-slate-500 mt-1">
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
               Last updated: {lastUpdated.toLocaleTimeString()}
             </p>
           )}
@@ -135,8 +135,8 @@ const AdminHome = () => {
           <StatCard label="Distributed" value={stats.aidDistributed} />
         </div>
 
-        <div className="rounded-2xl border border-amber-200 bg-white dark:bg-slate-800 p-5">
-          <h3 className="font-semibold text-slate-800 mb-3">Quick Links</h3>
+        <div className="rounded-2xl border border-amber-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5">
+          <h3 className="font-semibold text-slate-800 dark:text-slate-100 mb-3">Quick Links</h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <a href="#verify" className="rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-white text-center py-3 text-sm font-medium hover:from-amber-600 hover:to-amber-700 transition-all">Verify Students</a>
             <a href="#aid" className="rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-white text-center py-3 text-sm font-medium hover:from-amber-600 hover:to-amber-700 transition-all">Manage Aid</a>
@@ -147,17 +147,17 @@ const AdminHome = () => {
       </div>
 
       <div className="space-y-4">
-        <div className="rounded-2xl border border-amber-200 bg-white dark:bg-slate-800 p-5">
-          <h4 className="font-semibold text-slate-800 mb-3">Recent Notifications</h4>
+        <div className="rounded-2xl border border-amber-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5">
+          <h4 className="font-semibold text-slate-800 dark:text-slate-100 mb-3">Recent Notifications</h4>
           {notifications.length === 0 ? (
-            <p className="text-sm text-slate-500">No notifications yet.</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">No notifications yet.</p>
           ) : (
             <div className="space-y-2 max-h-80 overflow-y-auto">
               {notifications.map((n) => (
-                <div key={n._id} className={`border rounded-xl p-3 text-sm ${((n.isRead || []).some(r => (r.user === (user?._id||user?.id)) || (r.user?._id === (user?._id||user?.id)) || (String(r.user)===String(user?._id||user?.id)))) ? "border-amber-200 bg-amber-50" : "border-amber-300 bg-amber-100"}`}>
-                  <p className="font-medium text-slate-800">{n.title}</p>
-                  <p className="text-slate-700 mt-1">{n.message}</p>
-                  <div className="flex justify-between items-center mt-2 text-xs text-slate-600">
+                <div key={n._id} className={`border rounded-xl p-3 text-sm ${((n.isRead || []).some(r => (r.user === (user?._id||user?.id)) || (r.user?._id === (user?._id||user?.id)) || (String(r.user)===String(user?._id||user?.id)))) ? "border-amber-200 bg-amber-50 dark:border-amber-800/40 dark:bg-amber-900/20" : "border-amber-300 bg-amber-100 dark:border-amber-700/50 dark:bg-amber-900/30"}`}>
+                  <p className="font-medium text-slate-800 dark:text-slate-100">{n.title}</p>
+                  <p className="text-slate-700 dark:text-slate-300 mt-1">{n.message}</p>
+                  <div className="flex justify-between items-center mt-2 text-xs text-slate-600 dark:text-slate-400">
                     <span>To: {n.recipientType === 'individual' ? 'Individual' : n.recipientType === 'university_students' ? 'University Students' : 'All'}</span>
                     <span>{new Date(n.createdAt).toLocaleDateString()}</span>
                   </div>

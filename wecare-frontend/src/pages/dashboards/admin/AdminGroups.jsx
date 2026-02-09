@@ -129,24 +129,24 @@ const AdminGroups = () => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2 space-y-6">
-        <div className="rounded-2xl border border-amber-200 bg-white dark:bg-slate-800 p-5 shadow-sm">
-          <h3 className="mb-3 font-semibold text-slate-800">Create Group</h3>
+        <div className="rounded-2xl border border-amber-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm">
+          <h3 className="mb-3 font-semibold text-slate-800 dark:text-slate-100">Create Group</h3>
           <div className="flex flex-wrap gap-2 items-center">
-            <input value={newName} onChange={(e)=>setNewName(e.target.value)} placeholder="Group name" className="px-4 py-2 border border-amber-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-300 flex-1 max-w-sm" />
+            <input value={newName} onChange={(e)=>setNewName(e.target.value)} placeholder="Group name" className="px-4 py-2 border border-amber-200 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-300 dark:focus:ring-amber-600 flex-1 max-w-sm" />
             <button disabled={creating} onClick={onCreate} className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 text-white font-medium hover:from-amber-700 hover:to-amber-800 disabled:opacity-50 transition-all">{creating?"Creating...":"Create"}</button>
-            <p className="text-sm text-amber-700 font-medium">Group will be created for your university</p>
+            <p className="text-sm text-amber-700 dark:text-amber-200 font-medium">Group will be created for your university</p>
           </div>
           
         </div>
 
-        <div className="rounded-2xl border border-amber-200 bg-white dark:bg-slate-800 p-5 shadow-sm">
-          <h3 className="mb-3 font-semibold text-slate-800">Your University Groups</h3>
-          {loading ? <p className="text-sm text-slate-500">Loading...</p> : (
+        <div className="rounded-2xl border border-amber-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm">
+          <h3 className="mb-3 font-semibold text-slate-800 dark:text-slate-100">Your University Groups</h3>
+          {loading ? <p className="text-sm text-slate-500 dark:text-slate-400">Loading...</p> : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {uniGroups.map((g)=> (
-                <div key={g._id} className="rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-amber-100 p-4 hover:shadow-lg transition-shadow">
-                  <p className="font-medium text-amber-900">{g.name}</p>
-                  <p className="text-sm text-amber-700">Members: {g.membersCount}</p>
+                <div key={g._id} className="rounded-xl border border-amber-200 dark:border-slate-700 bg-gradient-to-br from-amber-50 to-amber-100 dark:from-slate-900 dark:to-slate-800 p-4 hover:shadow-lg transition-shadow">
+                  <p className="font-medium text-amber-900 dark:text-slate-100">{g.name}</p>
+                  <p className="text-sm text-amber-700 dark:text-slate-300">Members: {g.membersCount}</p>
                   <button onClick={()=>openDetails(g._id)} className="mt-3 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 text-white text-sm font-medium hover:from-amber-700 hover:to-amber-800 transition-all">Manage</button>
                 </div>
               ))}
@@ -154,14 +154,14 @@ const AdminGroups = () => {
           )}
         </div>
 
-        <div className="rounded-2xl border border-amber-200 bg-white dark:bg-slate-800 p-5 shadow-sm">
-          <h3 className="mb-3 font-semibold text-slate-800">Global Groups</h3>
-          {loading ? <p className="text-sm text-slate-500">Loading...</p> : (
+        <div className="rounded-2xl border border-amber-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm">
+          <h3 className="mb-3 font-semibold text-slate-800 dark:text-slate-100">Global Groups</h3>
+          {loading ? <p className="text-sm text-slate-500 dark:text-slate-400">Loading...</p> : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {globalGroups.map((g)=> (
-                <div key={g._id} className="rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-amber-100 p-4 hover:shadow-lg transition-shadow">
-                  <p className="font-medium text-amber-900">{g.name}</p>
-                  <p className="text-sm text-amber-700">Members: {g.membersCount}</p>
+                <div key={g._id} className="rounded-xl border border-amber-200 dark:border-slate-700 bg-gradient-to-br from-amber-50 to-amber-100 dark:from-slate-900 dark:to-slate-800 p-4 hover:shadow-lg transition-shadow">
+                  <p className="font-medium text-amber-900 dark:text-slate-100">{g.name}</p>
+                  <p className="text-sm text-amber-700 dark:text-slate-300">Members: {g.membersCount}</p>
                   <button onClick={()=>openDetails(g._id)} className="mt-3 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 text-white text-sm font-medium hover:from-amber-700 hover:to-amber-800 transition-all">Manage</button>
                 </div>
               ))}
@@ -171,54 +171,54 @@ const AdminGroups = () => {
       </div>
 
       <div className="space-y-4">
-        <div className="rounded-2xl border border-amber-200 bg-white dark:bg-slate-800 p-5 shadow-sm">
+        <div className="rounded-2xl border border-amber-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm">
           <div className="flex items-center justify-between mb-2">
-            <h4 className="font-semibold text-slate-800">Group Details</h4>
+            <h4 className="font-semibold text-slate-800 dark:text-slate-100">Group Details</h4>
             {selected && (
               <button 
                 onClick={() => { setSelected(null); setSelectedId(null); }} 
-                className="text-slate-400 hover:text-slate-600 text-xl font-bold"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 text-xl font-bold"
               >
                 ×
               </button>
             )}
           </div>
-          {error && <p className="text-sm text-rose-600 mb-2">{error}</p>}
+          {error && <p className="text-sm text-rose-600 dark:text-rose-300 mb-2">{error}</p>}
           {!selected ? (
-            <p className="text-sm text-slate-600">Select a group to manage</p>
+            <p className="text-sm text-slate-600 dark:text-slate-300">Select a group to manage</p>
           ) : (
             <div>
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  <p className="font-medium text-slate-800">{selected.name}</p>
-                  <p className="text-xs text-slate-600">{selected.isGlobal ? 'Global' : `University: ${selected.university || '-'}`}</p>
-                  <p className="text-xs text-amber-700 font-medium mt-1">{selected.members?.length || 0} Participants</p>
+                  <p className="font-medium text-slate-800 dark:text-slate-100">{selected.name}</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-300">{selected.isGlobal ? 'Global' : `University: ${selected.university || '-'}`}</p>
+                  <p className="text-xs text-amber-700 dark:text-amber-200 font-medium mt-1">{selected.members?.length || 0} Participants</p>
                 </div>
                 {!selected.isGlobal && (
                   <div className="relative">
                     <button 
                       onClick={() => setShowOptions(!showOptions)} 
-                      className="px-3 py-1.5 border border-amber-200 rounded-xl text-xs font-medium text-amber-700 hover:bg-amber-50"
+                      className="px-3 py-1.5 border border-amber-200 dark:border-amber-700 rounded-xl text-xs font-medium text-amber-700 dark:text-amber-200 hover:bg-amber-50 dark:hover:bg-amber-900/20"
                     >
                       Options
                     </button>
                     {showOptions && (
-                      <div className="absolute right-0 mt-1 w-40 rounded-xl border border-amber-200 bg-white shadow-lg z-10">
+                      <div className="absolute right-0 mt-1 w-40 rounded-xl border border-amber-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg z-10">
                         <button 
                           onClick={() => { onRename(); setShowOptions(false); }} 
-                          className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-amber-50 rounded-t-xl"
+                          className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-amber-50 dark:hover:bg-slate-800 rounded-t-xl"
                         >
                           Rename Group
                         </button>
                         <button 
                           onClick={() => { setShowMembers(true); setShowOptions(false); }} 
-                          className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-amber-50"
+                          className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-amber-50 dark:hover:bg-slate-800"
                         >
                           View Members
                         </button>
                         <button 
                           onClick={() => { onDelete(); setShowOptions(false); }} 
-                          className="w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 rounded-b-xl"
+                          className="w-full text-left px-4 py-2 text-sm text-rose-600 dark:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-b-xl"
                         >
                           Delete Group
                         </button>
@@ -229,8 +229,8 @@ const AdminGroups = () => {
               </div>
               
               <div className="mt-5">
-                <p className="font-medium text-slate-800 mb-2 text-sm">Messages</p>
-                <div className="border border-amber-200 rounded-2xl overflow-hidden bg-white">
+                <p className="font-medium text-slate-800 dark:text-slate-100 mb-2 text-sm">Messages</p>
+                <div className="border border-amber-200 dark:border-slate-700 rounded-2xl overflow-hidden bg-white dark:bg-slate-900">
                   <div className="max-h-64 overflow-auto p-3 space-y-2">
                     {selected.messages?.length ? selected.messages.map(msg => {
                       const mine = !msg.isAIGenerated && String(msg.sender) === String(user?._id);
@@ -243,7 +243,7 @@ const AdminGroups = () => {
 
                       return (
                         <div key={msg._id} className={`flex ${mine? 'justify-end' : 'justify-start'}`}>
-                          <div className={`max-w-[80%] rounded-2xl px-3 py-2 ${mine? 'bg-gradient-to-r from-amber-600 to-amber-700 text-white rounded-br-sm' : 'bg-amber-50 text-slate-800 border border-amber-200 rounded-bl-sm'}`}>
+                          <div className={`max-w-[80%] rounded-2xl px-3 py-2 ${mine? 'bg-gradient-to-r from-amber-600 to-amber-700 text-white rounded-br-sm' : 'bg-amber-50 dark:bg-amber-900/20 text-slate-800 dark:text-slate-100 border border-amber-200 dark:border-amber-700 rounded-bl-sm'}`}>
                             <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
                               <p className="text-[11px] opacity-80">{isAI ? 'AI Assistant' : (msg.senderName || 'Member')}</p>
                               {isAdmin && !isAI && (
@@ -263,7 +263,7 @@ const AdminGroups = () => {
                                   value={editingMessageText}
                                   onChange={(e) => setEditingMessageText(e.target.value)}
                                   rows={2}
-                                  className="w-full text-sm rounded-xl border border-amber-300 bg-white text-slate-800 px-2 py-1 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                                  className="w-full text-sm rounded-xl border border-amber-300 dark:border-amber-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 px-2 py-1 focus:outline-none focus:ring-2 focus:ring-amber-400 dark:focus:ring-amber-600"
                                 />
                                 <div className="flex gap-2 text-[11px]">
                                   <button
@@ -274,7 +274,7 @@ const AdminGroups = () => {
                                   </button>
                                   <button
                                     onClick={() => { setEditingMessageId(null); setEditingMessageText(""); }}
-                                    className={`${mine ? 'text-white' : 'text-amber-700'} px-2 py-1 rounded-lg border border-amber-200 hover:bg-amber-50`}
+                                    className={`${mine ? 'text-white' : 'text-amber-700 dark:text-amber-200'} px-2 py-1 rounded-lg border border-amber-200 dark:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/20`}
                                   >
                                     Cancel
                                   </button>
@@ -288,24 +288,24 @@ const AdminGroups = () => {
                               {canEdit && !isEditing && (
                                 <button
                                   onClick={() => startEditMessage(msg)}
-                                  className={`hover:underline ${mine? 'text-white' : 'text-amber-700'}`}
+                                  className={`hover:underline ${mine? 'text-white' : 'text-amber-700 dark:text-amber-200'}`}
                                 >
                                   Edit
                                 </button>
                               )}
                               {canDelete && (
-                                <button onClick={async()=>{ try{ await deleteMessage(user?.token, selected._id, msg._id); const d=await getGroup(user?.token, selected._id); setSelected(d);}catch(e){alert('Failed to delete');}}} className={`hover:underline ${mine? 'text-white' : 'text-amber-700'}`}>Delete</button>
+                                <button onClick={async()=>{ try{ await deleteMessage(user?.token, selected._id, msg._id); const d=await getGroup(user?.token, selected._id); setSelected(d);}catch(e){alert('Failed to delete');}}} className={`hover:underline ${mine? 'text-white' : 'text-amber-700 dark:text-amber-200'}`}>Delete</button>
                               )}
                             </div>
                           </div>
                         </div>
                       );
                     }) : (
-                      <div className="p-2 text-sm text-slate-500">No messages yet.</div>
+                      <div className="p-2 text-sm text-slate-500 dark:text-slate-400">No messages yet.</div>
                     )}
                   </div>
-                  <div className="p-3 bg-amber-50 border-t border-amber-200 flex gap-2">
-                    <input value={messageText} onChange={(e)=>setMessageText(e.target.value)} placeholder="Write a message..." className="px-4 py-2 border border-amber-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-300 flex-1" />
+                  <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border-t border-amber-200 dark:border-amber-700 flex gap-2">
+                    <input value={messageText} onChange={(e)=>setMessageText(e.target.value)} placeholder="Write a message..." className="px-4 py-2 border border-amber-200 dark:border-amber-600 rounded-xl bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-300 dark:focus:ring-amber-600 flex-1" />
                     <button onClick={async()=>{ if(!messageText.trim())return; try{ await postMessage(user?.token, selected._id, messageText.trim()); setMessageText(""); const d=await getGroup(user?.token, selected._id); setSelected(d);}catch(e){alert('Failed to send');}}} className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 text-white font-medium hover:from-amber-700 hover:to-amber-800 transition-all">Send</button>
                   </div>
                 </div>
@@ -317,25 +317,25 @@ const AdminGroups = () => {
       
       {showMembers && selected && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setShowMembers(false)}>
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4 max-h-[80vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 max-w-md w-full mx-4 max-h-[80vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-slate-800 text-lg">Group Members</h3>
+              <h3 className="font-semibold text-slate-800 dark:text-slate-100 text-lg">Group Members</h3>
               <button 
                 onClick={() => setShowMembers(false)} 
-                className="text-slate-400 hover:text-slate-600 text-xl"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 text-xl"
               >
                 ×
               </button>
             </div>
-            <p className="text-sm text-slate-600 mb-4">{selected.name}</p>
+            <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">{selected.name}</p>
             <div className="space-y-2">
               {selected.members?.map((m)=> (
-                <div key={m.user} className="flex items-center justify-between border border-amber-200 rounded-xl px-3 py-2 bg-amber-50">
+                <div key={m.user} className="flex items-center justify-between border border-amber-200 dark:border-amber-700 rounded-xl px-3 py-2 bg-amber-50 dark:bg-amber-900/20">
                   <div>
-                    <p className="text-sm text-slate-800">{m.name}</p>
-                    {m.isAnonymous && <p className="text-[11px] text-slate-500">Anonymous{m.alias?` • ${m.alias}`:''}</p>}
+                    <p className="text-sm text-slate-800 dark:text-slate-100">{m.name}</p>
+                    {m.isAnonymous && <p className="text-[11px] text-slate-500 dark:text-slate-400">Anonymous{m.alias?` • ${m.alias}`:''}</p>}
                   </div>
-                  <button onClick={()=>onRemoveMember(m.user)} className="px-2 py-1 rounded-lg text-xs font-medium text-rose-600 hover:bg-rose-50">Remove</button>
+                  <button onClick={()=>onRemoveMember(m.user)} className="px-2 py-1 rounded-lg text-xs font-medium text-rose-600 dark:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-900/30">Remove</button>
                 </div>
               ))}
             </div>

@@ -217,7 +217,7 @@ const buildLimitSummary = async (studentId) => {
 export const createAidRequest = async (req, res) => {
   try {
     if (req.user.role !== "student") return res.status(403).json({ message: "Only students can create requests" });
-    const { aidCategory, amountRange, explanation } = req.body;
+    const { aidCategory, amountRange, explanation, shareWithDonors } = req.body;
 
     if (!aidCategory || !Object.prototype.hasOwnProperty.call(CATEGORY_RULES, aidCategory)) {
       return res.status(400).json({ message: "Valid aid category is required" });
@@ -325,7 +325,8 @@ export const createAidRequest = async (req, res) => {
       precheckAt: now,
       emergencyOverrideRequired: overrideRequired,
       student: req.user._id,
-      university: req.user.university
+      university: req.user.university,
+      shareWithDonors: Boolean(shareWithDonors)
     });
 
     if (!precheckPassed) {

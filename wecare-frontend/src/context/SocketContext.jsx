@@ -37,7 +37,29 @@ export const SocketProvider = ({ children }) => {
       setStatus("reconnecting");
       toast.info("Reconnecting...");
     });
+    const onNotification = (n) => {
+      if (!n) return;
+      toast.message(n.title || "New notification", {
+        description: n.message || "",
+      });
+    };
+
+    const onGroupMessage = (data) => {
+      const msg = data?.message;
+      if (!msg || msg.isAIGenerated) return;
+      const uid = user?._id || user?.id;
+      if (uid && String(msg.sender) === String(uid)) return;
+      toast.message(`New message from ${msg.senderName || "Member"}`, {
+        description: msg.text || "",
+      });
+    };
+
+    s.on("notification:new", onNotification);
+    s.on("group:message", onGroupMessage);
+
     return () => {
+      try { s.off("notification:new", onNotification); } catch {}
+      try { s.off("group:message", onGroupMessage); } catch {}
       try { s.close(); } catch {}
       socketRef.current = null;
       setStatus("disconnected");

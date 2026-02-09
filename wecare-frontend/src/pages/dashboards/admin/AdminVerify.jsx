@@ -57,25 +57,25 @@ const AdminVerify = () => {
   };
 
   const StudentCard = ({ student, showActions = false }) => (
-    <div className="border border-amber-200 rounded-2xl p-4 mb-4 bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-shadow">
+    <div className="border border-amber-200 dark:border-slate-700 rounded-2xl p-4 mb-4 bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-shadow">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <h4 className="font-semibold text-slate-800 mb-2">{student.name}</h4>
-          <p className="text-sm text-slate-600 mb-1"><strong>Email:</strong> {student.email}</p>
-          <p className="text-sm text-slate-600 mb-1"><strong>Phone:</strong> {student.phone || 'Not provided'}</p>
-          <p className="text-sm text-slate-600 mb-1"><strong>Student ID:</strong> {student.studentId || 'Not provided'}</p>
-          <p className="text-sm text-slate-600 mb-1"><strong>Student Email:</strong> {student.studentEmail || 'Not provided'}</p>
+          <h4 className="font-semibold text-slate-800 dark:text-slate-100 mb-2">{student.name}</h4>
+          <p className="text-sm text-slate-600 dark:text-slate-300 mb-1"><strong>Email:</strong> {student.email}</p>
+          <p className="text-sm text-slate-600 dark:text-slate-300 mb-1"><strong>Phone:</strong> {student.phone || 'Not provided'}</p>
+          <p className="text-sm text-slate-600 dark:text-slate-300 mb-1"><strong>Student ID:</strong> {student.studentId || 'Not provided'}</p>
+          <p className="text-sm text-slate-600 dark:text-slate-300 mb-1"><strong>Student Email:</strong> {student.studentEmail || 'Not provided'}</p>
         </div>
         <div>
-          <p className="text-sm text-slate-600 mb-1"><strong>Course:</strong> {student.course || 'Not provided'}</p>
-          <p className="text-sm text-slate-600 mb-1"><strong>Year of Study:</strong> {student.yearOfStudy || 'Not provided'}</p>
-          <p className="text-sm text-slate-600 mb-1"><strong>Child Details:</strong> {student.childDetails || 'Not provided'}</p>
-          <p className="text-sm text-slate-600 mb-1"><strong>Documents:</strong> {student.documents ? 'Uploaded' : 'Not uploaded'}</p>
+          <p className="text-sm text-slate-600 dark:text-slate-300 mb-1"><strong>Course:</strong> {student.course || 'Not provided'}</p>
+          <p className="text-sm text-slate-600 dark:text-slate-300 mb-1"><strong>Year of Study:</strong> {student.yearOfStudy || 'Not provided'}</p>
+          <p className="text-sm text-slate-600 dark:text-slate-300 mb-1"><strong>Child Details:</strong> {student.childDetails || 'Not provided'}</p>
+          <p className="text-sm text-slate-600 dark:text-slate-300 mb-1"><strong>Documents:</strong> {student.documents ? 'Uploaded' : 'Not uploaded'}</p>
         </div>
       </div>
       {student.childDetails && (
-        <div className="mt-3 p-3 bg-amber-50 border border-amber-100 rounded-lg">
-          <p className="text-sm text-amber-800"><strong>Child Details:</strong> {student.childDetails}</p>
+        <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-700 rounded-lg">
+          <p className="text-sm text-amber-800 dark:text-amber-200"><strong>Child Details:</strong> {student.childDetails}</p>
         </div>
       )}
       {showActions && (
@@ -100,20 +100,20 @@ const AdminVerify = () => {
   const StatusBadge = ({ status, type, student }) => {
     const getBadgeStyle = () => {
       if (type === 'profile') {
-        return status ? 'bg-green-100 text-green-800 border-green-200' : 'bg-red-100 text-red-800 border-red-200';
+        return status ? 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-200 dark:border-green-700' : 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-200 dark:border-red-700';
       }
       
       // Determine status based on student data
       if (!student.isApproved && !student.profileSubmitted) {
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-200 dark:border-yellow-700';
       } else if (student.isApproved && student.profileSubmitted && !student.profileApproved) {
-        return 'bg-orange-100 text-orange-800 border-orange-200';
+        return 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/30 dark:text-orange-200 dark:border-orange-700';
       } else if (student.isApproved && student.profileSubmitted && student.profileApproved) {
-        return 'bg-green-100 text-green-800 border-green-200';
+        return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-200 dark:border-green-700';
       } else if (student.isApproved) {
-        return 'bg-blue-100 text-blue-800 border-blue-200';
+        return 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-200 dark:border-blue-700';
       }
-      return 'bg-gray-100 text-gray-800 border-gray-200';
+      return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700';
     };
 
     const getStatusText = () => {
@@ -144,7 +144,7 @@ const AdminVerify = () => {
     <div className="overflow-x-auto">
       <table className="min-w-full text-sm">
         <thead>
-          <tr className="text-left text-slate-500 bg-slate-50">
+          <tr className="text-left text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900">
             <th className="py-3 px-4 font-medium">Name</th>
             <th className="py-3 px-4 font-medium">Email</th>
             <th className="py-3 px-4 font-medium">Registered</th>
@@ -155,10 +155,10 @@ const AdminVerify = () => {
         </thead>
         <tbody>
           {data.map(s => (
-            <tr key={s._id} className="border-t border-slate-200 hover:bg-slate-50">
-              <td className="py-3 px-4 text-slate-800 font-medium">{s.name}</td>
-              <td className="py-3 px-4 text-slate-600">{s.email}</td>
-              <td className="py-3 px-4 text-slate-600">{new Date(s.createdAt).toLocaleDateString()}</td>
+            <tr key={s._id} className="border-t border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900/40">
+              <td className="py-3 px-4 text-slate-800 dark:text-slate-100 font-medium">{s.name}</td>
+              <td className="py-3 px-4 text-slate-600 dark:text-slate-300">{s.email}</td>
+              <td className="py-3 px-4 text-slate-600 dark:text-slate-300">{new Date(s.createdAt).toLocaleDateString()}</td>
               {showProfileStatus && (
                 <td className="py-3 px-4">
                   <StatusBadge status={s.profileSubmitted} type="profile" student={s} />
@@ -198,7 +198,7 @@ const AdminVerify = () => {
 
   return (
     <div className="space-y-4">
-      {error && <p className="text-red-600 bg-red-50 rounded px-3 py-2">{error}</p>}
+      {error && <p className="text-red-600 dark:text-rose-200 bg-red-50 dark:bg-rose-950/40 rounded px-3 py-2">{error}</p>}
       <div className="flex items-center gap-3 flex-wrap">
         <button 
           onClick={() => setTab("pending")} 
@@ -225,21 +225,21 @@ const AdminVerify = () => {
           Approved Student Moms
         </button>
       </div>
-      <div className="rounded-2xl border border-amber-200 bg-white dark:bg-slate-800 p-5 shadow-sm">
+      <div className="rounded-2xl border border-amber-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm">
         {loading ? (
-          <p className="text-slate-500">Loading...</p>
+          <p className="text-slate-500 dark:text-slate-400">Loading...</p>
         ) : tab === "pending" ? (
           <div>
-            <h3 className="text-lg font-semibold text-slate-800 mb-4">Pending Registration</h3>
-            <p className="text-sm text-slate-600 mb-4">Students who have registered but haven't been approved yet</p>
+            <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4">Pending Registration</h3>
+            <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">Students who have registered but haven't been approved yet</p>
             <Table data={pendingRegistration} showActions={true} showProfileStatus={true} stage="unverified" />
           </div>
         ) : tab === "awaiting" ? (
           <div>
-            <h3 className="text-lg font-semibold text-slate-800 mb-4">Awaiting Profile Verification</h3>
-            <p className="text-sm text-slate-600 mb-4">Verified students who completed their profile (100%) and are waiting for admin approval</p>
+            <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4">Awaiting Profile Verification</h3>
+            <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">Verified students who completed their profile (100%) and are waiting for admin approval</p>
             {awaitingProfileVerification.length === 0 ? (
-              <p className="text-slate-500">No students awaiting profile verification.</p>
+              <p className="text-slate-500 dark:text-slate-400">No students awaiting profile verification.</p>
             ) : (
               awaitingProfileVerification.map(student => (
                 <StudentCard key={student._id} student={student} showActions={true} />
@@ -248,14 +248,14 @@ const AdminVerify = () => {
           </div>
         ) : tab === "verified" ? (
           <div>
-            <h3 className="text-lg font-semibold text-slate-800 mb-4">Verified Students</h3>
-            <p className="text-sm text-slate-600 mb-4">All students from your university who are not pending verification (dynamic list)</p>
+            <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4">Verified Students</h3>
+            <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">All students from your university who are not pending verification (dynamic list)</p>
             <Table data={verifiedStudents} showActions={false} showProfileStatus={true} stage="verified" />
           </div>
         ) : (
           <div>
-            <h3 className="text-lg font-semibold text-slate-800 mb-4">Approved Student Moms</h3>
-            <p className="text-sm text-slate-600 mb-4">Students whose profile has been approved by admin - they can access all features</p>
+            <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4">Approved Student Moms</h3>
+            <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">Students whose profile has been approved by admin - they can access all features</p>
             <Table data={approvedStudentMoms} showActions={false} showProfileStatus={true} stage="approved" />
           </div>
         )}

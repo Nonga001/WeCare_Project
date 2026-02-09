@@ -5,16 +5,16 @@ import { getAidStats, myAidRequests } from "../../../services/aidService";
 
 const Badge = ({ status }) => {
   const map = {
-    verified: "bg-emerald-100 text-emerald-700 border-emerald-200",
-    pending: "bg-amber-100 text-amber-800 border-amber-200",
-    rejected: "bg-rose-100 text-rose-700 border-rose-200",
+    verified: "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-200 dark:border-emerald-800",
+    pending: "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/40 dark:text-amber-200 dark:border-amber-800",
+    rejected: "bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/40 dark:text-rose-200 dark:border-rose-800",
   };
   const label = status === "verified" ? "Verified" : status === "rejected" ? "Rejected" : "Pending";
   return <span className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${map[status] || map.pending}`}>{label}</span>;
 };
 
 const StatCard = ({ icon, label, value, color }) => (
-  <div className={`bg-gradient-to-br ${color} rounded-2xl p-6 text-white shadow-lg hover:shadow-xl transition-all`}>
+  <div className={`bg-gradient-to-br ${color} rounded-2xl p-6 text-white shadow-lg hover:shadow-xl transition-all dark:brightness-90`}>
     <div className="flex items-start justify-between">
       <div>
         <p className="text-sm font-medium opacity-90">{label}</p>
@@ -37,12 +37,12 @@ const RequestCard = ({ type, status }) => {
     essentials: '📦',
   };
   return (
-    <div className="rounded-xl border-2 border-slate-200 p-4 hover:shadow-md hover:border-slate-300 transition-all">
+    <div className="rounded-xl border-2 border-slate-200 p-4 hover:shadow-md hover:border-slate-300 transition-all dark:border-slate-700 dark:bg-slate-900/40">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="text-2xl">{typeIcons[type] || '📄'}</div>
           <div>
-            <p className="font-semibold text-slate-800">{type === 'financial' ? 'Financial Aid' : 'Essentials'}</p>
+            <p className="font-semibold text-slate-800 dark:text-slate-100">{type === 'financial' ? 'Financial Aid' : 'Essentials'}</p>
             <span className={`text-xs font-medium mt-1 px-2 py-1 rounded-full inline-block border ${statusColors[status] || statusColors.pending}`}>
               {status.charAt(0).toUpperCase() + status.slice(1)}
             </span>

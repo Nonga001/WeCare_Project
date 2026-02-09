@@ -316,7 +316,7 @@ export const postMessage = async (req, res) => {
         } catch (err) {
           console.error("AI response error:", err.message);
         }
-      }, 3 * 60 * 1000); // 3 minutes
+      }, 90 * 1000); // 1.5 minutes
     }
     
     res.status(201).json({ message: "Posted" });

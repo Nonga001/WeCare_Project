@@ -1,6 +1,7 @@
 import Donation from "../models/Donation.js";
 import AidRequest from "../models/AidRequest.js";
 import User from "../models/User.js";
+import { initiateSTKPush, querySTKPushStatus } from "../services/mpesaService.js";
 
 // Donor: create donation
 export const createDonation = async (req, res) => {
@@ -9,7 +10,7 @@ export const createDonation = async (req, res) => {
       return res.status(403).json({ message: "Only donors can make donations" });
     }
 
-    const { type, amount, items, paymentMethod, organization, notes } = req.body;
+    const { type, amount, items, paymentMethod, organization, notes, phoneNumber } = req.body;
     
     // Validation
     if (!type || !paymentMethod) {
@@ -19,6 +20,9 @@ export const createDonation = async (req, res) => {
     if (type === "financial") {
       if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
         return res.status(400).json({ message: "Valid amount required for financial donations" });
+      }
+      if (!phoneNumber) {
+        return res.status(400).json({ message: "Phone number is required for M-Pesa payments" });
       }
     }
 
@@ -45,10 +49,35 @@ export const createDonation = async (req, res) => {
       organization: organization || undefined,
       notes: notes || undefined,
       mothersSupported: 1, // Each donation supports 1 mother by default
-      status: "confirmed"
+      status: "pending",
+      mpesaPhoneNumber: phoneNumber,
+      accountReference: `DON-${Date.now()}`
     });
 
-    res.status(201).json(donation);
+    let mpesaResponse = null;
+    if (type === "financial" && paymentMethod === "mpesa") {
+      try {
+        mpesaResponse = await initiateSTKPush(
+          phoneNumber,
+          Number(amount),
+          donation.accountReference,
+          "WeCare Donation"
+        );
+        donation.mpesaMerchantRequestId = mpesaResponse.MerchantRequestID;
+        donation.mpesaCheckoutRequestId = mpesaResponse.CheckoutRequestID;
+        donation.mpesaResultCode = Number(mpesaResponse.ResponseCode || 0);
+        donation.mpesaResultDesc = mpesaResponse.ResponseDescription;
+        await donation.save();
+      } catch (err) {
+        donation.status = "failed";
+        donation.mpesaResultDesc = err.message;
+        await donation.save();
+
+        const statusCode = err.code === "MPESA_CONFIG_MISSING" ? 400 : 502;
+        return res.status(statusCode).json({ message: err.message });
+      }
+    }
+    res.status(201).json({ donation, mpesa: mpesaResponse });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
   }
@@ -70,6 +99,82 @@ export const getMyDonations = async (req, res) => {
   }
 };
 
+// Donor: delete own donations
+export const deleteMyDonations = async (req, res) => {
+  try {
+    if (req.user.role !== "donor") {
+      return res.status(403).json({ message: "Only donors can clear their donations" });
+    }
+
+    const result = await Donation.deleteMany({ donor: req.user._id });
+    res.json({ deletedCount: result.deletedCount || 0 });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+// Donor: query and update M-Pesa status for a donation
+export const queryDonationStatus = async (req, res) => {
+  try {
+    if (req.user.role !== "donor") {
+      return res.status(403).json({ message: "Only donors can query payment status" });
+    }
+
+    const { donationId } = req.params;
+    const donation = await Donation.findOne({ _id: donationId, donor: req.user._id });
+    if (!donation) {
+      return res.status(404).json({ message: "Donation not found" });
+    }
+
+    if (donation.paymentMethod !== "mpesa") {
+      return res.status(400).json({ message: "Only M-Pesa donations can be queried" });
+    }
+
+    if (!donation.mpesaCheckoutRequestId) {
+      return res.status(400).json({ message: "Missing M-Pesa checkout request ID" });
+    }
+
+    if (donation.status === "confirmed") {
+      return res.json({ donation, mpesa: null });
+    }
+
+    if (donation.status === "failed") {
+      const updatedAt = donation.updatedAt ? new Date(donation.updatedAt).getTime() : 0;
+      const graceWindowMs = 2 * 60 * 1000;
+      if (Date.now() - updatedAt > graceWindowMs) {
+        return res.json({ donation, mpesa: null });
+      }
+    }
+
+    const response = await querySTKPushStatus(donation.mpesaCheckoutRequestId);
+    const resultCode = Number(response?.ResultCode ?? response?.ResponseCode ?? NaN);
+    const resultDesc = response?.ResultDesc || response?.ResponseDescription;
+
+    if (!Number.isNaN(resultCode)) {
+      donation.mpesaResultCode = resultCode;
+      donation.mpesaResultDesc = resultDesc || donation.mpesaResultDesc;
+
+      if (resultCode === 0) {
+        donation.status = "confirmed";
+      } else if (resultCode === 1032 || resultCode === 1037) {
+        donation.status = "failed";
+      }
+
+      await donation.save();
+      console.log("[M-Pesa] Status query response:", {
+        id: donation._id.toString(),
+        status: donation.status,
+        resultCode: donation.mpesaResultCode,
+        resultDesc: donation.mpesaResultDesc,
+      });
+    }
+
+    res.json({ donation, mpesa: response });
+  } catch (err) {
+    res.status(500).json({ message: err?.message || "Failed to query payment" });
+  }
+};
+
 // Get global aid requests (all universities)
 export const getGlobalAidRequests = async (req, res) => {
   try {
@@ -79,7 +184,7 @@ export const getGlobalAidRequests = async (req, res) => {
 
     const { type, minAmount } = req.query;
     
-    let query = { status: { $in: ["pending", "approved"] } };
+    let query = { status: { $in: ["pending", "pending_admin", "approved"] }, shareWithDonors: true };
     
     if (type === "financial") {
       query.type = "financial";
@@ -91,7 +196,7 @@ export const getGlobalAidRequests = async (req, res) => {
     }
 
     const requests = await AidRequest.find(query)
-      .populate("student", "name university")
+      .select("type amount items createdAt status")
       .sort({ createdAt: -1 });
 
     res.json(requests);

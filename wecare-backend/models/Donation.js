@@ -18,7 +18,7 @@ const donationSchema = new mongoose.Schema(
     mothersSupported: { type: Number, default: 1, min: [1, "Must support at least 1"] }, // Number of mothers this donation supports
     status: { 
       type: String, 
-      enum: ["pending", "confirmed", "disbursed", "partially_disbursed"], 
+      enum: ["pending", "confirmed", "disbursed", "partially_disbursed", "failed"], 
       default: "pending" 
     },
     disbursedAmount: { type: Number, default: 0, min: [0, "Disbursed cannot be negative"] }, // For financial donations
@@ -30,6 +30,14 @@ const donationSchema = new mongoose.Schema(
       disbursedAt: { type: Date }
     }],
     transactionId: { type: String }, // Payment transaction reference
+    mpesaCheckoutRequestId: { type: String },
+    mpesaMerchantRequestId: { type: String },
+    mpesaResultCode: { type: Number },
+    mpesaResultDesc: { type: String },
+    mpesaReceiptNumber: { type: String },
+    mpesaTransactionDate: { type: String },
+    mpesaPhoneNumber: { type: String },
+    accountReference: { type: String },
     notes: { type: String },
     disbursedAt: { type: Date },
     disbursedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },

@@ -20,6 +20,15 @@ const DonorProfile = () => {
   const [countryCode, setCountryCode] = useState("+254");
   const [localPhone, setLocalPhone] = useState("");
   const [initialPhoneDigits, setInitialPhoneDigits] = useState("");
+  const [savedProfile, setSavedProfile] = useState({
+    type: "individual",
+    preference: "monthly",
+    org: "",
+    contact: "",
+    csr: "",
+    phone: "",
+  });
+  const [savedPhoneDisplay, setSavedPhoneDisplay] = useState("-");
   
   // Load donor profile from backend on mount
   useEffect(() => {
@@ -31,6 +40,14 @@ const DonorProfile = () => {
     if (user?.organization) setForm(f => ({ ...f, org: user.organization }));
     if (user?.contactPerson) setForm(f => ({ ...f, contact: user.contactPerson }));
     if (user?.csrFocus) setForm(f => ({ ...f, csr: user.csrFocus }));
+    setSavedProfile({
+      type: user?.donorType || "individual",
+      preference: user?.donorPreference || "monthly",
+      org: user?.organization || "",
+      contact: user?.contactPerson || "",
+      csr: user?.csrFocus || "",
+      phone: user?.phone || "",
+    });
   }, [user?.donorType, user?.donorPreference, user?.organization, user?.contactPerson, user?.csrFocus]);
   
   useEffect(() => {
@@ -48,12 +65,20 @@ const DonorProfile = () => {
     setCountryCode("+254");
     setLocalPhone(detectedLocal);
     setInitialPhoneDigits(detectedLocal ? `254${detectedLocal}` : "");
+    if (detectedLocal) {
+      setSavedPhoneDisplay(`+254 ${detectedLocal}`);
+    } else if (raw) {
+      setSavedPhoneDisplay(raw.startsWith("+") ? raw : raw.startsWith("254") ? `+${raw}` : raw);
+    } else {
+      setSavedPhoneDisplay("-");
+    }
   }, [user?.phone]);
 
   const [phoneError, setPhoneError] = useState("");
   const [phoneSuccess, setPhoneSuccess] = useState("");
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileMessage, setProfileMessage] = useState("");
+  const [profileError, setProfileError] = useState("");
   const refreshProfile = async () => {
     if (!user?.token) return null;
     const refreshed = await getProfile(user.token);
@@ -64,6 +89,26 @@ const DonorProfile = () => {
   const handleSaveProfile = async () => {
     setProfileSaving(true);
     setProfileMessage("");
+    setProfileError("");
+    setPhoneError("");
+    setPhoneSuccess("");
+    const codeDigits = (countryCode || "").replace(/\D/g, "");
+    const localDigits = (localPhone || "").replace(/\D/g, "");
+    const hasPhoneInput = localDigits.length > 0;
+    if (hasPhoneInput) {
+      if (codeDigits !== "254") {
+        setPhoneError("Only Kenyan (+254) numbers are supported.");
+        setTimeout(() => setPhoneError(""), 3000);
+        setProfileSaving(false);
+        return;
+      }
+      if (localDigits.length !== 9) {
+        setPhoneError("Enter the 9-digit Kenyan number after +254.");
+        setTimeout(() => setPhoneError(""), 3000);
+        setProfileSaving(false);
+        return;
+      }
+    }
     try {
       const payload = { donorPreference: form.preference, donorType: type };
       if (type === "corporate") {
@@ -71,13 +116,24 @@ const DonorProfile = () => {
         payload.contactPerson = form.contact;
         payload.csrFocus = form.csr;
       }
+      if (hasPhoneInput) {
+        const combined = `${codeDigits}${localDigits}`;
+        if (combined !== initialPhoneDigits) {
+          payload.phone = combined;
+        }
+      }
       await updateDonorProfile(user?.token, payload);
       await refreshProfile();
       setProfileMessage("Profile saved successfully");
       setInitialPreference(form.preference);
+      if (payload.phone) {
+        setPhoneSuccess("Phone number updated");
+        setTimeout(() => setPhoneSuccess(""), 3000);
+      }
       setTimeout(() => setProfileMessage(""), 3000);
     } catch (err) {
-      setProfileMessage(err?.response?.data?.message || "Failed to save profile");
+      setProfileError(err?.response?.data?.message || "Failed to save profile");
+      setTimeout(() => setProfileError(""), 3000);
     } finally {
       setProfileSaving(false);
     }
@@ -112,12 +168,6 @@ const DonorProfile = () => {
   const handleConfirmSwitch = async () => {
     if (pendingType) {
       setType(pendingType);
-      try {
-        await updateDonorProfile(user?.token, { donorType: pendingType });
-        await refreshProfile();
-      } catch (err) {
-        console.error("Failed to save donor type", err);
-      }
     }
     setShowModal(false);
     setPendingType(null);
@@ -126,39 +176,24 @@ const DonorProfile = () => {
     setShowModal(false);
     setPendingType(null);
   };
-  const handlePhoneUpdate = async () => {
-    setPhoneError("");
-    setPhoneSuccess("");
-    const codeDigits = (countryCode || "").replace(/\D/g, "");
-    const localDigits = (localPhone || "").replace(/\D/g, "");
-    if (codeDigits !== "254") {
-      setPhoneError("Only Kenyan (+254) numbers are supported.");
-      return;
-    }
-    if (localDigits.length !== 9) {
-      setPhoneError("Enter the 9-digit Kenyan number after +254.");
-      return;
-    }
-    const combined = `${codeDigits}${localDigits}`;
-    if (combined === initialPhoneDigits) {
-      setPhoneSuccess("Phone is already up to date.");
-      return;
-    }
-    try {
-      await updateDonorProfile(user?.token, { phone: combined });
-      await refreshProfile();
-      setPhoneSuccess("Phone number updated");
-      setInitialPhoneDigits(combined);
-    } catch (err) {
-      setPhoneError(err?.response?.data?.message || "Failed to update phone");
-    }
-  };
 
   const [pwd, setPwd] = useState({ currentPassword: "", newPassword: "", confirmNewPassword: "" });
   const [showPwd, setShowPwd] = useState({ current:false, next:false, confirm:false });
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [pwdLoading, setPwdLoading] = useState(false);
+  const currentPhoneDigits = (localPhone || "").replace(/\D/g, "");
+  const combinedPhoneDigits = currentPhoneDigits ? `254${currentPhoneDigits}` : "";
+  const isDirty = (
+    type !== (savedProfile.type || "individual") ||
+    form.preference !== (savedProfile.preference || "monthly") ||
+    (type === "corporate" && (
+      form.org !== (savedProfile.org || "") ||
+      form.contact !== (savedProfile.contact || "") ||
+      form.csr !== (savedProfile.csr || "")
+    )) ||
+    (combinedPhoneDigits && combinedPhoneDigits !== initialPhoneDigits)
+  );
   const passwordStrong = () => {
     const p = pwd.newPassword || "";
     return p.length >= 8 && /[A-Z]/.test(p) && /[a-z]/.test(p) && /[0-9]/.test(p) && /[^A-Za-z0-9]/.test(p);
@@ -166,14 +201,16 @@ const DonorProfile = () => {
   const handlePasswordChange = async () => {
     try {
       setError(""); setMessage(""); setPwdLoading(true);
-      if (!passwordStrong()) { setError("Password must be 8+ chars with A-Z, a-z, 0-9, special"); return; }
-      if (pwd.newPassword !== pwd.confirmNewPassword) { setError("New passwords do not match"); return; }
+      if (!pwd.currentPassword) { setError("Enter your current password"); setTimeout(() => setError(""), 3000); return; }
+      if (!passwordStrong()) { setError("Password must be 8+ chars with A-Z, a-z, 0-9, special"); setTimeout(() => setError(""), 3000); return; }
+      if (pwd.newPassword !== pwd.confirmNewPassword) { setError("New passwords do not match"); setTimeout(() => setError(""), 3000); return; }
       await changePasswordApi(user?.token, { currentPassword: pwd.currentPassword, newPassword: pwd.newPassword });
       setMessage("Password updated successfully");
       setPwd({ currentPassword: "", newPassword: "", confirmNewPassword: "" });
       setTimeout(()=>setMessage(""), 3000);
     } catch (err) {
       setError(err?.response?.data?.message || "Failed to update password");
+      setTimeout(() => setError(""), 3000);
     } finally {
       setPwdLoading(false);
     }
@@ -214,11 +251,19 @@ const DonorProfile = () => {
               </>
             )}
             <div className="sm:col-span-2">
-              <label className="block text-sm text-slate-600 mb-1">Phone Number</label>
+              <label className="block text-sm text-slate-600 dark:text-stone-300 mb-1">Phone Number</label>
               <div className="flex gap-2">
                 <input value={countryCode} onChange={(e)=>setCountryCode(e.target.value)} className="w-24 px-4 py-3 border rounded-xl bg-white dark:bg-slate-800 text-stone-800 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-stone-300 dark:focus:ring-stone-500" />
-                <input name="phone" placeholder="7XXXXXXXX" value={localPhone} onChange={(e)=>setLocalPhone(e.target.value)} className="flex-1 px-4 py-3 border rounded-xl bg-white dark:bg-slate-800 text-stone-800 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-stone-300 dark:focus:ring-stone-500" />
-                <button type="button" onClick={handlePhoneUpdate} className="px-4 py-3 rounded-xl bg-gradient-to-r from-stone-700 to-stone-800 text-white font-semibold hover:from-stone-800 hover:to-stone-900 transition shadow disabled:opacity-60" disabled={!localPhone}>Update</button>
+                <input
+                  name="phone"
+                  placeholder="7XXXXXXXX"
+                  value={localPhone}
+                  onChange={(e) => setLocalPhone((e.target.value || "").replace(/\D/g, "").slice(0, 9))}
+                  className="flex-1 px-4 py-3 border rounded-xl bg-white dark:bg-slate-800 text-stone-800 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-stone-300 dark:focus:ring-stone-500"
+                  inputMode="numeric"
+                  maxLength={9}
+                  title="Enter the 9-digit Kenyan number after +254"
+                />
               </div>
               {(phoneError || phoneSuccess) && (
                 <p className={`mt-2 text-sm ${phoneError ? 'text-red-600' : 'text-emerald-600'}`}>{phoneError || phoneSuccess}</p>
@@ -228,6 +273,12 @@ const DonorProfile = () => {
           <div className="mt-4 flex items-center justify-between">
             {profileMessage && (
               <p className="text-sm text-emerald-600">{profileMessage}</p>
+            )}
+            {profileError && (
+              <p className="text-sm text-rose-600">{profileError}</p>
+            )}
+            {!profileMessage && !profileError && isDirty && (
+              <p className="text-sm text-amber-600 dark:text-amber-300">You have unsaved changes.</p>
             )}
             <button type="button" onClick={handleSaveProfile} disabled={profileSaving} className="ml-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-stone-700 to-stone-800 text-white text-sm font-semibold hover:from-stone-800 hover:to-stone-900 transition shadow disabled:opacity-60">
               {profileSaving ? "Saving..." : "Save Profile"}
@@ -242,14 +293,14 @@ const DonorProfile = () => {
           <ul className="text-sm text-slate-700 dark:text-stone-200 space-y-1">
             <li><span className="font-medium">Name:</span> {user?.name || '-'}</li>
             <li><span className="font-medium">Email:</span> {user?.email || '-'}</li>
-            <li><span className="font-medium">Phone:</span> {localPhone ? `${countryCode} ${localPhone}` : '-'}</li>
-            <li><span className="font-medium">Type:</span> {type === 'corporate' ? 'Corporate' : 'Individual'}</li>
-            <li><span className="font-medium">Preference:</span> {form.preference === 'monthly' ? 'Monthly' : 'Occasionally'}</li>
-            {type === 'corporate' && (
+            <li><span className="font-medium">Phone:</span> {savedPhoneDisplay}</li>
+            <li><span className="font-medium">Type:</span> {savedProfile.type === 'corporate' ? 'Corporate' : 'Individual'}</li>
+            <li><span className="font-medium">Preference:</span> {savedProfile.preference === 'monthly' ? 'Monthly' : 'Occasionally'}</li>
+            {savedProfile.type === 'corporate' && (
               <>
-                <li><span className="font-medium">Organization:</span> {form.org || '-'}</li>
-                <li><span className="font-medium">Contact:</span> {form.contact || '-'}</li>
-                {form.csr && <li><span className="font-medium">CSR Focus:</span> {form.csr}</li>}
+                <li><span className="font-medium">Organization:</span> {savedProfile.org || '-'}</li>
+                <li><span className="font-medium">Contact:</span> {savedProfile.contact || '-'}</li>
+                {savedProfile.csr && <li><span className="font-medium">CSR Focus:</span> {savedProfile.csr}</li>}
               </>
             )}
           </ul>
@@ -259,10 +310,6 @@ const DonorProfile = () => {
           <h4 className="font-semibold text-stone-900 dark:text-stone-100 mb-3">Payment Preferences</h4>
           <div className="space-y-3">
             <div className="flex items-center justify-between py-2 border-b border-stone-200 dark:border-stone-700">
-              <span className="text-sm text-slate-700 dark:text-stone-200">Saved Payment Methods</span>
-              <span className="text-xs text-slate-500 dark:text-stone-400">0 cards</span>
-            </div>
-            <div className="flex items-center justify-between py-2 border-b border-stone-200 dark:border-stone-700">
               <span className="text-sm text-slate-700 dark:text-stone-200">Default Currency</span>
               <span className="text-sm font-medium text-stone-800 dark:text-stone-100">KES</span>
             </div>
@@ -270,9 +317,6 @@ const DonorProfile = () => {
               <span className="text-sm text-slate-700 dark:text-stone-200">Tax Receipt Email</span>
               <span className="text-xs text-slate-500 dark:text-stone-400">{user?.email || 'Not set'}</span>
             </div>
-            <button className="w-full mt-2 px-4 py-2 rounded-xl border border-stone-200 dark:border-stone-700 text-stone-800 dark:text-stone-100 text-sm font-medium hover:bg-stone-50 dark:hover:bg-slate-800/60 transition">
-              Manage Payment Methods
-            </button>
           </div>
         </div>
         <div className="rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-slate-900 p-5 shadow-sm">

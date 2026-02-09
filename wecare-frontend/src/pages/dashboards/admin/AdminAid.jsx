@@ -105,38 +105,38 @@ const AdminAid = () => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Balances */}
-      <div className="rounded-2xl border border-amber-200 bg-white dark:bg-slate-800 p-5 lg:col-span-2 shadow-sm">
-        <h3 className="font-semibold text-slate-800 mb-3">Available Balances</h3>
+      <div className="rounded-2xl border border-amber-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 lg:col-span-2 shadow-sm">
+        <h3 className="font-semibold text-slate-800 dark:text-slate-100 mb-3">Available Balances</h3>
         {balances ? (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-amber-100 p-4">
-              <p className="text-sm text-amber-700">Financial Total</p>
-              <p className="text-xl font-semibold text-amber-900">KES {balances.financial.total.toLocaleString()}</p>
+            <div className="rounded-xl border border-amber-200 dark:border-slate-700 bg-gradient-to-br from-amber-50 to-amber-100 dark:from-slate-900 dark:to-slate-800 p-4">
+              <p className="text-sm text-amber-700 dark:text-slate-300">Financial Total</p>
+              <p className="text-xl font-semibold text-amber-900 dark:text-slate-100">KES {balances.financial.total.toLocaleString()}</p>
             </div>
-            <div className="rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-amber-100 p-4">
-              <p className="text-sm text-amber-700">Financial Balance</p>
-              <p className="text-xl font-semibold text-amber-900">KES {balances.financial.balance.toLocaleString()}</p>
+            <div className="rounded-xl border border-amber-200 dark:border-slate-700 bg-gradient-to-br from-amber-50 to-amber-100 dark:from-slate-900 dark:to-slate-800 p-4">
+              <p className="text-sm text-amber-700 dark:text-slate-300">Financial Balance</p>
+              <p className="text-xl font-semibold text-amber-900 dark:text-slate-100">KES {balances.financial.balance.toLocaleString()}</p>
             </div>
-            <div className="rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-amber-100 p-4">
-              <p className="text-sm text-amber-700">Essentials Balance (items)</p>
-              <p className="text-xl font-semibold text-amber-900">{balances.essentials.balanceItems.toLocaleString()}</p>
+            <div className="rounded-xl border border-amber-200 dark:border-slate-700 bg-gradient-to-br from-amber-50 to-amber-100 dark:from-slate-900 dark:to-slate-800 p-4">
+              <p className="text-sm text-amber-700 dark:text-slate-300">Essentials Balance (items)</p>
+              <p className="text-xl font-semibold text-amber-900 dark:text-slate-100">{balances.essentials.balanceItems.toLocaleString()}</p>
             </div>
           </div>
         ) : (
-          <p className="text-sm text-slate-500">Loading balances...</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Loading balances...</p>
         )}
       </div>
-      <div className="rounded-2xl border border-amber-200 bg-white dark:bg-slate-800 p-5 shadow-sm">
-        <h3 className="font-semibold text-slate-800 mb-3">Aid Requests</h3>
+      <div className="rounded-2xl border border-amber-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm">
+        <h3 className="font-semibold text-slate-800 dark:text-slate-100 mb-3">Aid Requests</h3>
         
         {error && (
-          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3">
-            <p className="text-red-600 text-sm">{error}</p>
+          <div className="mb-4 rounded-lg border border-red-200 dark:border-rose-800 bg-red-50 dark:bg-rose-950/40 p-3">
+            <p className="text-red-600 dark:text-rose-200 text-sm">{error}</p>
           </div>
         )}
         
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-          <select value={typeFilter} onChange={(e)=>setTypeFilter(e.target.value)} className="px-4 py-2 border border-amber-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-300">
+          <select value={typeFilter} onChange={(e)=>setTypeFilter(e.target.value)} className="px-4 py-2 border border-amber-200 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-300 dark:focus:ring-amber-600">
             <option value="">All Types</option>
             <option value="food">Food</option>
             <option value="childcare">Childcare</option>
@@ -149,11 +149,11 @@ const AdminAid = () => {
         </div>
         <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
           {filtered.slice(0, 5).map((r) => (
-            <div key={r._id} className="rounded-xl border border-amber-200 bg-white dark:bg-slate-800 p-4 shadow-sm hover:shadow-md transition-shadow">
+            <div key={r._id} className="rounded-xl border border-amber-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                  <span className="font-medium text-slate-800 px-3 py-1 rounded-lg bg-amber-50 whitespace-nowrap">{r.type}</span>
-                  <p className="text-slate-700 font-medium">{r.requester}</p>
+                  <span className="font-medium text-slate-800 dark:text-slate-100 px-3 py-1 rounded-lg bg-amber-50 dark:bg-amber-900/20 whitespace-nowrap">{r.type}</span>
+                  <p className="text-slate-700 dark:text-slate-300 font-medium">{r.requester}</p>
                   <p className="text-xs px-2 py-1 rounded-lg font-medium whitespace-nowrap" style={{
                     backgroundColor: r.status === 'pending_admin' ? '#fef3c7' :
                       r.status === 'clarification_required' ? '#fee2e2' :
@@ -171,30 +171,30 @@ const AdminAid = () => {
                 </div>
                 <button 
                   onClick={() => setExpandedRequests(prev => ({ ...prev, [r._id]: !prev[r._id] }))} 
-                  className="px-3 py-1 rounded-lg text-sm font-medium bg-amber-100 text-amber-700 hover:bg-amber-200 transition-colors whitespace-nowrap"
+                  className="px-3 py-1 rounded-lg text-sm font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-200 hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-colors whitespace-nowrap"
                 >
                   {expandedRequests[r._id] ? 'Show Less' : 'Show More'}
                 </button>
               </div>
               
               {expandedRequests[r._id] && (
-                <div className="mt-4 pt-4 border-t border-amber-100">
+                <div className="mt-4 pt-4 border-t border-amber-100 dark:border-slate-700">
                   <div className="space-y-2 mb-4 text-sm">
-                    <p className="text-slate-600"><strong>Request ID:</strong> {r.requestId}</p>
-                    <p className="text-slate-600"><strong>Details:</strong> {r.detail}</p>
-                    <p className="text-slate-600"><strong>Reason:</strong> {r.reason}</p>
-                    {r.explanation && <p className="text-slate-600"><strong>Explanation:</strong> {r.explanation}</p>}
-                    {r.clarificationNote && <p className="text-slate-600"><strong>Clarification:</strong> {r.clarificationNote}</p>}
-                    {r.rejectedReason && <p className="text-slate-600"><strong>Rejection reason:</strong> {r.rejectedReason}</p>}
-                    {r.emergencyOverrideRequired && <p className="text-slate-600"><strong>Emergency override:</strong> Required</p>}
-                    <p className="text-xs text-slate-500"><strong>Created:</strong> {new Date(r.createdAt).toLocaleString()}</p>
-                    {r.approvedAt && <p className="text-xs text-slate-500"><strong>Approved:</strong> {new Date(r.approvedAt).toLocaleString()}</p>}
-                    {r.disbursedAt && <p className="text-xs text-slate-500"><strong>Disbursed:</strong> {new Date(r.disbursedAt).toLocaleString()}</p>}
+                    <p className="text-slate-600 dark:text-slate-300"><strong>Request ID:</strong> {r.requestId}</p>
+                    <p className="text-slate-600 dark:text-slate-300"><strong>Details:</strong> {r.detail}</p>
+                    <p className="text-slate-600 dark:text-slate-300"><strong>Reason:</strong> {r.reason}</p>
+                    {r.explanation && <p className="text-slate-600 dark:text-slate-300"><strong>Explanation:</strong> {r.explanation}</p>}
+                    {r.clarificationNote && <p className="text-slate-600 dark:text-slate-300"><strong>Clarification:</strong> {r.clarificationNote}</p>}
+                    {r.rejectedReason && <p className="text-slate-600 dark:text-slate-300"><strong>Rejection reason:</strong> {r.rejectedReason}</p>}
+                    {r.emergencyOverrideRequired && <p className="text-slate-600 dark:text-slate-300"><strong>Emergency override:</strong> Required</p>}
+                    <p className="text-xs text-slate-500 dark:text-slate-400"><strong>Created:</strong> {new Date(r.createdAt).toLocaleString()}</p>
+                    {r.approvedAt && <p className="text-xs text-slate-500 dark:text-slate-400"><strong>Approved:</strong> {new Date(r.approvedAt).toLocaleString()}</p>}
+                    {r.disbursedAt && <p className="text-xs text-slate-500 dark:text-slate-400"><strong>Disbursed:</strong> {new Date(r.disbursedAt).toLocaleString()}</p>}
                     {r.items && r.items.length > 0 && (
                       <div><strong>Items:</strong>
                         <ul className="ml-4 mt-1">
                           {r.items.map((item, idx) => (
-                            <li key={idx} className="text-slate-600">• {item.name} x{item.quantity}</li>
+                            <li key={idx} className="text-slate-600 dark:text-slate-300">• {item.name} x{item.quantity}</li>
                           ))}
                         </ul>
                       </div>
@@ -221,10 +221,10 @@ const AdminAid = () => {
                   <button onClick={()=>recheck(r._id)} className="px-4 py-2 rounded-xl bg-gradient-to-r from-orange-600 to-amber-600 text-white text-sm font-medium hover:from-orange-700 hover:to-amber-700 transition-all">Recheck Funds</button>
                 )}
                 {r.status === 'rejected' && (
-                  <span className="px-4 py-2 rounded-xl bg-amber-50 text-amber-700 text-sm font-medium border border-amber-200">No actions available</span>
+                  <span className="px-4 py-2 rounded-xl bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-200 text-sm font-medium border border-amber-200 dark:border-amber-700">No actions available</span>
                 )}
                 {r.status === 'disbursed' && expandedRequests[r._id] && (
-                  <span className="px-4 py-2 rounded-xl bg-emerald-50 text-emerald-700 text-sm font-medium border border-emerald-200">Completed</span>
+                  <span className="px-4 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-200 text-sm font-medium border border-emerald-200 dark:border-emerald-700">Completed</span>
                 )}
               </div>
             </div>
@@ -232,27 +232,27 @@ const AdminAid = () => {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-amber-200 bg-white dark:bg-slate-800 p-5 shadow-sm">
-        <h3 className="font-semibold text-slate-800 mb-3">Distribution Tracker</h3>
+      <div className="rounded-2xl border border-amber-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm">
+        <h3 className="font-semibold text-slate-800 dark:text-slate-100 mb-3">Distribution Tracker</h3>
         {!stats ? (
-          <p className="text-sm text-slate-600">Loading distribution stats...</p>
+          <p className="text-sm text-slate-600 dark:text-slate-300">Loading distribution stats...</p>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-amber-100 p-4 text-center">
-              <p className="text-xs text-amber-700">Pending</p>
-              <p className="text-lg font-semibold text-amber-900">{stats.pending}</p>
+            <div className="rounded-xl border border-amber-200 dark:border-slate-700 bg-gradient-to-br from-amber-50 to-amber-100 dark:from-slate-900 dark:to-slate-800 p-4 text-center">
+              <p className="text-xs text-amber-700 dark:text-slate-300">Pending</p>
+              <p className="text-lg font-semibold text-amber-900 dark:text-slate-100">{stats.pending}</p>
             </div>
-            <div className="rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-amber-100 p-4 text-center">
-              <p className="text-xs text-amber-700">Approved</p>
-              <p className="text-lg font-semibold text-amber-900">{stats.approved}</p>
+            <div className="rounded-xl border border-amber-200 dark:border-slate-700 bg-gradient-to-br from-amber-50 to-amber-100 dark:from-slate-900 dark:to-slate-800 p-4 text-center">
+              <p className="text-xs text-amber-700 dark:text-slate-300">Approved</p>
+              <p className="text-lg font-semibold text-amber-900 dark:text-slate-100">{stats.approved}</p>
             </div>
-            <div className="rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-amber-100 p-4 text-center">
-              <p className="text-xs text-amber-700">Waiting</p>
-              <p className="text-lg font-semibold text-amber-900">{stats.waiting}</p>
+            <div className="rounded-xl border border-amber-200 dark:border-slate-700 bg-gradient-to-br from-amber-50 to-amber-100 dark:from-slate-900 dark:to-slate-800 p-4 text-center">
+              <p className="text-xs text-amber-700 dark:text-slate-300">Waiting</p>
+              <p className="text-lg font-semibold text-amber-900 dark:text-slate-100">{stats.waiting}</p>
             </div>
-            <div className="rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-amber-100 p-4 text-center">
-              <p className="text-xs text-amber-700">Disbursed</p>
-              <p className="text-lg font-semibold text-amber-900">{stats.disbursed}</p>
+            <div className="rounded-xl border border-amber-200 dark:border-slate-700 bg-gradient-to-br from-amber-50 to-amber-100 dark:from-slate-900 dark:to-slate-800 p-4 text-center">
+              <p className="text-xs text-amber-700 dark:text-slate-300">Disbursed</p>
+              <p className="text-lg font-semibold text-amber-900 dark:text-slate-100">{stats.disbursed}</p>
             </div>
           </div>
         )}

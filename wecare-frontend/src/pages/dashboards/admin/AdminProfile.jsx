@@ -136,55 +136,55 @@ const AdminProfile = () => {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2 space-y-6">
         {(message || error) && (
-          <div className={`${error?"bg-red-50 border-red-200 text-red-700":"bg-amber-50 border-amber-200 text-amber-700"} border px-4 py-3 rounded-xl`}>{error||message}</div>
+          <div className={`${error?"bg-red-50 border-red-200 text-red-700 dark:bg-rose-950/40 dark:border-rose-800 dark:text-rose-200":"bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-950/40 dark:border-amber-800 dark:text-amber-200"} border px-4 py-3 rounded-xl`}>{error||message}</div>
         )}
-        <div className="rounded-2xl border border-amber-200 bg-white dark:bg-slate-800 p-5 shadow-sm">
-          <h3 className="font-semibold text-slate-800 mb-4">Admin Details</h3>
+        <div className="rounded-2xl border border-amber-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm">
+          <h3 className="font-semibold text-slate-800 dark:text-slate-100 mb-4">Admin Details</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <input name="name" placeholder="Full Name" value={form.name} disabled className="w-full px-4 py-3 border rounded-xl bg-slate-50 text-slate-500" />
-            <input name="university" placeholder="University" value={form.university} disabled className="w-full px-4 py-3 border rounded-xl bg-slate-50 text-slate-500" />
+            <input name="name" placeholder="Full Name" value={form.name} disabled className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-300" />
+            <input name="university" placeholder="University" value={form.university} disabled className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-300" />
             <div>
               <select 
                 name="department" 
                 value={form.department} 
                 onChange={handleDepartmentChange}
                 disabled={form.department && form.department.trim() !== ""}
-                className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 ${form.department && form.department.trim() !== "" ? "border-slate-200 bg-slate-50 text-slate-500 cursor-not-allowed" : "border-amber-200 focus:ring-amber-300"}`}
+                className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 dark:bg-slate-900 dark:text-slate-100 ${form.department && form.department.trim() !== "" ? "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-300 cursor-not-allowed" : "border-amber-200 dark:border-slate-600 focus:ring-amber-300 dark:focus:ring-amber-600"}`}
               >
                 <option value="">Select Department</option>
                 <option value="welfare">Welfare</option>
                 <option value="gender">Gender</option>
                 <option value="health">Health</option>
               </select>
-              <p className={`text-xs mt-1 ${form.department && form.department.trim() !== "" ? "text-emerald-600 font-medium" : "text-slate-600"}`}>
+              <p className={`text-xs mt-1 ${form.department && form.department.trim() !== "" ? "text-emerald-600 dark:text-emerald-300 font-medium" : "text-slate-600 dark:text-slate-400"}`}>
                 {form.department && form.department.trim() !== "" ? "✓ Department assigned and locked" : "💡 Once assigned, this department is permanent for your university"}
               </p>
             </div>
-            <input name="email" placeholder="Official Email" value={form.email} disabled className="w-full px-4 py-3 border rounded-xl bg-slate-50 text-slate-500" />
+            <input name="email" placeholder="Official Email" value={form.email} disabled className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-300" />
           </div>
         </div>
 
-        <div className="rounded-2xl border border-amber-200 bg-white dark:bg-slate-800 p-5 shadow-sm">
-          <h3 className="font-semibold text-slate-800 mb-4">Security</h3>
+        <div className="rounded-2xl border border-amber-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm">
+          <h3 className="font-semibold text-slate-800 dark:text-slate-100 mb-4">Security</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="relative">
-              <input name="currentPassword" type="password" placeholder="Current Password" value={form.currentPassword} onChange={handleChange} className="w-full px-4 py-3 border border-amber-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-300" />
+              <input name="currentPassword" type="password" placeholder="Current Password" value={form.currentPassword} onChange={handleChange} className="w-full px-4 py-3 border border-amber-200 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-300 dark:focus:ring-amber-600" />
             </div>
             <div className="relative">
-              <input name="newPassword" type={show.next?"text":"password"} placeholder="New Password" value={form.newPassword} onChange={handleChange} className="w-full px-4 py-3 pr-12 border border-amber-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-300" />
-              <button type="button" onClick={()=>setShow(s=>({...s, next:!s.next}))} className="absolute inset-y-0 right-0 px-3 text-slate-500">{show.next?"🙈":"👁️"}</button>
+              <input name="newPassword" type={show.next?"text":"password"} placeholder="New Password" value={form.newPassword} onChange={handleChange} className="w-full px-4 py-3 pr-12 border border-amber-200 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-300 dark:focus:ring-amber-600" />
+              <button type="button" onClick={()=>setShow(s=>({...s, next:!s.next}))} className="absolute inset-y-0 right-0 px-3 text-slate-500 dark:text-slate-400">{show.next?"🙈":"👁️"}</button>
             </div>
             <div className="relative sm:col-span-2">
-              <input name="confirmNewPassword" type={show.confirm?"text":"password"} placeholder="Confirm New Password" value={form.confirmNewPassword} onChange={handleChange} className="w-full px-4 py-3 pr-12 border border-amber-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-300" />
-              <button type="button" onClick={()=>setShow(s=>({...s, confirm:!s.confirm}))} className="absolute inset-y-0 right-0 px-3 text-slate-500">{show.confirm?"🙈":"👁️"}</button>
+              <input name="confirmNewPassword" type={show.confirm?"text":"password"} placeholder="Confirm New Password" value={form.confirmNewPassword} onChange={handleChange} className="w-full px-4 py-3 pr-12 border border-amber-200 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-amber-300 dark:focus:ring-amber-600" />
+              <button type="button" onClick={()=>setShow(s=>({...s, confirm:!s.confirm}))} className="absolute inset-y-0 right-0 px-3 text-slate-500 dark:text-slate-400">{show.confirm?"🙈":"👁️"}</button>
             </div>
           </div>
-          <ul className="mt-2 text-xs text-slate-600 space-y-1">
-            <li className={form.newPassword.length>=8?"text-emerald-600":"text-slate-500"}>• At least 8 characters</li>
-            <li className={/[A-Z]/.test(form.newPassword)?"text-emerald-600":"text-slate-500"}>• Uppercase letter</li>
-            <li className={/[a-z]/.test(form.newPassword)?"text-emerald-600":"text-slate-500"}>• Lowercase letter</li>
-            <li className={/[0-9]/.test(form.newPassword)?"text-emerald-600":"text-slate-500"}>• Number</li>
-            <li className={/[^A-Za-z0-9]/.test(form.newPassword)?"text-emerald-600":"text-slate-500"}>• Special character</li>
+          <ul className="mt-2 text-xs text-slate-600 dark:text-slate-400 space-y-1">
+            <li className={form.newPassword.length>=8?"text-emerald-600 dark:text-emerald-300":"text-slate-500 dark:text-slate-500"}>• At least 8 characters</li>
+            <li className={/[A-Z]/.test(form.newPassword)?"text-emerald-600 dark:text-emerald-300":"text-slate-500 dark:text-slate-500"}>• Uppercase letter</li>
+            <li className={/[a-z]/.test(form.newPassword)?"text-emerald-600 dark:text-emerald-300":"text-slate-500 dark:text-slate-500"}>• Lowercase letter</li>
+            <li className={/[0-9]/.test(form.newPassword)?"text-emerald-600 dark:text-emerald-300":"text-slate-500 dark:text-slate-500"}>• Number</li>
+            <li className={/[^A-Za-z0-9]/.test(form.newPassword)?"text-emerald-600 dark:text-emerald-300":"text-slate-500 dark:text-slate-500"}>• Special character</li>
           </ul>
           <div className="mt-3">
             <button type="button" onClick={handlePasswordChange} className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 text-white text-sm font-medium hover:from-amber-700 hover:to-amber-800 transition-all">Update Password</button>
@@ -193,22 +193,22 @@ const AdminProfile = () => {
       </div>
 
       <div className="space-y-4">
-        <div className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-amber-100 dark:bg-slate-800 p-5 shadow-sm">
-          <h4 className="font-semibold text-slate-900 mb-3">Admin Information</h4>
+        <div className="rounded-2xl border border-amber-200 dark:border-slate-700 bg-gradient-to-br from-amber-50 to-amber-100 dark:from-slate-900 dark:to-slate-800 p-5 shadow-sm">
+          <h4 className="font-semibold text-slate-900 dark:text-slate-100 mb-3">Admin Information</h4>
           <div className="space-y-3">
             <div>
-              <p className="text-xs font-medium text-slate-700 uppercase">University</p>
-              <p className="text-slate-900 font-bold text-base mt-1">{form.university && form.university.trim() ? form.university : "Not set"}</p>
+              <p className="text-xs font-medium text-slate-700 dark:text-slate-300 uppercase">University</p>
+              <p className="text-slate-900 dark:text-slate-100 font-bold text-base mt-1">{form.university && form.university.trim() ? form.university : "Not set"}</p>
             </div>
-            <div className="h-px bg-amber-300"></div>
+            <div className="h-px bg-amber-300 dark:bg-slate-600"></div>
             <div>
-              <p className="text-xs font-medium text-slate-700 uppercase">Department</p>
-              <p className="text-slate-900 font-bold text-base mt-1 capitalize">{form.department || "Not set"}</p>
+              <p className="text-xs font-medium text-slate-700 dark:text-slate-300 uppercase">Department</p>
+              <p className="text-slate-900 dark:text-slate-100 font-bold text-base mt-1 capitalize">{form.department || "Not set"}</p>
             </div>
-            <div className="h-px bg-amber-300"></div>
+            <div className="h-px bg-amber-300 dark:bg-slate-600"></div>
             <div>
-              <p className="text-xs font-medium text-slate-700 uppercase">Status</p>
-              <p className="text-emerald-700 font-bold text-base mt-1">Approved by Super Admin</p>
+              <p className="text-xs font-medium text-slate-700 dark:text-slate-300 uppercase">Status</p>
+              <p className="text-emerald-700 dark:text-emerald-300 font-bold text-base mt-1">Approved by Super Admin</p>
             </div>
           </div>
         </div>
@@ -216,14 +216,14 @@ const AdminProfile = () => {
         {/* Confirmation Modal */}
         {showConfirmModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
-            <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border-2 border-amber-300">
-              <h3 className="text-xl font-bold text-slate-900 mb-2">Confirm Department Assignment</h3>
-              <p className="text-slate-700 mb-4">
-                You are about to assign the <span className="font-bold capitalize text-amber-700">{pendingDepartment}</span> department to yourself.
+            <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 max-w-md w-full shadow-2xl border-2 border-amber-300 dark:border-slate-700">
+              <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">Confirm Department Assignment</h3>
+              <p className="text-slate-700 dark:text-slate-300 mb-4">
+                You are about to assign the <span className="font-bold capitalize text-amber-700 dark:text-amber-300">{pendingDepartment}</span> department to yourself.
               </p>
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
-                <p className="text-sm text-slate-700 font-medium">⚠️ Important Notes:</p>
-                <ul className="text-xs text-slate-600 mt-2 space-y-1 list-disc list-inside">
+              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl p-4 mb-4">
+                <p className="text-sm text-slate-700 dark:text-slate-200 font-medium">⚠️ Important Notes:</p>
+                <ul className="text-xs text-slate-600 dark:text-slate-300 mt-2 space-y-1 list-disc list-inside">
                   <li>This assignment is <span className="font-bold">permanent</span></li>
                   <li>Only one admin per department per university</li>
                   <li>Other admins without departments cannot perform activities</li>
@@ -239,7 +239,7 @@ const AdminProfile = () => {
                     setPendingDepartment(null);
                   }}
                   disabled={isUpdatingDept}
-                  className="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-medium hover:bg-slate-50 transition-all disabled:opacity-50"
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-all disabled:opacity-50"
                 >
                   Cancel
                 </button>

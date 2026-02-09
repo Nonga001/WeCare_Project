@@ -2,6 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import path from "path";
+import { fileURLToPath } from "url";
 import connectDB from "./config/db.js";
 import authRoutes from "./routes/auth.js";
 import userRoutes from "./routes/user.js";
@@ -10,10 +11,13 @@ import aidRoutes from "./routes/aid.js";
 import donationRoutes from "./routes/donations.js";
 import disbursementRoutes from "./routes/disbursements.js";
 import groupRoutes from "./routes/groups.js";
+import mpesaRoutes from "./routes/mpesa.js";
 import Group from "./models/Group.js";
 import User from "./models/User.js";
 
-dotenv.config();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.join(__dirname, ".env") });
 connectDB();
 
 const app = express();
@@ -32,6 +36,7 @@ app.use("/api/aid", aidRoutes);
 app.use("/api/donations", donationRoutes);
 app.use("/api/disbursements", disbursementRoutes);
 app.use("/api/groups", groupRoutes);
+app.use("/api/mpesa", mpesaRoutes);
 
 const PORT = process.env.PORT || 5000;
 // Create HTTP server and Socket.IO
