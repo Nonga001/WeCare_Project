@@ -1,6 +1,7 @@
 import User from "../models/User.js";
 import bcrypt from "bcryptjs";
 import EthicalFeedback from "../models/EthicalFeedback.js";
+import DeletionRequest from "../models/DeletionRequest.js";
 
 // Example user profile route
 export const getProfile = async (req, res) => {
@@ -600,5 +601,141 @@ export const getEthicalFeedbackStats = async (req, res) => {
     res.json(stats);
   } catch (err) {
     res.status(500).json({ message: "Failed to get feedback stats", error: err.message });
+  }
+};
+
+// Request account deletion (7-day grace period)
+export const requestAccountDeletion = async (req, res) => {
+  try {
+    const { password, reason } = req.body;
+    const userId = req.user._id;
+
+    if (!password) {
+      return res.status(400).json({ message: "Password is required" });
+    }
+
+    // Verify password
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: "Invalid password" });
+    }
+
+    // Check if deletion already requested
+    const existingRequest = await DeletionRequest.findOne({ userId });
+
+    if (existingRequest && ["pending", "confirmed"].includes(existingRequest.status)) {
+      return res.status(400).json({
+        message: "Deletion already requested",
+        scheduledFor: existingRequest.scheduledDeletionDate
+      });
+    }
+
+    // Create or reuse deletion request
+    const scheduledDeletionDate = new Date();
+    scheduledDeletionDate.setDate(scheduledDeletionDate.getDate() + 7); // 7 days from now
+
+    const deletionRequest = existingRequest || new DeletionRequest({
+      userId,
+      userEmail: user.email,
+      userName: user.name
+    });
+
+    deletionRequest.status = "confirmed";
+    deletionRequest.reason = reason;
+    deletionRequest.requestedAt = new Date();
+    deletionRequest.confirmedAt = new Date();
+    deletionRequest.scheduledDeletionDate = scheduledDeletionDate;
+    deletionRequest.cancelledAt = null;
+    deletionRequest.completedAt = null;
+
+    await deletionRequest.save();
+
+    // Update user to mark deletion as requested
+    await User.findByIdAndUpdate(userId, {
+      deletionRequested: true,
+      deletionRequestedAt: new Date(),
+      deletionScheduledFor: scheduledDeletionDate
+    });
+
+    res.json({
+      message: "Account deletion scheduled",
+      scheduledFor: scheduledDeletionDate,
+      daysUntilDeletion: 7
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to request account deletion", error: err.message });
+  }
+};
+
+// Cancel account deletion
+export const cancelAccountDeletion = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    const deletionRequest = await DeletionRequest.findOne({
+      userId,
+      status: { $in: ["pending", "confirmed"] }
+    });
+
+    if (!deletionRequest) {
+      return res.status(404).json({ message: "No pending deletion request found" });
+    }
+
+    // Check if still within grace period
+    const now = new Date();
+    if (now > deletionRequest.scheduledDeletionDate) {
+      return res.status(400).json({
+        message: "Grace period has expired. Account has been deleted."
+      });
+    }
+
+    // Cancel deletion
+    deletionRequest.status = "cancelled";
+    deletionRequest.cancelledAt = new Date();
+    await deletionRequest.save();
+
+    // Update user
+    await User.findByIdAndUpdate(userId, {
+      deletionRequested: false,
+      deletionRequestedAt: null,
+      deletionScheduledFor: null
+    });
+
+    res.json({ message: "Account deletion cancelled" });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to cancel account deletion", error: err.message });
+  }
+};
+
+// Get deletion request status
+export const getDeletionStatus = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    const deletionRequest = await DeletionRequest.findOne({
+      userId,
+      status: { $in: ["pending", "confirmed"] }
+    });
+
+    if (!deletionRequest) {
+      return res.json({ hasPendingDeletion: false });
+    }
+
+    const now = new Date();
+    const daysRemaining = Math.ceil((deletionRequest.scheduledDeletionDate - now) / (1000 * 60 * 60 * 24));
+
+    res.json({
+      hasPendingDeletion: true,
+      scheduledFor: deletionRequest.scheduledDeletionDate,
+      daysRemaining: Math.max(0, daysRemaining),
+      canCancel: daysRemaining > 0
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to get deletion status", error: err.message });
   }
 };

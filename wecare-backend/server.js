@@ -14,6 +14,7 @@ import groupRoutes from "./routes/groups.js";
 import mpesaRoutes from "./routes/mpesa.js";
 import configRoutes from "./routes/config.js";
 import walletRoutes from "./routes/wallet.js";
+import { startDeletionScheduler } from "./services/deletionService.js";
 import Group from "./models/Group.js";
 import User from "./models/User.js";
 
@@ -111,6 +112,9 @@ httpServer.listen(PORT, async () => {
   } catch (e) {
     console.error("Failed to ensure global group:", e?.message || e);
   }
+
+  // Start background deletion scheduler
+  startDeletionScheduler();
 
   // Background task: Sync old pending donations with M-Pesa status
   const syncPendingDonations = async () => {

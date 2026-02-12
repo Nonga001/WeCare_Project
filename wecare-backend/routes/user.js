@@ -1,7 +1,7 @@
 import express from "express";
 import multer from "multer";
 import path from "path";
-import { getProfile, approveAdmin, approveAdminsBulk, approveStudent, listUsers, setSuspended, listStudentsForAdmin, rejectStudent, getAdminStats, updateStudentProfile, updateDonorProfile, submitProfileForApproval, getProfileCompletion, updateAdminProfile, changePassword, resetAdminDepartment, submitEthicalFeedback, getEthicalFeedbackStats } from "../controllers/userController.js";
+import { getProfile, approveAdmin, approveAdminsBulk, approveStudent, listUsers, setSuspended, listStudentsForAdmin, rejectStudent, getAdminStats, updateStudentProfile, updateDonorProfile, submitProfileForApproval, getProfileCompletion, updateAdminProfile, changePassword, resetAdminDepartment, submitEthicalFeedback, getEthicalFeedbackStats, requestAccountDeletion, cancelAccountDeletion, getDeletionStatus } from "../controllers/userController.js";
 import { protect, requireAdminDepartment } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
@@ -53,5 +53,10 @@ router.get("/profile/completion", protect, getProfileCompletion);
 // Ethical feedback
 router.post("/ethical-feedback", protect, submitEthicalFeedback);
 router.get("/ethical-feedback/stats", protect, getEthicalFeedbackStats);
+
+// Account deletion (7-day grace period)
+router.post("/request-deletion", protect, requestAccountDeletion);
+router.post("/cancel-deletion", protect, cancelAccountDeletion);
+router.get("/deletion-status", protect, getDeletionStatus);
 
 export default router;

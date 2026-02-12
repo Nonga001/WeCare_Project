@@ -36,6 +36,12 @@ const userSchema = new mongoose.Schema(
     profileApproved: { type: Boolean, default: false }, // Admin approves the submitted profile
     profileApprovedAt: { type: Date },
     profileApprovedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    
+    // Account deletion tracking
+    deletionRequested: { type: Boolean, default: false },
+    deletionRequestedAt: { type: Date },
+    deletionScheduledFor: { type: Date },
+    
     // Activity tracking
     lastActive: { type: Date, default: Date.now },
   },
