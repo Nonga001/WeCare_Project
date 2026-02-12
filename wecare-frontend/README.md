@@ -1,12 +1,93 @@
-# React + Vite
+# WeCare Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + Vite frontend application for the WeCare student aid and donation platform.
 
-Currently, two official plugins are available:
+## Project Overview
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+WeCare Frontend is a modern React application built with Vite providing fast development and optimized production builds. The application provides role-based interfaces for students, donors, administrators, and super administrators to manage aid requests, donations, and platform operations.
 
-## Expanding the ESLint configuration
+## Technology Stack
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- React 18+ for UI components
+- Vite for fast development and optimized builds
+- Tailwind CSS for styling
+- React Router for navigation
+- Axios for API requests
+- Socket.io for real-time notifications
+- Vite + React plugin for Hot Module Replacement (HMR)
+
+## Getting Started
+
+### Prerequisites
+- Node.js 16 or higher
+- npm or yarn package manager
+
+### Installation
+
+```bash
+npm install
+```
+
+### Development Server
+
+```bash
+npm run dev
+```
+
+The development server will start at `http://localhost:5173`
+
+### Build for Production
+
+```bash
+npm run build
+```
+
+### Preview Production Build
+
+```bash
+npm run preview
+```
+
+## Project Structure
+
+```
+src/
+  pages/          - Page components organized by user role
+  components/     - Reusable React components
+  services/       - API client and service functions
+  context/        - React Context for state management
+  routes/         - Route definitions and protection
+  assets/         - Static assets and images
+  App.jsx         - Main application component
+  main.jsx        - Application entry point
+```
+
+## Available Scripts
+
+- `npm run dev` - Start development server with HMR
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build locally
+- `npm run lint` - Run ESLint
+
+## Configuration
+
+### Environment Variables
+
+Create a `.env` file in the project root:
+
+```
+VITE_API_URL=http://localhost:5000
+VITE_SOCKET_URL=http://localhost:5000
+```
+
+### Tailwind CSS
+
+Tailwind CSS is configured in `tailwind.config.js` for styling the application with utility classes.
+
+## ESLint Configuration
+
+The project includes ESLint for code quality. Configuration is in `eslint.config.js`.
+
+## Build Optimization
+
+Vite provides automatic code splitting and optimized builds for production. The build process creates optimized chunks for faster loading.
