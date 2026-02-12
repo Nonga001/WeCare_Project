@@ -92,4 +92,20 @@ export const changePassword = async (token, payload) => {
   return res.data;
 };
 
+// Account deletion (7-day grace period)
+export const requestAccountDeletion = async (token, payload) => {
+  const res = await axios.post(`${API_URL}/request-deletion`, payload, getAuthHeaders(token));
+  return res.data;
+};
+
+export const cancelAccountDeletion = async (token) => {
+  const res = await axios.post(`${API_URL}/cancel-deletion`, {}, getAuthHeaders(token));
+  return res.data;
+};
+
+export const getDeletionStatus = async (token) => {
+  const res = await axios.get(`${API_URL}/deletion-status`, getAuthHeaders(token));
+  return res.data;
+};
+
 

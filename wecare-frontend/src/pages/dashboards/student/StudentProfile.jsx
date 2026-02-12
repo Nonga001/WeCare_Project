@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
-import { updateStudentProfile, submitProfileForApproval, getProfileCompletion, changePassword as changePasswordApi } from "../../../services/userService";
+import { updateStudentProfile, submitProfileForApproval, getProfileCompletion, changePassword as changePasswordApi, requestAccountDeletion, cancelAccountDeletion, getDeletionStatus } from "../../../services/userService";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const UPLOAD_BASE = import.meta.env.VITE_SOCKET_URL || API_BASE;
@@ -39,6 +39,10 @@ const StudentProfile = () => {
   const [userProfile, setUserProfile] = useState(null);
   const [pwd, setPwd] = useState({ currentPassword: "", newPassword: "", confirmNewPassword: "" });
   const [showPwd, setShowPwd] = useState({ next: false, confirm: false });
+  const [deletionStatus, setDeletionStatus] = useState({ hasPendingDeletion: false });
+  const [deleteForm, setDeleteForm] = useState({ password: "", reason: "" });
+  const [deletionLoading, setDeletionLoading] = useState(false);
+  const [nowTick, setNowTick] = useState(Date.now());
   const fileObject = form.documents instanceof File ? form.documents : null;
   const fileName = typeof form.documents === "string" ? form.documents : "";
   const isImageName = (name) => /\.(jpe?g|png)$/i.test(name || "");
@@ -121,6 +125,25 @@ const StudentProfile = () => {
     if (user?.token) loadProfile();
   }, [user?.token]);
 
+  const loadDeletionStatus = async () => {
+    try {
+      const data = await getDeletionStatus(user?.token);
+      setDeletionStatus(data);
+    } catch (err) {
+      setDeletionStatus({ hasPendingDeletion: false });
+    }
+  };
+
+  useEffect(() => {
+    if (user?.token) loadDeletionStatus();
+  }, [user?.token]);
+
+  useEffect(() => {
+    if (!deletionStatus?.hasPendingDeletion || !deletionStatus?.scheduledFor) return;
+    const intervalId = setInterval(() => setNowTick(Date.now()), 1000);
+    return () => clearInterval(intervalId);
+  }, [deletionStatus?.hasPendingDeletion, deletionStatus?.scheduledFor]);
+
   const handleChange = (e) => {
     const { name, value, files } = e.target;
     if (name === 'countryCode') return setCountryCode(value);
@@ -150,6 +173,43 @@ const StudentProfile = () => {
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to update password');
     } finally { setLoading(false); }
+  };
+
+  const handleRequestDeletion = async () => {
+    if (!deleteForm.password) return setError("Password is required to request deletion");
+    const confirmed = window.confirm("Schedule account deletion? You will have 7 days to cancel.");
+    if (!confirmed) return;
+    try {
+      setDeletionLoading(true);
+      setError("");
+      const payload = { password: deleteForm.password, reason: deleteForm.reason };
+      await requestAccountDeletion(user?.token, payload);
+      setSuccess("Account deletion scheduled");
+      setDeleteForm({ password: "", reason: "" });
+      await loadDeletionStatus();
+      setTimeout(() => setSuccess(""), 4500);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to request account deletion");
+    } finally {
+      setDeletionLoading(false);
+    }
+  };
+
+  const handleCancelDeletion = async () => {
+    const confirmed = window.confirm("Cancel scheduled account deletion?");
+    if (!confirmed) return;
+    try {
+      setDeletionLoading(true);
+      setError("");
+      await cancelAccountDeletion(user?.token);
+      setSuccess("Account deletion cancelled");
+      await loadDeletionStatus();
+      setTimeout(() => setSuccess(""), 4500);
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to cancel account deletion");
+    } finally {
+      setDeletionLoading(false);
+    }
   };
 
   const handleUpdate = async (field) => {
@@ -401,6 +461,23 @@ const StudentProfile = () => {
   const currentDocUrl = currentDocName ? `${UPLOAD_BASE}/uploads/${currentDocName}` : "";
   const currentIsImage = isImageName(currentDocName);
   const currentIsPdf = isPdfName(currentDocName);
+  const deletionDateLabel = deletionStatus?.scheduledFor ? new Date(deletionStatus.scheduledFor).toLocaleString() : "";
+  const deletionDaysRemaining = typeof deletionStatus?.daysRemaining === "number" ? deletionStatus.daysRemaining : null;
+  const deletionRemainingMs = deletionStatus?.scheduledFor
+    ? Math.max(0, new Date(deletionStatus.scheduledFor).getTime() - nowTick)
+    : null;
+  const formatCountdown = (ms) => {
+    if (ms === null) return "";
+    const totalSeconds = Math.floor(ms / 1000);
+    const days = Math.floor(totalSeconds / 86400);
+    const hours = Math.floor((totalSeconds % 86400) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    const pad = (n) => n.toString().padStart(2, "0");
+    if (days > 0) return `${days}d ${pad(hours)}h ${pad(minutes)}m ${pad(seconds)}s`;
+    if (hours > 0) return `${pad(hours)}h ${pad(minutes)}m ${pad(seconds)}s`;
+    return `${pad(minutes)}m ${pad(seconds)}s`;
+  };
 
   return (
     <div className="space-y-6">
@@ -623,6 +700,66 @@ const StudentProfile = () => {
               </div>
               <button type="button" onClick={handlePasswordChange} disabled={loading} className="w-full px-4 py-3 rounded-2xl bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50">Update password</button>
             </div>
+          </div>
+
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-rose-200 dark:border-rose-700 shadow-sm">
+            <h4 className="font-semibold text-slate-800 dark:text-slate-100 mb-2">Delete Account</h4>
+            <p className="text-sm text-slate-600 dark:text-slate-300 mb-3">
+              You can schedule account deletion with a 7-day grace period.
+            </p>
+            <div className="text-xs text-slate-500 dark:text-slate-400 space-y-1 mb-4">
+              <div>- You can cancel any time before the deadline.</div>
+              <div>- After 7 days, your account is anonymized and access is removed.</div>
+              <div>- This action cannot be undone after the grace period.</div>
+            </div>
+
+            {deletionStatus?.hasPendingDeletion ? (
+              <div className="space-y-3">
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                  <div className="font-semibold">Deletion scheduled</div>
+                  <div>Scheduled for: {deletionDateLabel || "Pending"}</div>
+                  {deletionDaysRemaining !== null && (
+                    <div>Days remaining: {Math.max(0, deletionDaysRemaining)}</div>
+                  )}
+                  {deletionRemainingMs !== null && (
+                    <div>Time left: {formatCountdown(deletionRemainingMs)}</div>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCancelDeletion}
+                  disabled={deletionLoading || (deletionDaysRemaining !== null && deletionDaysRemaining <= 0)}
+                  className="w-full px-4 py-3 rounded-2xl bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50"
+                >
+                  Cancel deletion
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <input
+                  type="password"
+                  placeholder="Confirm password"
+                  value={deleteForm.password}
+                  onChange={(e) => setDeleteForm(p => ({ ...p, password: e.target.value }))}
+                  className="w-full px-4 py-3 rounded-xl border"
+                />
+                <textarea
+                  placeholder="Reason (optional)"
+                  value={deleteForm.reason}
+                  onChange={(e) => setDeleteForm(p => ({ ...p, reason: e.target.value }))}
+                  rows={3}
+                  className="w-full px-4 py-3 rounded-xl border text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={handleRequestDeletion}
+                  disabled={deletionLoading}
+                  className="w-full px-4 py-3 rounded-2xl bg-rose-600 text-white hover:bg-rose-700 disabled:opacity-50"
+                >
+                  Schedule deletion
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm">
