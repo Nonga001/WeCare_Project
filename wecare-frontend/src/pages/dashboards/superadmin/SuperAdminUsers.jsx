@@ -157,10 +157,11 @@ const SuperAdminUsers = () => {
     if (u.isSuspended) {
       return <span className="px-2 py-1 rounded-full text-xs font-semibold bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">Suspended</span>;
     }
-    if (!u.isApproved) {
-      return <span className="px-2 py-1 rounded-full text-xs font-semibold bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300">Pending</span>;
+    // Donors are always active (no approval needed)
+    if (u.role === "donor" || u.isApproved) {
+      return <span className="px-2 py-1 rounded-full text-xs font-semibold bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">Active</span>;
     }
-    return <span className="px-2 py-1 rounded-full text-xs font-semibold bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">Active</span>;
+    return <span className="px-2 py-1 rounded-full text-xs font-semibold bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300">Pending</span>;
   };
 
   const getRoleBadge = (role) => {
@@ -403,10 +404,12 @@ const SuperAdminUsers = () => {
               {filteredUsers.map((u) => expandedUserId === u._id && (
                 <div key={`detail-${u._id}`} className="border-t border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-slate-800/50 p-4">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div>
-                      <span className="text-xs font-semibold text-stone-500 dark:text-stone-400 uppercase">University</span>
-                      <p className="text-sm text-stone-900 dark:text-stone-100 mt-1">{u.university || "-"}</p>
-                    </div>
+                    {u.role !== "donor" && (
+                      <div>
+                        <span className="text-xs font-semibold text-stone-500 dark:text-stone-400 uppercase">University</span>
+                        <p className="text-sm text-stone-900 dark:text-stone-100 mt-1">{u.university || "-"}</p>
+                      </div>
+                    )}
                     {u.role === "admin" && (
                       <div>
                         <span className="text-xs font-semibold text-stone-500 dark:text-stone-400 uppercase">Department</span>
@@ -523,10 +526,12 @@ const SuperAdminUsers = () => {
                   {expandedUserId === u._id && (
                     <div className="border-t border-stone-200 dark:border-stone-700 bg-stone-50 dark:bg-slate-800/50 p-4">
                       <div className="space-y-3">
-                        <div>
-                          <span className="text-xs font-semibold text-stone-500 dark:text-stone-400 uppercase">University</span>
-                          <p className="text-sm text-stone-900 dark:text-stone-100 mt-1">{u.university || "-"}</p>
-                        </div>
+                        {u.role !== "donor" && (
+                          <div>
+                            <span className="text-xs font-semibold text-stone-500 dark:text-stone-400 uppercase">University</span>
+                            <p className="text-sm text-stone-900 dark:text-stone-100 mt-1">{u.university || "-"}</p>
+                          </div>
+                        )}
                         {u.role === "admin" && u.department && (
                           <div>
                             <span className="text-xs font-semibold text-stone-500 dark:text-stone-400 uppercase">Department</span>

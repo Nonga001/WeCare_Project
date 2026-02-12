@@ -370,13 +370,29 @@ export const getGlobalStats = async (req, res) => {
       AidRequest.countDocuments({ status: "disbursed" })
     ]);
 
-    // Get university breakdown
+    // Get university breakdown (normalize variations of same university)
     const universityBreakdown = await User.aggregate([
       { $match: { role: "student" } },
+      {
+        $addFields: {
+          normalizedUniversity: {
+            $switch: {
+              branches: [
+                { case: { $regexMatch: { input: { $toLower: "$university" }, regex: "dedan.*kimathi|dekut" } }, then: "Dedan Kimathi University (DeKUT)" },
+                { case: { $regexMatch: { input: { $toLower: "$university" }, regex: "nairobi|uon" } }, then: "University of Nairobi (UoN)" },
+                { case: { $regexMatch: { input: { $toLower: "$university" }, regex: "kenyatta|\\bku\\b" } }, then: "Kenyatta University (KU)" },
+                { case: { $regexMatch: { input: { $toLower: "$university" }, regex: "kirinyaga" } }, then: "Kirinyaga University" },
+                { case: { $regexMatch: { input: { $toLower: "$university" }, regex: "karatina" } }, then: "Karatina University" }
+              ],
+              default: "$university"
+            }
+          }
+        }
+      },
       { $group: { 
-        _id: "$university", 
+        _id: "$normalizedUniversity", 
         count: { $sum: 1 },
-        verifiedMoms: { $sum: { $cond: [{ $and: ["$isApproved", "$profileSubmitted", "$profileApproved"] }, 1, 0] } }
+        verifiedMoms: { $sum: { $cond: [{ $and: [{ $eq: ["$isApproved", true] }, { $eq: ["$profileSubmitted", true] }, { $eq: ["$profileApproved", true] }] }, 1, 0] } }
       }},
       { $sort: { count: -1 } }
     ]);
@@ -512,24 +528,247 @@ export const getSuperAnalytics = async (req, res) => {
       windowStats(prev30Start, last30)
     ]);
 
-    // University breakdown: verified moms and donations sent to uni
+    const flowWindow = async (start, end) => {
+      const [inflowAgg, outflowAgg] = await Promise.all([
+        Donation.aggregate([
+          { $match: { type: "financial", createdAt: { $gte: start, $lt: end || now } } },
+          { $group: { _id: null, total: { $sum: { $ifNull: ["$amount", 0] } } } }
+        ]),
+        Donation.aggregate([
+          { $match: { type: "financial", disbursedAt: { $gte: start, $lt: end || now } } },
+          { $group: { _id: null, total: { $sum: { $ifNull: ["$disbursedAmount", 0] } } } }
+        ])
+      ]);
+      return {
+        inflow: inflowAgg[0]?.total || 0,
+        outflow: outflowAgg[0]?.total || 0
+      };
+    };
+
+    const [weeklyFlow, prevWeeklyFlow, monthlyFlow, prevMonthlyFlow] = await Promise.all([
+      flowWindow(last7),
+      flowWindow(prev7Start, last7),
+      flowWindow(last30),
+      flowWindow(prev30Start, last30)
+    ]);
+
+    const statusBreakdownAgg = await AidRequest.aggregate([
+      { $group: { _id: "$status", count: { $sum: 1 } } }
+    ]);
+
+    const requestsByCategoryAgg = await AidRequest.aggregate([
+      {
+        $group: {
+          _id: "$aidCategory",
+          requests: { $sum: 1 },
+          avgAmount: { $avg: { $ifNull: ["$amount", 0] } }
+        }
+      }
+    ]);
+
+    const disbursedByCategoryAgg = await AidRequest.aggregate([
+      {
+        $addFields: {
+          disbursedAmountCalc: {
+            $sum: {
+              $map: {
+                input: { $ifNull: ["$disbursementMatches", []] },
+                as: "m",
+                in: { $ifNull: ["$$m.amount", 0] }
+              }
+            }
+          },
+          disbursedItemsCalc: {
+            $sum: {
+              $map: {
+                input: { $ifNull: ["$disbursementMatches", []] },
+                as: "m",
+                in: {
+                  $sum: {
+                    $map: {
+                      input: { $ifNull: ["$$m.items", []] },
+                      as: "it",
+                      in: { $ifNull: ["$$it.quantity", 0] }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        $group: {
+          _id: "$aidCategory",
+          disbursedAmount: { $sum: "$disbursedAmountCalc" },
+          disbursedItems: { $sum: "$disbursedItemsCalc" }
+        }
+      }
+    ]);
+
+    const normalizeUniversityExpr = {
+      $switch: {
+        branches: [
+          { case: { $regexMatch: { input: { $toLower: "$university" }, regex: "dedan.*kimathi|dekut" } }, then: "Dedan Kimathi University (DeKUT)" },
+          { case: { $regexMatch: { input: { $toLower: "$university" }, regex: "nairobi|uon" } }, then: "University of Nairobi (UoN)" },
+          { case: { $regexMatch: { input: { $toLower: "$university" }, regex: "kenyatta|\\bku\\b" } }, then: "Kenyatta University (KU)" },
+          { case: { $regexMatch: { input: { $toLower: "$university" }, regex: "kirinyaga" } }, then: "Kirinyaga University" },
+          { case: { $regexMatch: { input: { $toLower: "$university" }, regex: "karatina" } }, then: "Karatina University" }
+        ],
+        default: "$university"
+      }
+    };
+
+    const universityDistributionAgg = await AidRequest.aggregate([
+      {
+        $addFields: {
+          normalizedUniversity: normalizeUniversityExpr,
+          disbursedAmountCalc: {
+            $sum: {
+              $map: {
+                input: { $ifNull: ["$disbursementMatches", []] },
+                as: "m",
+                in: { $ifNull: ["$$m.amount", 0] }
+              }
+            }
+          },
+          disbursedItemsCalc: {
+            $sum: {
+              $map: {
+                input: { $ifNull: ["$disbursementMatches", []] },
+                as: "m",
+                in: {
+                  $sum: {
+                    $map: {
+                      input: { $ifNull: ["$$m.items", []] },
+                      as: "it",
+                      in: { $ifNull: ["$$it.quantity", 0] }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        $group: {
+          _id: "$normalizedUniversity",
+          totalRequests: { $sum: 1 },
+          approvedCount: {
+            $sum: { $cond: [{ $ne: ["$approvedAt", null] }, 1, 0] }
+          },
+          disbursedAmount: { $sum: "$disbursedAmountCalc" },
+          disbursedItems: { $sum: "$disbursedItemsCalc" }
+        }
+      },
+      { $sort: { totalRequests: -1 } }
+    ]);
+
+    const categoryByUniversityAgg = await AidRequest.aggregate([
+      {
+        $addFields: {
+          normalizedUniversity: normalizeUniversityExpr,
+          disbursedAmountCalc: {
+            $sum: {
+              $map: {
+                input: { $ifNull: ["$disbursementMatches", []] },
+                as: "m",
+                in: { $ifNull: ["$$m.amount", 0] }
+              }
+            }
+          },
+          disbursedItemsCalc: {
+            $sum: {
+              $map: {
+                input: { $ifNull: ["$disbursementMatches", []] },
+                as: "m",
+                in: {
+                  $sum: {
+                    $map: {
+                      input: { $ifNull: ["$$m.items", []] },
+                      as: "it",
+                      in: { $ifNull: ["$$it.quantity", 0] }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        $group: {
+          _id: { university: "$normalizedUniversity", category: "$aidCategory" },
+          requests: { $sum: 1 },
+          avgAmount: { $avg: { $ifNull: ["$amount", 0] } },
+          disbursedAmount: { $sum: "$disbursedAmountCalc" },
+          disbursedItems: { $sum: "$disbursedItemsCalc" }
+        }
+      }
+    ]);
+
+    const donationStatusAgg = await Donation.aggregate([
+      { $group: { _id: "$status", count: { $sum: 1 } } }
+    ]);
+
+    const failureReasonsAgg = await Donation.aggregate([
+      { $match: { status: "failed" } },
+      { $group: { _id: { $ifNull: ["$mpesaResultDesc", "Unknown"] }, count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 5 }
+    ]);
+
+    // University breakdown: verified moms and donations sent to uni (normalize variations)
     const verifiedByUni = await User.aggregate([
       { $match: { role: "student" } },
+      {
+        $addFields: {
+          normalizedUniversity: {
+            $switch: {
+              branches: [
+                { case: { $regexMatch: { input: { $toLower: "$university" }, regex: "dedan.*kimathi|dekut" } }, then: "Dedan Kimathi University (DeKUT)" },
+                { case: { $regexMatch: { input: { $toLower: "$university" }, regex: "nairobi|uon" } }, then: "University of Nairobi (UoN)" },
+                { case: { $regexMatch: { input: { $toLower: "$university" }, regex: "kenyatta|\\bku\\b" } }, then: "Kenyatta University (KU)" },
+                { case: { $regexMatch: { input: { $toLower: "$university" }, regex: "kirinyaga" } }, then: "Kirinyaga University" },
+                { case: { $regexMatch: { input: { $toLower: "$university" }, regex: "karatina" } }, then: "Karatina University" }
+              ],
+              default: "$university"
+            }
+          }
+        }
+      },
       { $group: { 
-        _id: "$university",
-        verifiedMoms: { $sum: { $cond: [{ $and: ["$isApproved", "$profileSubmitted", "$profileApproved"] }, 1, 0] } },
+        _id: "$normalizedUniversity",
+        verifiedMoms: { $sum: { $cond: [{ $and: [{ $eq: ["$isApproved", true] }, { $eq: ["$profileSubmitted", true] }, { $eq: ["$profileApproved", true] }] }, 1, 0] } },
         totalStudents: { $sum: 1 }
       } },
       { $sort: { totalStudents: -1 } }
     ]);
 
-    // Donations to universities via disbursedTo -> aidRequest.university
+    // Donations to universities via disbursedTo -> aidRequest.university (normalize)
     const donationsToUni = await Donation.aggregate([
       { $unwind: "$disbursedTo" },
       { $lookup: { from: "aidrequests", localField: "disbursedTo.aidRequestId", foreignField: "_id", as: "ar" } },
       { $unwind: "$ar" },
+      {
+        $addFields: {
+          normalizedUniversity: {
+            $switch: {
+              branches: [
+                { case: { $regexMatch: { input: { $toLower: "$ar.university" }, regex: "dedan.*kimathi|dekut" } }, then: "Dedan Kimathi University (DeKUT)" },
+                { case: { $regexMatch: { input: { $toLower: "$ar.university" }, regex: "nairobi|uon" } }, then: "University of Nairobi (UoN)" },
+                { case: { $regexMatch: { input: { $toLower: "$ar.university" }, regex: "kenyatta|\\bku\\b" } }, then: "Kenyatta University (KU)" },
+                { case: { $regexMatch: { input: { $toLower: "$ar.university" }, regex: "kirinyaga" } }, then: "Kirinyaga University" },
+                { case: { $regexMatch: { input: { $toLower: "$ar.university" }, regex: "karatina" } }, then: "Karatina University" }
+              ],
+              default: "$ar.university"
+            }
+          }
+        }
+      },
       { $group: {
-        _id: "$ar.university",
+        _id: "$normalizedUniversity",
         financialAmount: { $sum: { $ifNull: ["$disbursedTo.amount", 0] } },
         essentialsItems: { $sum: { $sum: { $map: { input: { $ifNull: ["$disbursedTo.items", []] }, as: "it", in: { $ifNull: ["$$it.quantity", 0] } } } } }
       } }
@@ -537,6 +776,51 @@ export const getSuperAnalytics = async (req, res) => {
 
     const donationsByUniMap = new Map();
     donationsToUni.forEach(d => donationsByUniMap.set(d._id, d));
+
+    const categoryByUniversityMap = new Map();
+    categoryByUniversityAgg.forEach((row) => {
+      const uni = row._id?.university || "Unknown";
+      if (!categoryByUniversityMap.has(uni)) categoryByUniversityMap.set(uni, []);
+      categoryByUniversityMap.get(uni).push({
+        category: row._id?.category || "unknown",
+        requests: row.requests || 0,
+        avgAmount: Math.round(row.avgAmount || 0),
+        disbursedAmount: row.disbursedAmount || 0,
+        disbursedItems: row.disbursedItems || 0
+      });
+    });
+
+    const disbursedByCategoryMap = new Map();
+    disbursedByCategoryAgg.forEach((row) => disbursedByCategoryMap.set(row._id, row));
+
+    const aidCategoryBreakdown = requestsByCategoryAgg.map((row) => ({
+      category: row._id || "unknown",
+      requests: row.requests || 0,
+      avgAmount: Math.round(row.avgAmount || 0),
+      disbursedAmount: disbursedByCategoryMap.get(row._id)?.disbursedAmount || 0,
+      disbursedItems: disbursedByCategoryMap.get(row._id)?.disbursedItems || 0
+    }));
+
+    const universityDistribution = universityDistributionAgg.map((row) => ({
+      university: row._id || "Unknown",
+      totalRequests: row.totalRequests || 0,
+      approvedCount: row.approvedCount || 0,
+      approvalRate: row.totalRequests ? Math.round((row.approvedCount / row.totalRequests) * 100) : 0,
+      disbursedAmount: row.disbursedAmount || 0,
+      disbursedItems: row.disbursedItems || 0,
+      categories: categoryByUniversityMap.get(row._id) || []
+    }));
+
+    const statusBreakdown = statusBreakdownAgg.map((row) => ({
+      status: row._id,
+      count: row.count || 0
+    }));
+
+    const donationStatusMap = new Map(donationStatusAgg.map((row) => [row._id, row.count]));
+    const successCount = (donationStatusMap.get("disbursed") || 0) + (donationStatusMap.get("partially_disbursed") || 0);
+    const failedCount = donationStatusMap.get("failed") || 0;
+    const totalDonationCount = Array.from(donationStatusMap.values()).reduce((sum, v) => sum + v, 0);
+    const successRate = totalDonationCount > 0 ? Math.round((successCount / totalDonationCount) * 100) : 0;
 
     const universityBreakdown = verifiedByUni.map(u => ({
       university: u._id || "Unknown",
@@ -570,6 +854,42 @@ export const getSuperAnalytics = async (req, res) => {
           financialAmount: totalFinancialDonations,
           essentialsItems: totalEssentialsItems
         }
+      },
+      funding: {
+        totalReceived: totalFinancialDonations,
+        totalDisbursed: totalFinancialDisbursed,
+        remainingBalance: financialBalance,
+        weeklyFlow,
+        monthlyFlow,
+        weeklyTrend: {
+          inflowDelta: weeklyFlow.inflow - prevWeeklyFlow.inflow,
+          outflowDelta: weeklyFlow.outflow - prevWeeklyFlow.outflow
+        },
+        monthlyTrend: {
+          inflowDelta: monthlyFlow.inflow - prevMonthlyFlow.inflow,
+          outflowDelta: monthlyFlow.outflow - prevMonthlyFlow.outflow
+        }
+      },
+      demandSupply: {
+        weeklyRequests: weeklyCurrent.requests,
+        monthlyRequests: monthlyCurrent.requests,
+        statusBreakdown,
+        inflowOutflow: {
+          inflow: totalFinancialDonations,
+          outflow: totalFinancialDisbursed,
+          net: financialBalance
+        }
+      },
+      aidCategoryBreakdown,
+      universityDistribution,
+      disbursementHealth: {
+        successRate,
+        successCount,
+        failedCount,
+        failureReasons: failureReasonsAgg.map((row) => ({
+          reason: row._id || "Unknown",
+          count: row.count || 0
+        }))
       },
       balances: {
         financialAmount: financialBalance,

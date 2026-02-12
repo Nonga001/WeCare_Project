@@ -11,8 +11,9 @@ export const protect = async (req, res, next) => {
       token = req.headers.authorization.split(" ")[1];
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       // For superadmin token that may not exist in DB (fixed login)
-      if (decoded && decoded.id === "superadmin-fixed-id" && decoded.role === "superadmin") {
-        req.user = { _id: decoded.id, role: "superadmin", name: "Super Admin" };
+      const superAdminObjectId = "000000000000000000000001";
+      if (decoded && decoded.role === "superadmin" && (decoded.id === "superadmin-fixed-id" || decoded.id === superAdminObjectId)) {
+        req.user = { _id: superAdminObjectId, role: "superadmin", name: "Super Admin" };
         return next();
       }
 

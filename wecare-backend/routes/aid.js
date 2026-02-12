@@ -11,7 +11,10 @@ import {
   recheckFunds,
   getAidStats,
   getAidLimitsForStudent,
-  getAdminReports
+  getAdminReports,
+  respondToClarification,
+  getRecentClarificationResponses,
+  cancelAidRequest
 } from "../controllers/aidController.js";
 
 const router = express.Router();
@@ -22,6 +25,8 @@ router.use(protect);
 router.post("/", createAidRequest);
 router.get("/mine", listMyAidRequests);
 router.get("/limits/mine", getAidLimitsForStudent);
+router.patch("/:id/clarification-response", respondToClarification);
+router.patch("/:id/cancel", cancelAidRequest);
 
 // Admin - require department assignment
 router.get("/university", requireAdminDepartment, listUniversityAidRequests);
@@ -34,6 +39,7 @@ router.post("/:id/disburse", requireAdminDepartment, disburseAid);
 // Stats - require admin department
 router.get("/stats", requireAdminDepartment, getAidStats);
 router.get("/reports", requireAdminDepartment, getAdminReports);
+router.get("/clarifications/recent", requireAdminDepartment, getRecentClarificationResponses);
 
 export default router;
 

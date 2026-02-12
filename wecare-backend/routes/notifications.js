@@ -10,6 +10,7 @@ import {
   getDonorsForNotification, 
   getSentNotifications,
   getUnreadCount,
+  markAllAsRead,
   hideNotification,
   unhideNotification,
   getHiddenNotifications
@@ -27,6 +28,7 @@ router.get("/", getNotifications);
 // Get notifications sent by current user
 router.get("/sent", getSentNotifications);
 router.get("/unread-count", getUnreadCount);
+router.patch("/read-all", markAllAsRead);
 
 // Send notification (admin/superadmin only)
 router.post("/send", sendNotification);

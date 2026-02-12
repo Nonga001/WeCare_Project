@@ -67,6 +67,7 @@ const AdminHome = () => {
   }, [socketRef?.current]);
 
   const [notifications, setNotifications] = useState([]);
+  const [clarificationResponses, setClarificationResponses] = useState([]);
 
   useEffect(() => {
     const load = async () => {
@@ -76,6 +77,24 @@ const AdminHome = () => {
       } catch {}
     };
     if (user?.token) load();
+  }, [user?.token]);
+
+  // Fetch recent clarification responses
+  useEffect(() => {
+    const fetchClarifications = async () => {
+      try {
+        const response = await fetch("http://localhost:3001/api/aid/clarifications/recent", {
+          headers: { Authorization: `Bearer ${user?.token}` }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setClarificationResponses(data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch clarification responses:", err);
+      }
+    };
+    if (user?.token) fetchClarifications();
   }, [user?.token]);
 
   // Listen for new notifications via socket
@@ -90,6 +109,21 @@ const AdminHome = () => {
     s.on("notification:new", onNewNotification);
     return () => {
       try { s.off("notification:new", onNewNotification); } catch {}
+    };
+  }, [socketRef?.current]);
+
+  // Listen for new clarification responses via socket
+  useEffect(() => {
+    const s = socketRef?.current;
+    if (!s) return;
+
+    const onNewClarification = (response) => {
+      setClarificationResponses(prev => [response, ...prev.slice(0, 1)]);
+    };
+
+    s.on("clarification:response:new", onNewClarification);
+    return () => {
+      try { s.off("clarification:response:new", onNewClarification); } catch {}
     };
   }, [socketRef?.current]);
 
@@ -147,6 +181,49 @@ const AdminHome = () => {
       </div>
 
       <div className="space-y-4">
+        <div className="rounded-2xl border border-amber-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5">
+          <h4 className="font-semibold text-slate-800 dark:text-slate-100 mb-3">Recent Responses</h4>
+          {clarificationResponses.length === 0 ? (
+            <p className="text-sm text-slate-500 dark:text-slate-400">No clarification responses yet.</p>
+          ) : (
+            <div className="space-y-3 max-h-96 overflow-y-auto">
+              {clarificationResponses.map((response) => (
+                <div key={response._id} className="border border-blue-200 dark:border-blue-800/40 bg-blue-50 dark:bg-blue-900/20 rounded-xl p-3 text-sm">
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <p className="font-medium text-slate-800 dark:text-slate-100">
+                        {response.student?.name || "Student"}
+                      </p>
+                      <p className="text-xs text-slate-600 dark:text-slate-400">
+                        ID: {response.requestId}
+                      </p>
+                    </div>
+                    <span className="text-xs bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">
+                      {response.aidCategory}
+                    </span>
+                  </div>
+                  
+                  {response.clarificationNote && (
+                    <div className="bg-white dark:bg-slate-700/50 border border-blue-100 dark:border-blue-900/40 rounded p-2 mb-2 text-xs">
+                      <p className="font-medium text-slate-700 dark:text-slate-300">Your Question:</p>
+                      <p className="text-slate-600 dark:text-slate-400 mt-1">{response.clarificationNote}</p>
+                    </div>
+                  )}
+                  
+                  <div className="bg-white dark:bg-slate-700/50 border border-green-100 dark:border-green-900/40 rounded p-2 mb-2 text-xs">
+                    <p className="font-medium text-green-700 dark:text-green-300">Student's Response:</p>
+                    <p className="text-slate-600 dark:text-slate-400 mt-1">{response.clarificationResponse}</p>
+                  </div>
+                  
+                  <p className="text-xs text-slate-500 dark:text-slate-500 mt-2">
+                    {new Date(response.clarificationResponseAt).toLocaleDateString()} at {new Date(response.clarificationResponseAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div className="rounded-2xl border border-amber-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5">
           <h4 className="font-semibold text-slate-800 dark:text-slate-100 mb-3">Recent Notifications</h4>
           {notifications.length === 0 ? (

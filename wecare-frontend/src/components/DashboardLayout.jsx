@@ -2,8 +2,9 @@
 import { useAuth } from "../context/AuthContext";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useLocation, NavLink } from "react-router-dom";
-import { getNotifications, getUnreadCount, markAsRead } from "../services/notificationService";
+import { getNotifications, getUnreadCount, markAsRead, markAllAsRead as markAllAsReadService } from "../services/notificationService";
 import { useSocket } from "../context/SocketContext";
+import AnnouncementBanner from "./AnnouncementBanner";
 
 const DashboardLayout = ({ title, children }) => {
   const { logout, user } = useAuth();
@@ -246,17 +247,8 @@ const DashboardLayout = ({ title, children }) => {
 
   const markAllAsRead = async () => {
     try {
-      const uid = user?._id || user?.id;
-      const toMark = dropdownItems.filter(n => !(n.isRead || []).some(r => (r.user === uid) || (r.user?._id === uid) || (String(r.user) === String(uid))));
-      if (toMark.length === 0) {
-        const latest = await fetchDropdownItems();
-        setDropdownItems(latest);
-        setUnreadCount(0);
-        return;
-      }
-      await Promise.allSettled(toMark.map(n => markAsRead(user?.token, n._id)));
-      const count = await getUnreadCount(user?.token);
-      setUnreadCount(Number(count) || 0);
+      await markAllAsReadService(user?.token);
+      setUnreadCount(0);
       const latest = await fetchDropdownItems();
       setDropdownItems(latest);
     } catch {}
@@ -310,6 +302,11 @@ const DashboardLayout = ({ title, children }) => {
                     onClick={(e) => { if (!isVerifiedStudent) e.preventDefault(); }}
                     className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : `${!isVerifiedStudent ? 'text-slate-400 bg-slate-100 cursor-not-allowed dark:text-slate-500 dark:bg-slate-800' : 'text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800/60'}`}`}
                   >Aid</NavLink>
+                  <NavLink
+                    to="/dashboard/student/wallet"
+                    onClick={(e) => { if (!isVerifiedStudent) e.preventDefault(); }}
+                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-medium transition ${isActive ? 'bg-amber-700 text-white' : `${!isVerifiedStudent ? 'text-slate-400 bg-slate-100 cursor-not-allowed dark:text-slate-500 dark:bg-slate-800' : 'text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800/60'}`}`}
+                  >Wallet</NavLink>
                   <NavLink
                     to="/dashboard/student/support"
                     onClick={(e) => { if (!isVerifiedStudent) e.preventDefault(); }}
@@ -436,7 +433,14 @@ const DashboardLayout = ({ title, children }) => {
                 title="Notifications"
               >
                 <span className="relative inline-flex items-center">
-                  <span className={hasUnread ? '' : 'opacity-80'}>🔔</span>
+                  <svg
+                    className={`h-5 w-5 ${hasUnread ? '' : 'opacity-80'}`}
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path d="M10 2a6 6 0 00-6 6v2.586l-.707.707A1 1 0 004 13h12a1 1 0 00.707-1.707L16 10.586V8a6 6 0 00-6-6zm0 16a2 2 0 001.995-1.85L12 16H8a2 2 0 002 2z" />
+                  </svg>
                   <span className={`ml-1 w-2 h-2 rounded-full ${socketStatus === 'connected' ? 'bg-emerald-500' : socketStatus === 'reconnecting' ? 'bg-yellow-500' : 'bg-slate-400'}`}></span>
                 </span>
                 {unreadCount > 0 && (
@@ -459,7 +463,7 @@ const DashboardLayout = ({ title, children }) => {
                         <button key={n._id} onClick={() => {
                           const role = user?.role;
                           if (role === 'student') navigate('/dashboard/student/notifications');
-                          else if (role === 'donor') navigate('/dashboard/donor');
+                          else if (role === 'donor') navigate('/dashboard/donor/notifications');
                           else if (role === 'admin') navigate('/dashboard/admin/notifications');
                           else if (role === 'superadmin') navigate('/dashboard/superadmin/notifications');
                           setShowDropdown(false);
@@ -482,7 +486,7 @@ const DashboardLayout = ({ title, children }) => {
                     <button onClick={() => {
                       const role = user?.role;
                       if (role === 'student') navigate('/dashboard/student/notifications');
-                      else if (role === 'donor') navigate('/dashboard/donor');
+                      else if (role === 'donor') navigate('/dashboard/donor/notifications');
                       else if (role === 'admin') navigate('/dashboard/admin/notifications');
                       else if (role === 'superadmin') navigate('/dashboard/superadmin/notifications');
                       setShowDropdown(false);
@@ -553,6 +557,9 @@ const DashboardLayout = ({ title, children }) => {
                       </NavLink>
                       <NavLink to="/dashboard/student/aid" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-amber-700 text-white shadow' : 'text-slate-800 hover:bg-amber-50 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
                         <span className="text-sm font-medium">Aid</span>
+                      </NavLink>
+                      <NavLink to="/dashboard/student/wallet" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-amber-700 text-white shadow' : 'text-slate-800 hover:bg-amber-50 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
+                        <span className="text-sm font-medium">Wallet</span>
                       </NavLink>
                       <NavLink to="/dashboard/student/support" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-amber-700 text-white shadow' : 'text-slate-800 hover:bg-amber-50 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
                         <span className="text-sm font-medium">Support</span>
@@ -649,9 +656,13 @@ const DashboardLayout = ({ title, children }) => {
             </>
           )}
 
-      <main className={`w-full px-4 sm:px-6 lg:px-10 pt-16 sm:pt-20 lg:pt-24 pb-16 ${mobileOpen ? 'pointer-events-none' : ''}`}>
-        {children}
-      </main>
+      {/* Main Content Area with Announcement Banner */}
+      <div className="w-full pt-14 sm:pt-16 lg:pt-20">
+        <AnnouncementBanner />
+        <main className={`w-full px-4 sm:px-6 lg:px-10 py-6 pb-16 ${mobileOpen ? 'pointer-events-none' : ''}`}>
+          {children}
+        </main>
+      </div>
 
       <footer className="fixed bottom-0 left-0 right-0 w-full h-12 px-3 sm:px-4 lg:px-6 flex items-center justify-center bg-slate-50/95 border-t border-slate-200 text-center dark:bg-slate-900/95 dark:border-slate-800">
         {(user?.role === "admin" || user?.role === "student") && user?.isApproved === false && (

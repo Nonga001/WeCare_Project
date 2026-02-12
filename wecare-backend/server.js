@@ -12,6 +12,8 @@ import donationRoutes from "./routes/donations.js";
 import disbursementRoutes from "./routes/disbursements.js";
 import groupRoutes from "./routes/groups.js";
 import mpesaRoutes from "./routes/mpesa.js";
+import configRoutes from "./routes/config.js";
+import walletRoutes from "./routes/wallet.js";
 import Group from "./models/Group.js";
 import User from "./models/User.js";
 
@@ -37,6 +39,8 @@ app.use("/api/donations", donationRoutes);
 app.use("/api/disbursements", disbursementRoutes);
 app.use("/api/groups", groupRoutes);
 app.use("/api/mpesa", mpesaRoutes);
+app.use("/api/config", configRoutes);
+app.use("/api/wallet", walletRoutes);
 
 const PORT = process.env.PORT || 5000;
 // Create HTTP server and Socket.IO

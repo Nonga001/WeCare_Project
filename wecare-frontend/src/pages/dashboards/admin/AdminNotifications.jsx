@@ -6,7 +6,8 @@ import {
   getStudentsForNotification, 
   deleteNotification, 
   editNotification,
-  getSentNotifications
+  getSentNotifications,
+  markAllAsRead
 } from "../../../services/notificationService";
 // Removed localStorage fallback for hidden notifications
 import { useSocket } from "../../../context/SocketContext";
@@ -70,12 +71,8 @@ const AdminNotifications = () => {
 
   const markAllAsReadNow = async () => {
     try {
-      const uid = user?._id || user?.id;
-      const unread = notifications.filter(n => !((n.isRead || []).some(r => (r.user === uid) || (r.user?._id === uid) || (String(r.user) === String(uid)))));
-      for (const n of unread) {
-        await markAsRead(user?.token, n._id);
-      }
-      setNotifications(prev => prev.map(n => ({ ...n, isRead: [...(n.isRead || []), { user: uid, readAt: new Date().toISOString() }] })));
+      await markAllAsRead(user?.token);
+      await fetchData();
     } catch {}
   };
 

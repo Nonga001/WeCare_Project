@@ -7,7 +7,8 @@ import {
   editNotification,
   getAdminsForNotification,
   getDonorsForNotification,
-  getSentNotifications
+  getSentNotifications,
+  markAllAsRead
 } from "../../../services/notificationService";
 // Removed localStorage fallback for hidden notifications
 import { useSocket } from "../../../context/SocketContext";
@@ -82,12 +83,8 @@ const SuperAdminNotifications = () => {
 
   const markAllAsReadNow = async () => {
     try {
-      const uid = user?._id || user?.id;
-      const unread = notifications.filter(n => !((n.isRead || []).some(r => (r.user === uid) || (r.user?._id === uid) || (String(r.user) === String(uid)))));
-      for (const n of unread) {
-        await markAsRead(user?.token, n._id);
-      }
-      setNotifications(prev => prev.map(n => ({ ...n, isRead: [...(n.isRead || []), { user: uid, readAt: new Date().toISOString() }] })));
+      await markAllAsRead(user?.token);
+      await fetchNotifications();
     } catch {}
   };
 
@@ -118,7 +115,8 @@ const SuperAdminNotifications = () => {
       setNotifications(prev => [n, ...prev]);
       // If current user is sender, also update sent
       const uid = user?._id || user?.id;
-      const sentByUser = (n.sender && (n.sender._id === uid)) || (!!n.senderRole && n.senderRole === user?.role && (!!n.senderName ? n.senderName === user?.name : true));
+      const senderId = n.sender?._id || n.sender;
+      const sentByUser = (senderId && String(senderId) === String(uid)) || (!!n.senderRole && n.senderRole === user?.role && (!!n.senderName ? n.senderName === user?.name : true));
       if (sentByUser) setSent(prev => [n, ...prev]);
     };
     const onUpdate = (n) => {
@@ -230,8 +228,9 @@ const SuperAdminNotifications = () => {
 
   const isSender = (n) => {
     const uid = user?._id || user?.id;
+    const senderId = n.sender?._id || n.sender;
     return (
-      (n.sender && (n.sender._id === uid)) ||
+      (senderId && String(senderId) === String(uid)) ||
       (!!n.senderRole && n.senderRole === user?.role && (!!n.senderName ? n.senderName === user?.name : true))
     );
   };
@@ -349,17 +348,69 @@ const SuperAdminNotifications = () => {
         )}
       </div>
 
+      {/* Recent Notifications */}
+      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Recent Notifications</h3>
+          <button
+            onClick={markAllAsReadNow}
+            className="text-sm text-blue-600 hover:underline dark:text-blue-300"
+          >
+            Mark all as read
+          </button>
+        </div>
+
+        {notifications.length === 0 ? (
+          <p className="text-slate-500 dark:text-slate-400 text-center py-6">No notifications yet.</p>
+        ) : (
+          <div className="space-y-4">
+            {notifications.map((n) => (
+              <div
+                key={n._id}
+                onClick={() => { if (!isRead(n)) handleMarkAsRead(n._id); }}
+                className={`border rounded-lg p-4 ${isRead(n) ? "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50" : "border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20"}`}
+              >
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h4 className="font-medium text-slate-800 dark:text-slate-100">{n.title}</h4>
+                    <p className="text-slate-600 dark:text-slate-300 mt-1">{n.message}</p>
+                    <div className="flex gap-4 mt-2 text-sm text-slate-500 dark:text-slate-400">
+                      <span>To: {getRecipientText(n)}</span>
+                      <span>Sent: {formatDate(n.createdAt)}</span>
+                      <span>By: {n.sender?.name || n.senderName || n.senderRole || 'System'}</span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleHide(n._id)}
+                      className="px-3 py-1 bg-slate-600 text-white rounded hover:bg-slate-700"
+                    >
+                      Hide
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+            <div className="mt-3 text-center">
+              {hasMore && (
+                <button onClick={loadMore} className="px-3 py-1 text-sm text-blue-600 dark:text-blue-300 hover:underline">Load older</button>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Notifications List - show only items sent by current super admin */}
       <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">System Notifications</h3>
         </div>
         
-        {sent.filter(isSender).length === 0 ? (
+        {sent.length === 0 ? (
           <p className="text-slate-500 dark:text-slate-400 text-center py-8">No notifications sent yet.</p>
         ) : (
           <div className="space-y-4">
-            {sent.filter(isSender).map((notification) => (
+            {sent.map((notification) => (
               <div key={notification._id} onClick={() => { if (!isRead(notification)) handleMarkAsRead(notification._id); }} className={`border rounded-lg p-4 ${isRead(notification) ? "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50" : "border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20"}`}>
                 {editingNotification?._id === notification._id ? (
                   <form onSubmit={handleEditNotification} className="space-y-3">
@@ -393,22 +444,18 @@ const SuperAdminNotifications = () => {
                         </div>
                       </div>
                       <div className="flex gap-2">
-                        {isSender(notification) && (
-                          <>
-                            <button
-                              onClick={() => setEditingNotification(notification)}
-                              className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => handleDeleteNotification(notification._id)}
-                              className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
-                            >
-                              Delete
-                            </button>
-                          </>
-                        )}
+                        <button
+                          onClick={() => setEditingNotification(notification)}
+                          className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteNotification(notification._id)}
+                          className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                        >
+                          Delete
+                        </button>
                       </div>
                     </div>
                   </>
@@ -424,34 +471,6 @@ const SuperAdminNotifications = () => {
         )}
       </div>
 
-      {/* Hidden */}
-      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6">
-        <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4">Hidden</h3>
-        {(hiddenList || []).length === 0 ? (
-          <p className="text-slate-500 dark:text-slate-400">No hidden notifications.</p>
-        ) : (
-          <div className="space-y-4">
-            {hiddenList.map((n) => (
-              <div key={n._id} className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 bg-slate-50 dark:bg-slate-800/50">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h4 className="font-medium text-slate-800 dark:text-slate-100">{n.title}</h4>
-                    <p className="text-slate-600 dark:text-slate-300 mt-1">{n.message}</p>
-                    <div className="flex gap-4 mt-2 text-sm text-slate-500 dark:text-slate-400">
-                      <span>To: {getRecipientText(n)}</span>
-                      <span>Sent: {formatDate(n.createdAt)}</span>
-                      <span>By: {n.sender?.name || n.senderName || n.senderRole || 'System'}</span>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <button onClick={() => handleUnhide(n._id)} className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">Unhide</button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
     </div>
   );
 };

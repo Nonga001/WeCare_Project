@@ -213,111 +213,54 @@ export const postMessage = async (req, res) => {
       });
     }
     
-    // AI reinforcement for admin messages after 10 seconds
-    if (isAdmin) {
-      setTimeout(async () => {
-        try {
-          const freshGroup = await Group.findById(id);
-          if (!freshGroup) return;
-          
-          const adminMessage = text.trim().toLowerCase();
-          let aiResponse = "";
-          
-          // Simple greeting reinforcement
-          if (adminMessage.match(/^(hi|hello|hey|greetings|good morning|good afternoon|good evening)/)) {
-            aiResponse = adminMessage.charAt(0).toUpperCase() + adminMessage.slice(1) + "!";
-          } 
-          // Questions or meaningful content
-          else if (adminMessage.includes("?") || adminMessage.split(" ").length > 5) {
-            aiResponse = "Noted.";
-          }
-          // Short statements
-          else {
-            aiResponse = "Acknowledged.";
-          }
-          
-          // Post AI reinforcement
-          freshGroup.messages.push({
-            sender: req.user._id,
-            text: aiResponse,
-            isAIGenerated: true
-          });
-          freshGroup.lastAIResponseAt = new Date();
-          await freshGroup.save();
-          
-          // Emit AI message
-          if (io) {
-            io.to(`group:${id}`).emit("group:message", {
-              groupId: id,
-              message: {
-                _id: freshGroup.messages[freshGroup.messages.length - 1]._id,
-                sender: req.user._id,
-                senderName: "AI Assistant",
-                text: aiResponse,
-                isAIGenerated: true,
-                createdAt: new Date()
-              }
-            });
-          }
-        } catch (err) {
-          console.error("AI reinforcement error:", err.message);
-        }
-      }, 10 * 1000); // 10 seconds
-    }
-    
-    // Check if AI should respond (no activity for 3 minutes, with at least 2 messages)
-    const messageCount = group.messages.length;
-    if (messageCount >= 2 && !isAdmin) {
-      setTimeout(async () => {
-        try {
-          const freshGroup = await Group.findById(id).populate("messages.sender", "name");
-          if (!freshGroup || freshGroup.messages.length === 0) return;
-          
-          const lastMessage = freshGroup.messages[freshGroup.messages.length - 1];
-          if (!lastMessage || lastMessage.isAIGenerated) return; // Don't respond to AI messages
-          
-          const timeSinceLastMsg = Date.now() - new Date(lastMessage.createdAt).getTime();
-          const minutesSinceLastMsg = timeSinceLastMsg / (1000 * 60);
-          
-          if (minutesSinceLastMsg >= 3) {
-            // Format messages for AI (last 20)
-            const formattedMessages = freshGroup.messages.slice(-20).map(msg => ({
-              senderName: msg.sender?.name || "User",
-              text: msg.text,
-              createdAt: msg.createdAt
-            }));
-            
-            const aiResponse = await generateGroupResponse(formattedMessages, freshGroup.name);
-            
-            // Post AI response as system user
-            freshGroup.messages.push({
-              sender: req.user._id,
-              text: `🤖 AI Assistant: ${aiResponse}`,
-              isAIGenerated: true
-            });
-            freshGroup.lastAIResponseAt = new Date();
-            await freshGroup.save();
-            
-            // Emit AI message
-            if (io) {
-              io.to(`group:${id}`).emit("group:message", {
-                groupId: id,
-                message: {
-                  _id: freshGroup.messages[freshGroup.messages.length - 1]._id,
-                  sender: null,
-                  senderName: "AI Assistant",
-                  text: `🤖 ${aiResponse}`,
-                  isAIGenerated: true,
-                  createdAt: new Date()
-                }
-              });
+    // AI reply to all messages (admin and student) after 15 seconds
+    // Read last 10 messages and generate thoughtful, concise response
+    setTimeout(async () => {
+      try {
+        const freshGroup = await Group.findById(id).populate("messages.sender", "name");
+        if (!freshGroup) return;
+        
+        // Don't respond if last message is already AI-generated
+        const lastMessage = freshGroup.messages[freshGroup.messages.length - 1];
+        if (lastMessage && lastMessage.isAIGenerated) return;
+        
+        // Format last 10 messages for AI context
+        const recentMessages = freshGroup.messages.slice(-10).map(msg => ({
+          senderName: msg.sender?.name || "User",
+          text: msg.text,
+          createdAt: msg.createdAt
+        }));
+        
+        // Generate AI response using groqService
+        const aiResponse = await generateGroupResponse(recentMessages, freshGroup.name);
+        
+        // Post AI response
+        freshGroup.messages.push({
+          sender: req.user._id,
+          text: aiResponse,
+          isAIGenerated: true
+        });
+        freshGroup.lastAIResponseAt = new Date();
+        await freshGroup.save();
+        
+        // Emit AI message
+        if (io) {
+          io.to(`group:${id}`).emit("group:message", {
+            groupId: id,
+            message: {
+              _id: freshGroup.messages[freshGroup.messages.length - 1]._id,
+              sender: null,
+              senderName: "AI Assistant",
+              text: aiResponse,
+              isAIGenerated: true,
+              createdAt: new Date()
             }
-          }
-        } catch (err) {
-          console.error("AI response error:", err.message);
+          });
         }
-      }, 90 * 1000); // 1.5 minutes
-    }
+      } catch (err) {
+        console.error("AI response error:", err.message);
+      }
+    }, 15 * 1000); // 15 seconds
     
     res.status(201).json({ message: "Posted" });
   } catch (err) {

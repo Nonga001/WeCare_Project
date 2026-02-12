@@ -1,12 +1,16 @@
 import AidRequest from "../models/AidRequest.js";
 import Donation from "../models/Donation.js";
 import User from "../models/User.js";
+import { creditWallet } from "./walletController.js";
 
 // Get available donations for disbursement (exact matches only)
 export const getAvailableDonations = async (req, res) => {
   try {
     if (req.user.role !== "admin") {
       return res.status(403).json({ message: "Only admins can view available donations" });
+    }
+    if (req.user.department !== "welfare") {
+      return res.status(403).json({ message: "Only welfare admins can view disbursement options" });
     }
 
     const university = req.user.university;
@@ -264,6 +268,17 @@ export const disburseWithMatch = async (req, res) => {
     // Save both documents
     await Promise.all([donation.save(), aidRequest.save()]);
 
+    // Credit student wallet if financial aid
+    if (aidRequest.type === "financial") {
+      await creditWallet(
+        aidRequest.student,
+        aidRequest.amount,
+        aidRequest._id,
+        donation._id,
+        `Disbursement for ${aidRequest.aidCategory} aid request`
+      );
+    }
+
     res.json({
       message: "Aid disbursed successfully",
       aidRequest: {
@@ -313,6 +328,9 @@ export const getAvailableBalances = async (req, res) => {
   try {
     if (!["admin", "superadmin"].includes(req.user.role)) {
       return res.status(403).json({ message: "Unauthorized" });
+    }
+    if (req.user.role === "admin" && req.user.department !== "welfare") {
+      return res.status(403).json({ message: "Only welfare admins can view balances" });
     }
 
     const financialAgg = await Donation.aggregate([

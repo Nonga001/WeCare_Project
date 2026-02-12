@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
-import { getNotifications, markAsRead, deleteNotification } from "../../../services/notificationService";
+import { getNotifications, markAsRead, markAllAsRead, deleteNotification } from "../../../services/notificationService";
 // Removed localStorage fallback for hidden notifications
 import { useSocket } from "../../../context/SocketContext";
 import { hideNotificationServer, unhideNotificationServer, getHiddenNotifications } from "../../../services/notificationService";
@@ -43,13 +43,8 @@ const StudentNotifications = () => {
 
   const markAllAsReadNow = async () => {
     try {
-      const uid = user?._id || user?.id;
-      const unread = notifications.filter(n => !((n.isRead || []).some(r => (r.user === uid) || (r.user?._id === uid) || (String(r.user) === String(uid)))));
-      for (const n of unread) {
-        await markAsRead(user?.token, n._id);
-      }
-      // Optimistically update list
-      setNotifications(prev => prev.map(n => ({ ...n, isRead: [...(n.isRead || []), { user: uid, readAt: new Date().toISOString() }] })));
+      await markAllAsRead(user?.token);
+      await fetchNotifications();
     } catch {}
   };
 

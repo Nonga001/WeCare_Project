@@ -27,7 +27,8 @@ const aidRequestSchema = new mongoose.Schema(
         "verified",
         "funds_reserved",
         "waiting_funds",
-        "second_approval_pending"
+        "second_approval_pending",
+        "cancelled"
       ],
       default: "pending_verification"
     },
@@ -44,6 +45,8 @@ const aidRequestSchema = new mongoose.Schema(
     verifiedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     verifiedAt: { type: Date },
     clarificationNote: { type: String },
+    clarificationResponse: { type: String },
+    clarificationResponseAt: { type: Date },
     secondApprovedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     secondApprovedAt: { type: Date },
     rejectedReason: { type: String },
@@ -55,6 +58,9 @@ const aidRequestSchema = new mongoose.Schema(
     rejectedAt: { type: Date },
     disbursedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     disbursedAt: { type: Date },
+    cancelledBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    cancelledAt: { type: Date },
+    cancelledReason: { type: String },
     disbursementMatches: [{ 
       donationId: { type: mongoose.Schema.Types.ObjectId, ref: "Donation" },
       amount: { type: Number }, // For financial disbursements

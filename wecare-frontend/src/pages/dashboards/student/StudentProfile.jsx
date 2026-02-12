@@ -7,11 +7,12 @@ const UPLOAD_BASE = import.meta.env.VITE_SOCKET_URL || API_BASE;
 
 const MiniBadge = ({ status }) => {
   const map = {
-    verified: "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-200 dark:border-amber-700",
+    verified: "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-200 dark:border-emerald-700",
+    awaiting_verification: "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-200 dark:border-blue-700",
     pending: "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-200 dark:border-amber-700",
     rejected: "bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-200 dark:border-rose-700",
   };
-  const label = status === "verified" ? "Verified" : status === "rejected" ? "Rejected" : "Pending";
+  const label = status === "verified" ? "Verified" : status === "awaiting_verification" ? "Awaiting Verification" : status === "rejected" ? "Rejected" : "Pending";
   return <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${map[status] || map.pending}`}>{label}</span>;
 };
 
@@ -435,7 +436,7 @@ const StudentProfile = () => {
                   <p className="text-sm text-slate-500 mt-1">Completion: <span className="font-semibold">{completion.completionPercent}%</span></p>
                 </div>
                 <div>
-                  <MiniBadge status={completion.isApproved ? 'verified' : (completion.profileSubmitted ? 'pending' : 'pending')} />
+                  <MiniBadge status={completion.profileApproved ? 'verified' : (completion.profileSubmitted ? 'awaiting_verification' : 'pending')} />
                 </div>
               </div>
             </div>

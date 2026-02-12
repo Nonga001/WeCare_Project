@@ -96,6 +96,12 @@ const SuperAdminAnalytics = () => {
     ? Math.round(((data.monthly.current.donationsAmount - data.monthly.previous.donationsAmount) / data.monthly.previous.donationsAmount || 1) * 100)
     : 0;
 
+  const funding = data.funding || {};
+  const demandSupply = data.demandSupply || {};
+  const aidCategoryBreakdown = data.aidCategoryBreakdown || [];
+  const universityDistribution = data.universityDistribution || [];
+  const disbursementHealth = data.disbursementHealth || {};
+
   return (
     <div className="space-y-6" ref={printRef}>
       {/* Header */}
@@ -149,6 +155,80 @@ const SuperAdminAnalytics = () => {
         />
       </div>
 
+      {/* System-Wide Funding Analytics */}
+      <div className="rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-slate-900 p-6 shadow-sm">
+        <h3 className="text-lg font-semibold text-stone-900 dark:text-stone-100 mb-4">System-Wide Funding Analytics</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="p-4 rounded-lg bg-emerald-50 dark:bg-emerald-900/20">
+            <p className="text-sm font-medium text-stone-600 dark:text-stone-300">Total Funds Received</p>
+            <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">KES {(funding.totalReceived || 0).toLocaleString()}</p>
+          </div>
+          <div className="p-4 rounded-lg bg-rose-50 dark:bg-rose-900/20">
+            <p className="text-sm font-medium text-stone-600 dark:text-stone-300">Total Funds Disbursed</p>
+            <p className="text-2xl font-bold text-rose-700 dark:text-rose-300">KES {(funding.totalDisbursed || 0).toLocaleString()}</p>
+          </div>
+          <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20">
+            <p className="text-sm font-medium text-stone-600 dark:text-stone-300">Remaining Balance</p>
+            <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">KES {(funding.remainingBalance || 0).toLocaleString()}</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          <div className="p-4 rounded-lg border border-stone-200 dark:border-stone-700">
+            <p className="text-sm font-semibold text-stone-700 dark:text-stone-300">Weekly Flow</p>
+            <div className="flex items-center justify-between mt-2 text-sm text-stone-600 dark:text-stone-400">
+              <span>Inflow</span>
+              <span>KES {(funding.weeklyFlow?.inflow || 0).toLocaleString()}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm text-stone-600 dark:text-stone-400">
+              <span>Outflow</span>
+              <span>KES {(funding.weeklyFlow?.outflow || 0).toLocaleString()}</span>
+            </div>
+          </div>
+          <div className="p-4 rounded-lg border border-stone-200 dark:border-stone-700">
+            <p className="text-sm font-semibold text-stone-700 dark:text-stone-300">Monthly Flow</p>
+            <div className="flex items-center justify-between mt-2 text-sm text-stone-600 dark:text-stone-400">
+              <span>Inflow</span>
+              <span>KES {(funding.monthlyFlow?.inflow || 0).toLocaleString()}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm text-stone-600 dark:text-stone-400">
+              <span>Outflow</span>
+              <span>KES {(funding.monthlyFlow?.outflow || 0).toLocaleString()}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Demand vs Supply */}
+      <div className="rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-slate-900 p-6 shadow-sm">
+        <h3 className="text-lg font-semibold text-stone-900 dark:text-stone-100 mb-4">Demand vs Supply</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="p-4 rounded-lg bg-stone-50 dark:bg-slate-800/50">
+            <p className="text-sm font-semibold text-stone-700 dark:text-stone-300">Requests (Weekly)</p>
+            <p className="text-2xl font-bold text-stone-900 dark:text-stone-100">{(demandSupply.weeklyRequests || 0).toLocaleString()}</p>
+          </div>
+          <div className="p-4 rounded-lg bg-stone-50 dark:bg-slate-800/50">
+            <p className="text-sm font-semibold text-stone-700 dark:text-stone-300">Requests (Monthly)</p>
+            <p className="text-2xl font-bold text-stone-900 dark:text-stone-100">{(demandSupply.monthlyRequests || 0).toLocaleString()}</p>
+          </div>
+          <div className="p-4 rounded-lg bg-stone-50 dark:bg-slate-800/50">
+            <p className="text-sm font-semibold text-stone-700 dark:text-stone-300">Inflow vs Outflow</p>
+            <p className="text-sm text-stone-600 dark:text-stone-400 mt-1">Inflow: KES {(demandSupply.inflowOutflow?.inflow || 0).toLocaleString()}</p>
+            <p className="text-sm text-stone-600 dark:text-stone-400">Outflow: KES {(demandSupply.inflowOutflow?.outflow || 0).toLocaleString()}</p>
+            <p className="text-sm font-semibold text-stone-800 dark:text-stone-200 mt-1">Net: KES {(demandSupply.inflowOutflow?.net || 0).toLocaleString()}</p>
+          </div>
+        </div>
+        <div className="mt-4">
+          <p className="text-sm font-semibold text-stone-700 dark:text-stone-300 mb-2">Request Status Breakdown</p>
+          <div className="flex flex-wrap gap-2">
+            {(demandSupply.statusBreakdown || []).map((s) => (
+              <span key={s.status} className="px-3 py-1 rounded-full text-xs font-semibold bg-stone-100 dark:bg-slate-800 text-stone-700 dark:text-stone-300">
+                {s.status}: {s.count}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* Performance Metrics */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-slate-900 p-6 shadow-sm">
@@ -199,6 +279,97 @@ const SuperAdminAnalytics = () => {
               <span className="text-lg font-bold text-stone-900 dark:text-stone-100">{data.monthly.current.requests - data.monthly.previous.requests > 0 ? '+' : ''}{data.monthly.current.requests - data.monthly.previous.requests}</span>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Aid Category Breakdown */}
+      <div className="rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-slate-900 p-6 shadow-sm">
+        <h3 className="text-lg font-semibold text-stone-900 dark:text-stone-100 mb-4">Aid Category Breakdown</h3>
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead>
+              <tr className="border-b border-stone-200 dark:border-stone-700">
+                <th className="text-left py-3 px-4 font-semibold text-stone-700 dark:text-stone-300">Category</th>
+                <th className="text-right py-3 px-4 font-semibold text-stone-700 dark:text-stone-300">Requests</th>
+                <th className="text-right py-3 px-4 font-semibold text-stone-700 dark:text-stone-300">Avg Amount (KES)</th>
+                <th className="text-right py-3 px-4 font-semibold text-stone-700 dark:text-stone-300">Disbursed (KES)</th>
+                <th className="text-right py-3 px-4 font-semibold text-stone-700 dark:text-stone-300">Items</th>
+              </tr>
+            </thead>
+            <tbody>
+              {aidCategoryBreakdown.map((c) => (
+                <tr key={c.category} className="border-b border-stone-200 dark:border-stone-700 hover:bg-stone-50 dark:hover:bg-slate-800/50 transition">
+                  <td className="py-3 px-4 font-medium text-stone-900 dark:text-stone-100">{c.category}</td>
+                  <td className="text-right py-3 px-4 text-stone-700 dark:text-stone-300">{c.requests.toLocaleString()}</td>
+                  <td className="text-right py-3 px-4 text-stone-700 dark:text-stone-300">{c.avgAmount.toLocaleString()}</td>
+                  <td className="text-right py-3 px-4 text-stone-700 dark:text-stone-300">{c.disbursedAmount.toLocaleString()}</td>
+                  <td className="text-right py-3 px-4 text-stone-700 dark:text-stone-300">{c.disbursedItems.toLocaleString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* University / Department Distribution */}
+      <div className="rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-slate-900 p-6 shadow-sm">
+        <h3 className="text-lg font-semibold text-stone-900 dark:text-stone-100 mb-4">University Distribution</h3>
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead>
+              <tr className="border-b border-stone-200 dark:border-stone-700">
+                <th className="text-left py-3 px-4 font-semibold text-stone-700 dark:text-stone-300">University</th>
+                <th className="text-right py-3 px-4 font-semibold text-stone-700 dark:text-stone-300">Requests</th>
+                <th className="text-right py-3 px-4 font-semibold text-stone-700 dark:text-stone-300">Approval Rate</th>
+                <th className="text-right py-3 px-4 font-semibold text-stone-700 dark:text-stone-300">Disbursed (KES)</th>
+                <th className="text-right py-3 px-4 font-semibold text-stone-700 dark:text-stone-300">Items</th>
+              </tr>
+            </thead>
+            <tbody>
+              {universityDistribution.map((u) => (
+                <tr key={u.university} className="border-b border-stone-200 dark:border-stone-700 hover:bg-stone-50 dark:hover:bg-slate-800/50 transition">
+                  <td className="py-3 px-4 font-medium text-stone-900 dark:text-stone-100">{u.university}</td>
+                  <td className="text-right py-3 px-4 text-stone-700 dark:text-stone-300">{u.totalRequests.toLocaleString()}</td>
+                  <td className="text-right py-3 px-4 text-stone-700 dark:text-stone-300">{u.approvalRate}%</td>
+                  <td className="text-right py-3 px-4 text-stone-700 dark:text-stone-300">{u.disbursedAmount.toLocaleString()}</td>
+                  <td className="text-right py-3 px-4 text-stone-700 dark:text-stone-300">{u.disbursedItems.toLocaleString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Disbursement Success & Failure */}
+      <div className="rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-slate-900 p-6 shadow-sm">
+        <h3 className="text-lg font-semibold text-stone-900 dark:text-stone-100 mb-4">Disbursement Success & Failure</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="p-4 rounded-lg bg-emerald-50 dark:bg-emerald-900/20">
+            <p className="text-sm font-medium text-stone-600 dark:text-stone-300">Success Rate</p>
+            <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-300">{disbursementHealth.successRate || 0}%</p>
+          </div>
+          <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20">
+            <p className="text-sm font-medium text-stone-600 dark:text-stone-300">Successful Disbursements</p>
+            <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">{(disbursementHealth.successCount || 0).toLocaleString()}</p>
+          </div>
+          <div className="p-4 rounded-lg bg-rose-50 dark:bg-rose-900/20">
+            <p className="text-sm font-medium text-stone-600 dark:text-stone-300">Failed Disbursements</p>
+            <p className="text-2xl font-bold text-rose-700 dark:text-rose-300">{(disbursementHealth.failedCount || 0).toLocaleString()}</p>
+          </div>
+        </div>
+        <div className="mt-4">
+          <p className="text-sm font-semibold text-stone-700 dark:text-stone-300 mb-2">Top Failure Reasons</p>
+          {(disbursementHealth.failureReasons || []).length === 0 ? (
+            <p className="text-sm text-stone-500 dark:text-stone-400">No failure reasons recorded.</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {(disbursementHealth.failureReasons || []).map((r) => (
+                <span key={r.reason} className="px-3 py-1 rounded-full text-xs font-semibold bg-stone-100 dark:bg-slate-800 text-stone-700 dark:text-stone-300">
+                  {r.reason}: {r.count}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

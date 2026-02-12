@@ -1,13 +1,24 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
+import SuperAdminConfig from "../models/SuperAdminConfig.js";
 
 // 🔑 Generate JWT token
-const generateToken = (user) => {
+const getSessionTimeoutHours = async () => {
+  try {
+    const config = await SuperAdminConfig.findOne({ key: "sessionTimeoutHours" });
+    const hours = Number(config?.value);
+    if (Number.isFinite(hours) && hours > 0) return hours;
+  } catch {}
+  return 24;
+};
+
+const generateToken = async (user) => {
+  const hours = await getSessionTimeoutHours();
   return jwt.sign(
     { id: user._id, role: user.role },
     process.env.JWT_SECRET,
-    { expiresIn: "1d" }
+    { expiresIn: `${hours}h` }
   );
 };
 
@@ -169,12 +180,12 @@ export const login = async (req, res) => {
 
       if (isValid) {
         const superAdminUser = {
-          _id: "superadmin-fixed-id",
+          _id: "000000000000000000000001",
           name: "Super Admin",
           email: "wecare@admin.com",
           role: "superadmin",
         };
-        const token = generateToken(superAdminUser);
+        const token = await generateToken(superAdminUser);
         return res.json({
           message: "superadmin login successful",
           token,
@@ -212,7 +223,6 @@ export const login = async (req, res) => {
     if ((user.role === "admin" || user.role === "student") && !user.isApproved) {
       const pendingBy = user.role === "admin" ? "Super Admin" : "Your University Admin";
       // Allow login but indicate pending status in response; frontend will gate features
-      const token = generateToken(user);
       return res.json({
         message: `Login successful, awaiting approval by ${pendingBy}`,
         token,
@@ -222,6 +232,8 @@ export const login = async (req, res) => {
           email: user.email,
           role: user.role,
           isApproved: user.isApproved,
+          profileSubmitted: user.profileSubmitted,
+          profileApproved: user.profileApproved,
           university: user.university,
           department: user.department,
           organization: user.organization,
@@ -237,7 +249,7 @@ export const login = async (req, res) => {
     // Update lastActive and generate JWT
     user.lastActive = new Date();
     await user.save();
-    const token = generateToken(user);
+    const token = await generateToken(user);
 
     res.json({
       message: `${role} login successful`,
@@ -248,6 +260,8 @@ export const login = async (req, res) => {
         email: user.email,
         role: user.role,
         isApproved: user.isApproved,
+        profileSubmitted: user.profileSubmitted,
+        profileApproved: user.profileApproved,
         university: user.university,
         department: user.department,
         organization: user.organization,

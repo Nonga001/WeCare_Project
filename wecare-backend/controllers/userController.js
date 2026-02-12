@@ -170,11 +170,12 @@ export const approveStudent = async (req, res) => {
       return res.status(403).json({ message: "Admin can only approve students from their university" });
     }
     
-    // If student has submitted profile, approve the profile
+    // If student has submitted profile, approve both profile and account
     if (student.profileSubmitted && !student.profileApproved) {
       student.profileApproved = true;
       student.profileApprovedAt = new Date();
-    } else {
+      student.isApproved = true; // Also approve the account
+    } else if (!student.isApproved) {
       // Otherwise, just approve the student registration
       student.isApproved = true;
     }
@@ -230,7 +231,7 @@ export const listUsers = async (req, res) => {
     if (req.user.role !== "superadmin") {
       return res.status(403).json({ message: "Only superadmin can list users" });
     }
-    const users = await User.find({}, "name email role university isApproved isSuspended").sort({ createdAt: -1 });
+    const users = await User.find({}, "name email role university organization department phone isApproved isSuspended createdAt").sort({ createdAt: -1 });
     res.json(users);
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });

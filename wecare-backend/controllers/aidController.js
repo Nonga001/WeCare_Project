@@ -60,6 +60,28 @@ const CATEGORY_RULES = {
     requiresOverride: true
   }
 };
+
+const ADMIN_CATEGORY_ACCESS = {
+  welfare: null,
+  health: ["emergency"],
+  gender: ["childcare"],
+};
+
+const canAccessCategory = (department, aidCategory) => {
+  if (!department) return false;
+  if (department === "welfare") return true;
+  const allowed = ADMIN_CATEGORY_ACCESS[department] || [];
+  return allowed.includes(aidCategory);
+};
+
+const assertCategoryAccess = (req, aidCategory) => {
+  if (req.user?.role !== "admin") return true;
+  if (req.user?.role === "admin" && req.user?.department === "welfare") return true;
+  if (!canAccessCategory(req.user?.department, aidCategory)) {
+    return false;
+  }
+  return true;
+};
 const DUPLICATE_WINDOW_DAYS = 14;
 const SEMESTER_MONTHS = 4;
 const EXPLANATION_MAX = 240;
@@ -218,18 +240,18 @@ const buildLimitSummary = async (studentId) => {
 export const createAidRequest = async (req, res) => {
   try {
     if (req.user.role !== "student") return res.status(403).json({ message: "Only students can create requests" });
-    const { aidCategory, amountRange, explanation, shareWithDonors } = req.body;
+    const { aidCategory, amount, explanation, shareWithDonors } = req.body;
 
     if (!aidCategory || !Object.prototype.hasOwnProperty.call(CATEGORY_RULES, aidCategory)) {
       return res.status(400).json({ message: "Valid aid category is required" });
     }
-    if (!amountRange) {
-      return res.status(400).json({ message: "Amount range is required" });
+    const parsedAmount = Number(amount);
+    if (!parsedAmount || parsedAmount <= 0) {
+      return res.status(400).json({ message: "Amount must be greater than 0" });
     }
     const rule = CATEGORY_RULES[aidCategory];
-    const range = rule.ranges.find(r => r.label === amountRange);
-    if (!range) {
-      return res.status(400).json({ message: "Invalid amount range" });
+    if (parsedAmount > rule.maxAmountPerPeriod) {
+      return res.status(400).json({ message: `Amount cannot exceed ${rule.maxAmountPerPeriod} KES for ${aidCategory}` });
     }
     const trimmedExplanation = String(explanation || "").trim();
     if (trimmedExplanation.length > EXPLANATION_MAX) {
@@ -248,9 +270,9 @@ export const createAidRequest = async (req, res) => {
     let precheckReason = "";
     let limitFailed = false;
 
-    if (!student.studentMom) {
+    if (!student.profileSubmitted || !student.profileApproved) {
       precheckPassed = false;
-      precheckReason = "Student mom status not verified";
+      precheckReason = "Student profile not verified by admin";
     }
 
     if (precheckPassed && !student.isApproved) {
@@ -283,7 +305,7 @@ export const createAidRequest = async (req, res) => {
         { $group: { _id: null, total: { $sum: "$amountRangeMax" } } }
       ]);
       const totalAmount = totalAmountAgg[0]?.total || 0;
-      if ((totalAmount + range.max) > rule.maxAmountPerPeriod) {
+      if ((totalAmount + parsedAmount) > rule.maxAmountPerPeriod) {
         precheckPassed = false;
         precheckReason = `${aidCategory} amount limit reached for this period`;
         limitFailed = true;
@@ -312,12 +334,12 @@ export const createAidRequest = async (req, res) => {
     const doc = await AidRequest.create({
       requestId,
       aidCategory,
-      amountRange: range.label,
-      amountRangeMin: range.min,
-      amountRangeMax: range.max,
+      amountRange: `${parsedAmount}`,
+      amountRangeMin: parsedAmount,
+      amountRangeMax: parsedAmount,
       explanation: trimmedExplanation || undefined,
       type: "financial",
-      amount: range.max,
+      amount: parsedAmount,
       items: [],
       reason: trimmedExplanation || `Aid request: ${aidCategory}`,
       status: precheckPassed ? "pending_admin" : "precheck_failed",
@@ -345,7 +367,7 @@ export const createAidRequest = async (req, res) => {
     if (adminIds.length) {
       await notifyUsers({
         title: "New aid request pending verification",
-        message: `Request ${doc.requestId} requires verification (${aidCategory}, ${range.label}).${overrideRequired ? " Emergency override needed." : ""}`,
+        message: `Request ${doc.requestId} requires verification (${aidCategory}, ${parsedAmount} KES).${overrideRequired ? " Emergency override needed." : ""}`,
         recipients: adminIds,
         recipientType: "single_admin",
         university: req.user.university
@@ -381,7 +403,28 @@ export const listMyAidRequests = async (req, res) => {
 export const listUniversityAidRequests = async (req, res) => {
   try {
     if (req.user.role !== "admin") return res.status(403).json({ message: "Only admins" });
-    const list = await AidRequest.find({ university: req.user.university }).populate("student", "name email").sort({ createdAt: -1 });
+    const query = { university: req.user.university };
+    if (req.user.department && req.user.department !== "welfare") {
+      const allowed = ADMIN_CATEGORY_ACCESS[req.user.department] || [];
+      query.aidCategory = { $in: allowed };
+    }
+    const list = await AidRequest.find(query).populate("student", "name email").sort({ createdAt: -1 });
+    if (req.user.department && req.user.department !== "welfare") {
+      const sanitized = list.map((doc) => {
+        const clone = doc.toObject();
+        delete clone.amount;
+        delete clone.amountRange;
+        delete clone.amountRangeMin;
+        delete clone.amountRangeMax;
+        delete clone.reservedAmount;
+        delete clone.reservedAt;
+        delete clone.disbursementMatches;
+        delete clone.disbursedAt;
+        delete clone.disbursedBy;
+        return clone;
+      });
+      return res.json(sanitized);
+    }
     res.json(list);
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
@@ -399,6 +442,9 @@ export const setAidStatus = async (req, res) => {
     
     const doc = await AidRequest.findById(id);
     if (!doc || doc.university !== req.user.university) return res.status(404).json({ message: "Request not found" });
+    if (!assertCategoryAccess(req, doc.aidCategory)) {
+      return res.status(403).json({ message: "Not allowed for this aid category" });
+    }
 
     if (status === "approved") {
       if (!["pending", "pending_admin"].includes(doc.status)) {
@@ -521,6 +567,12 @@ export const secondApproveAid = async (req, res) => {
     const { id } = req.params;
     const doc = await AidRequest.findById(id);
     if (!doc || doc.university !== req.user.university) return res.status(404).json({ message: "Request not found" });
+    if (!assertCategoryAccess(req, doc.aidCategory)) {
+      return res.status(403).json({ message: "Not allowed for this aid category" });
+    }
+    if (req.user.department !== "welfare") {
+      return res.status(403).json({ message: "Only welfare admins can finalize approvals and disburse" });
+    }
     if (doc.status !== "second_approval_pending") return res.status(400).json({ message: "Request not ready for second approval" });
     if (doc.verifiedBy && String(doc.verifiedBy) === String(req.user._id)) {
       return res.status(400).json({ message: "Second approval must be done by a different admin" });
@@ -570,6 +622,9 @@ export const recheckFunds = async (req, res) => {
     const { id } = req.params;
     const doc = await AidRequest.findById(id);
     if (!doc || doc.university !== req.user.university) return res.status(404).json({ message: "Request not found" });
+    if (!assertCategoryAccess(req, doc.aidCategory)) {
+      return res.status(403).json({ message: "Not allowed for this aid category" });
+    }
     if (doc.status !== "waiting_funds") return res.status(400).json({ message: "Request not waiting for funds" });
 
     const reserve = await reserveFundsForRequest(doc);
@@ -601,9 +656,15 @@ export const recheckFunds = async (req, res) => {
 export const disburseAid = async (req, res) => {
   try {
     if (req.user.role !== "admin") return res.status(403).json({ message: "Only admins" });
+    if (req.user.department !== "welfare") {
+      return res.status(403).json({ message: "Only welfare admins can disburse aid" });
+    }
     const { id } = req.params;
     const reqDoc = await AidRequest.findById(id);
     if (!reqDoc || reqDoc.university !== req.user.university) return res.status(404).json({ message: "Request not found" });
+    if (!assertCategoryAccess(req, reqDoc.aidCategory)) {
+      return res.status(403).json({ message: "Not allowed for this aid category" });
+    }
     if (reqDoc.status !== "waiting") return res.status(400).json({ message: "Only waiting requests can be disbursed" });
 
     // Find eligible donations and auto-match (exact coverage required)
@@ -687,6 +748,18 @@ export const disburseAid = async (req, res) => {
 
     await Promise.all([matchedDonation.save(), reqDoc.save()]);
 
+    // Credit student wallet if financial aid
+    if (reqDoc.type === "financial") {
+      const { creditWallet } = await import("./walletController.js");
+      await creditWallet(
+        reqDoc.student,
+        reqDoc.amount,
+        reqDoc._id,
+        matchedDonation._id,
+        `Disbursement for ${reqDoc.aidCategory} aid request`
+      );
+    }
+
     res.json({
       message: "Aid disbursed successfully",
       aidRequest: { _id: reqDoc._id, status: reqDoc.status, disbursedAt: reqDoc.disbursedAt },
@@ -706,9 +779,15 @@ export const disburseAid = async (req, res) => {
 export const moveToWaiting = async (req, res) => {
   try {
     if (req.user.role !== "admin") return res.status(403).json({ message: "Only admins" });
+    if (req.user.department !== "welfare") {
+      return res.status(403).json({ message: "Only welfare admins can move requests to waiting" });
+    }
     const { id } = req.params;
     const doc = await AidRequest.findById(id);
     if (!doc || doc.university !== req.user.university) return res.status(404).json({ message: "Request not found" });
+    if (!assertCategoryAccess(req, doc.aidCategory)) {
+      return res.status(403).json({ message: "Not allowed for this aid category" });
+    }
     if (doc.status !== "approved") return res.status(400).json({ message: "Only approved requests can be moved to waiting" });
     doc.status = "waiting";
     await doc.save();
@@ -730,11 +809,16 @@ export const getAidStats = async (req, res) => {
       return res.json({ financialPending, essentialsPending });
     }
     if (role === "admin") {
+      const base = { university: req.user.university };
+      if (req.user.department && req.user.department !== "welfare") {
+        const allowed = ADMIN_CATEGORY_ACCESS[req.user.department] || [];
+        base.aidCategory = { $in: allowed };
+      }
       const [pending, approved, waiting, disbursed] = await Promise.all([
-        AidRequest.countDocuments({ university: req.user.university, status: { $in: ["pending_admin", "clarification_required", "pending_verification"] } }),
-        AidRequest.countDocuments({ university: req.user.university, status: { $in: ["verified", "second_approval_pending", "approved"] } }),
-        AidRequest.countDocuments({ university: req.user.university, status: "waiting_funds" }),
-        AidRequest.countDocuments({ university: req.user.university, status: "disbursed" })
+        AidRequest.countDocuments({ ...base, status: { $in: ["pending_admin", "clarification_required", "pending_verification"] } }),
+        AidRequest.countDocuments({ ...base, status: { $in: ["verified", "second_approval_pending", "approved"] } }),
+        AidRequest.countDocuments({ ...base, status: "waiting_funds" }),
+        AidRequest.countDocuments({ ...base, status: "disbursed" })
       ]);
       return res.json({ pending, approved, waiting, disbursed });
     }
@@ -1184,7 +1268,7 @@ export const getAdminReports = async (req, res) => {
     });
     auditLog.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
-    res.json({
+    const payload = {
       verifiedMoms: {
         currentTotal: totalVerified,
         currentPeriod: verifiedThisMonth,
@@ -1248,7 +1332,181 @@ export const getAdminReports = async (req, res) => {
       },
       period,
       window: { currentStart, currentEnd: now, previousStart, previousEnd }
+    };
+
+    if (req.user.role === "admin" && req.user.department !== "welfare") {
+      payload.financialAid = { currentPeriod: 0, previousPeriod: 0 };
+      payload.aidDisbursementSummary.totalFundsReceived = 0;
+      payload.aidDisbursementSummary.totalFundsDisbursed = 0;
+      payload.aidDisbursementSummary.remainingBalance = 0;
+      const scrubBreakdown = (obj) => {
+        const next = { financial: {}, essentials: obj?.essentials || {} };
+        Object.keys(obj?.financial || {}).forEach((k) => { next.financial[k] = 0; });
+        return next;
+      };
+      payload.aidDisbursementSummary.breakdown = {
+        week: scrubBreakdown(payload.aidDisbursementSummary.breakdown.week),
+        month: scrubBreakdown(payload.aidDisbursementSummary.breakdown.month),
+        semester: scrubBreakdown(payload.aidDisbursementSummary.breakdown.semester)
+      };
+      payload.beneficiaryActivity.avgAidPerStudent = 0;
+      payload.disbursementMethod.byPaymentMethod = payload.disbursementMethod.byPaymentMethod.map((m) => ({
+        ...m,
+        totalAmount: 0
+      }));
+      payload.auditCompliance.recentEvents = payload.auditCompliance.recentEvents.map((e) => ({
+        ...e,
+        transactionId: null
+      }));
+    }
+
+    res.json(payload);
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+// Student: respond to clarification request
+export const respondToClarification = async (req, res) => {
+  try {
+    if (req.user.role !== "student") {
+      return res.status(403).json({ message: "Only students can respond to clarifications" });
+    }
+    const { id } = req.params;
+    const { response } = req.body;
+
+    if (!response || String(response).trim().length === 0) {
+      return res.status(400).json({ message: "Response cannot be empty" });
+    }
+
+    const doc = await AidRequest.findById(id);
+    if (!doc) return res.status(404).json({ message: "Request not found" });
+    if (String(doc.student) !== String(req.user._id)) {
+      return res.status(403).json({ message: "Can only respond to your own requests" });
+    }
+    if (doc.status !== "clarification_required") {
+      return res.status(400).json({ message: "Request is not awaiting clarification" });
+    }
+
+    doc.clarificationResponse = String(response).trim();
+    doc.clarificationResponseAt = new Date();
+    doc.status = "pending_admin";
+    await doc.save();
+
+    // Populate student info for socket emission
+    await doc.populate("student", "name email");
+
+    // Emit socket event to notify admins of new clarification response
+    io.to(`role:admin`).emit("clarification:response:new", {
+      _id: doc._id,
+      requestId: doc.requestId,
+      student: { name: doc.student?.name, email: doc.student?.email },
+      aidCategory: doc.aidCategory,
+      clarificationNote: doc.clarificationNote,
+      clarificationResponse: doc.clarificationResponse,
+      clarificationResponseAt: doc.clarificationResponseAt
     });
+
+    // Notify admins of response
+    await notifyUsers({
+      title: "Student responded to clarification",
+      message: `Request ${doc.requestId || doc._id} received a response to clarification from ${doc.student?.name || "a student"}`,
+      recipientType: "all_admins",
+      university: doc.university
+    });
+
+    res.json({ message: "Response submitted successfully", doc });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+// Admin: get recent clarification responses
+export const getRecentClarificationResponses = async (req, res) => {
+  try {
+    if (!["admin", "superadmin"].includes(req.user.role)) {
+      return res.status(403).json({ message: "Only admins can view clarification responses" });
+    }
+
+    const baseQuery = { 
+      clarificationResponse: { $exists: true, $ne: null },
+      university: req.user.role === "admin" ? req.user.university : undefined
+    };
+
+    if (req.user.role === "admin" && !req.user.university) {
+      return res.status(400).json({ message: "Admin must have a university assigned" });
+    }
+
+    // Remove undefined university for superadmin
+    if (req.user.role === "superadmin") {
+      delete baseQuery.university;
+    }
+
+    const responses = await AidRequest.find(baseQuery)
+      .populate("student", "name email university")
+      .sort({ clarificationResponseAt: -1 })
+      .limit(2)
+      .select("requestId aidCategory clarificationNote clarificationResponse clarificationResponseAt student");
+
+    res.json(responses);
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+// Student: cancel an aid request
+export const cancelAidRequest = async (req, res) => {
+  try {
+    if (req.user.role !== "student") {
+      return res.status(403).json({ message: "Only students can cancel their aid requests" });
+    }
+
+    const { id } = req.params;
+    const { reason } = req.body;
+
+    const doc = await AidRequest.findById(id).populate("student", "name email");
+    if (!doc) return res.status(404).json({ message: "Request not found" });
+
+    // Verify ownership
+    if (String(doc.student._id) !== String(req.user._id)) {
+      return res.status(403).json({ message: "Can only cancel your own requests" });
+    }
+
+    // Only allow cancellation for certain statuses
+    const cancellableStatuses = ["pending_admin", "approved", "waiting", "waiting_funds", "funds_reserved", "second_approval_pending"];
+    if (!cancellableStatuses.includes(doc.status)) {
+      return res.status(400).json({ 
+        message: `Cannot cancel request with status '${doc.status}'. You can only cancel requests that are pending, approved, or waiting.` 
+      });
+    }
+
+    // Update request status to cancelled
+    doc.status = "cancelled";
+    doc.cancelledBy = req.user._id;
+    doc.cancelledAt = new Date();
+    doc.cancelledReason = (reason || "").trim() || "Student cancelled the request";
+    await doc.save();
+
+    // Notify admins
+    await notifyUsers({
+      title: "Cancelled: " + (doc.requestId || doc._id),
+      message: `${doc.student.name} cancelled their ${doc.aidCategory} aid request for KES ${doc.amount || doc.amountRange}. Reason: ${doc.cancelledReason}`,
+      recipientType: "all_admins",
+      university: doc.university
+    });
+
+    // Emit socket notification to admins
+    if (io) {
+      io.to(`role:admin`).emit("aid:request:cancelled", {
+        requestId: doc.requestId,
+        studentName: doc.student.name,
+        aidCategory: doc.aidCategory,
+        amount: doc.amount,
+        cancelledReason: doc.cancelledReason
+      });
+    }
+
+    res.json({ message: "Request cancelled successfully", doc });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
   }

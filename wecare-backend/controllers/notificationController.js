@@ -38,6 +38,14 @@ export const getNotifications = async (req, res) => {
     const userObjectId = mongoose.Types.ObjectId.isValid(userId) ? new mongoose.Types.ObjectId(userId) : null;
     const baseQuery = buildVisibilityQuery(req);
 
+    const senderExclusions = [];
+    if (userObjectId) senderExclusions.push({ sender: userObjectId });
+    if (req.user?.role) {
+      const roleQuery = { senderRole: req.user.role };
+      if (req.user?.name) roleQuery.senderName = req.user.name;
+      senderExclusions.push(roleQuery);
+    }
+
     // Exclude items the user deleted/hidden
     if (userObjectId) {
       baseQuery.isDeleted = { $not: { $elemMatch: { user: userObjectId } } };
@@ -46,7 +54,10 @@ export const getNotifications = async (req, res) => {
     const { before, limit } = req.query;
     const pageLimit = Math.min(Number(limit) || 50, 100);
     const cursorFilter = before ? { _id: { $lt: before } } : {};
-    const notifications = await Notification.find({ ...baseQuery, ...cursorFilter })
+    const query = senderExclusions.length > 0
+      ? { $and: [{ ...baseQuery, ...cursorFilter }, { $nor: senderExclusions }] }
+      : { ...baseQuery, ...cursorFilter };
+    const notifications = await Notification.find(query)
       .populate("sender", "name email role")
       .populate("recipients", "name email role")
       .sort({ createdAt: -1 })
@@ -62,7 +73,15 @@ export const getSentNotifications = async (req, res) => {
   try {
     const userId = req.user._id;
     const uid = String(userId);
-    const query = { sender: uid };
+    const userObjectId = mongoose.Types.ObjectId.isValid(userId) ? new mongoose.Types.ObjectId(userId) : null;
+    const senderQueries = [];
+    if (userObjectId) senderQueries.push({ sender: userObjectId });
+    if (req.user?.role) {
+      const roleQuery = { senderRole: req.user.role };
+      if (req.user?.name) roleQuery.senderName = req.user.name;
+      senderQueries.push(roleQuery);
+    }
+    const query = senderQueries.length > 0 ? { $or: senderQueries } : { sender: uid };
     const { before, limit } = req.query;
     const pageLimit = Math.min(Number(limit) || 100, 100);
     const cursorFilter = before ? { _id: { $lt: before } } : {};
@@ -93,13 +112,46 @@ export const getUnreadCount = async (req, res) => {
     ];
     if (userObjectId) audience.unshift({ recipients: userObjectId });
 
-    const query = { $or: audience };
+    const senderExclusions = [];
+    if (userObjectId) senderExclusions.push({ sender: userObjectId });
+    if (req.user?.role) {
+      const roleQuery = { senderRole: req.user.role };
+      if (req.user?.name) roleQuery.senderName = req.user.name;
+      senderExclusions.push(roleQuery);
+    }
+
+    const query = senderExclusions.length > 0
+      ? { $and: [{ $or: audience }, { $nor: senderExclusions }] }
+      : { $or: audience };
     if (userObjectId) {
       query.isDeleted = { $not: { $elemMatch: { user: userObjectId } } };
       query.isRead = { $not: { $elemMatch: { user: userObjectId } } };
     }
     const count = await Notification.countDocuments(query);
     res.json({ count });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+// Mark all visible notifications as read
+export const markAllAsRead = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const userObjectId = mongoose.Types.ObjectId.isValid(userId) ? new mongoose.Types.ObjectId(userId) : null;
+    if (!userObjectId) return res.json({ updated: 0 });
+
+    const baseQuery = buildVisibilityQuery(req);
+    baseQuery.isDeleted = { $not: { $elemMatch: { user: userObjectId } } };
+    baseQuery.isRead = { $not: { $elemMatch: { user: userObjectId } } };
+
+    const result = await Notification.updateMany(
+      baseQuery,
+      { $addToSet: { isRead: { user: userObjectId, readAt: new Date() } } }
+    );
+
+    io.to(`user:${userId}`).emit("notification:read-all", { userId });
+    res.json({ updated: result.modifiedCount || 0 });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
   }

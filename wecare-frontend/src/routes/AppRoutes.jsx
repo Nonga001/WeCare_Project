@@ -6,6 +6,7 @@ import PendingApproval from "../pages/PendingApproval";
 import EthicalFeedback from "../pages/EthicalFeedback";
 import PolicyPage from "../pages/PolicyPage";
 import TermsAndConditions from "../pages/TermsAndConditions";
+import MaintenancePage from "../pages/MaintenancePage";
 import RegisterStudent from "../pages/auth/RegisterStudent";
 import RegisterDonor from "../pages/auth/RegisterDonor";
 import RegisterAdmin from "../pages/auth/RegisterAdmin";
@@ -20,6 +21,7 @@ import StudentHome from "../pages/dashboards/student/StudentHome";
 import StudentProfile from "../pages/dashboards/student/StudentProfile";
 import StudentAid from "../pages/dashboards/student/StudentAid";
 import StudentSupport from "../pages/dashboards/student/StudentSupport";
+import StudentWallet from "../pages/dashboards/student/StudentWallet";
 import DonorDashboard from "../pages/dashboards/DonorDashboard";
 import AdminDashboard from "../pages/dashboards/AdminDashboard";
 import SuperAdminDashboard from "../pages/dashboards/SuperAdminDashboard";
@@ -49,6 +51,7 @@ const AppRoutes = () => {
       <Routes>
         {/* Public */}
         <Route path="/" element={<Landing />} />
+        <Route path="/maintenance" element={<MaintenancePage />} />
         <Route path="/login/student" element={<LoginStudent />} />
         <Route path="/login/donor" element={<LoginDonor />} />
         <Route path="/login/admin" element={<LoginAdmin />} />
@@ -74,6 +77,7 @@ const AppRoutes = () => {
           <Route index element={<StudentHome />} />
           <Route path="profile" element={<StudentProfile />} />
           <Route path="aid" element={<StudentAid />} />
+          <Route path="wallet" element={<StudentWallet />} />
           <Route path="support" element={<StudentSupport />} />
           <Route path="notifications" element={<StudentNotifications />} />
         </Route>
