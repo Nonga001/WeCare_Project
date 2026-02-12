@@ -1,4 +1,5 @@
 import Donation from "../models/Donation.js";
+import crypto from "crypto";
 import AidRequest from "../models/AidRequest.js";
 import User from "../models/User.js";
 import { initiateSTKPush, querySTKPushStatus } from "../services/mpesaService.js";
@@ -37,6 +38,11 @@ export const createDonation = async (req, res) => {
       }
     }
 
+    const referenceId = `WeCare-${Date.now().toString(36).toUpperCase()}-${crypto
+      .randomBytes(3)
+      .toString("hex")
+      .toUpperCase()}`;
+
     const donation = await Donation.create({
       type,
       amount: type === "financial" ? Number(amount) : undefined,
@@ -51,7 +57,8 @@ export const createDonation = async (req, res) => {
       mothersSupported: 1, // Each donation supports 1 mother by default
       status: "pending",
       mpesaPhoneNumber: phoneNumber,
-      accountReference: `DON-${Date.now()}`
+      accountReference: referenceId,
+      transactionId: referenceId,
     });
 
     let mpesaResponse = null;
@@ -138,6 +145,17 @@ export const queryDonationStatus = async (req, res) => {
       return res.json({ donation, mpesa: null });
     }
 
+    if (donation.status === "pending") {
+      const createdAt = donation.createdAt ? new Date(donation.createdAt).getTime() : 0;
+      const pendingLimitMs = 2 * 60 * 1000;
+      if (createdAt && Date.now() - createdAt > pendingLimitMs) {
+        donation.status = "failed";
+        donation.mpesaResultDesc = "Payment timed out after 2 minutes.";
+        await donation.save();
+        return res.json({ donation, mpesa: null });
+      }
+    }
+
     if (donation.status === "failed") {
       const updatedAt = donation.updatedAt ? new Date(donation.updatedAt).getTime() : 0;
       const graceWindowMs = 2 * 60 * 1000;
@@ -156,7 +174,7 @@ export const queryDonationStatus = async (req, res) => {
 
       if (resultCode === 0) {
         donation.status = "confirmed";
-      } else if (resultCode === 1032 || resultCode === 1037) {
+      } else {
         donation.status = "failed";
       }
 
@@ -212,28 +230,107 @@ export const getDonorStats = async (req, res) => {
       return res.status(403).json({ message: "Only donors can view stats" });
     }
 
-    const [totalDonations, mothersSupported, financialDonated, essentialsDonated] = await Promise.all([
-      Donation.countDocuments({ donor: req.user._id }),
-      Donation.aggregate([
-        { $match: { donor: req.user._id } },
-        { $group: { _id: null, total: { $sum: "$mothersSupported" } } }
-      ]),
-      Donation.aggregate([
-        { $match: { donor: req.user._id, type: "financial" } },
-        { $group: { _id: null, total: { $sum: "$amount" } } }
-      ]),
-      Donation.aggregate([
-        { $match: { donor: req.user._id, type: "essentials" } },
-        { $unwind: "$items" },
-        { $group: { _id: null, total: { $sum: "$items.quantity" } } }
-      ])
+    const period = String(req.query.period || "month").toLowerCase();
+    const now = new Date();
+
+    const getPeriodStart = (p, base) => {
+      const d = new Date(base);
+      if (p === "day") return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      if (p === "week") {
+        const day = d.getDay();
+        const diff = (day + 6) % 7; // Monday start
+        d.setDate(d.getDate() - diff);
+        return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      }
+      if (p === "year") return new Date(d.getFullYear(), 0, 1);
+      return new Date(d.getFullYear(), d.getMonth(), 1);
+    };
+
+    const currentStart = getPeriodStart(period, now);
+    const previousEnd = new Date(currentStart);
+    let previousStart = new Date(currentStart);
+
+    if (period === "day") {
+      previousStart.setDate(previousStart.getDate() - 1);
+    } else if (period === "week") {
+      previousStart.setDate(previousStart.getDate() - 7);
+    } else if (period === "year") {
+      previousStart = new Date(currentStart.getFullYear() - 1, 0, 1);
+    } else {
+      previousStart = new Date(currentStart.getFullYear(), currentStart.getMonth() - 1, 1);
+    }
+
+    const buildStats = async (start, end) => {
+      const match = { donor: req.user._id, createdAt: { $gte: start, $lt: end } };
+      const [donationsCount, mothersSupported, financialDonated, essentialsDonated] = await Promise.all([
+        Donation.countDocuments(match),
+        Donation.aggregate([
+          { $match: match },
+          { $group: { _id: null, total: { $sum: "$mothersSupported" } } }
+        ]),
+        Donation.aggregate([
+          { $match: { ...match, type: "financial" } },
+          { $group: { _id: null, total: { $sum: { $ifNull: ["$amount", 0] } } } }
+        ]),
+        Donation.aggregate([
+          { $match: { ...match, type: "essentials" } },
+          { $unwind: { path: "$items", preserveNullAndEmptyArrays: true } },
+          { $group: { _id: null, total: { $sum: { $ifNull: ["$items.quantity", 0] } } } }
+        ])
+      ]);
+
+      return {
+        donationsCount,
+        mothersSupported: mothersSupported[0]?.total || 0,
+        financialDonated: financialDonated[0]?.total || 0,
+        essentialsDonated: essentialsDonated[0]?.total || 0,
+      };
+    };
+
+    const buildAllTime = async () => {
+      const match = { donor: req.user._id };
+      const [donationsCount, mothersSupported, financialDonated, essentialsDonated] = await Promise.all([
+        Donation.countDocuments(match),
+        Donation.aggregate([
+          { $match: match },
+          { $group: { _id: null, total: { $sum: "$mothersSupported" } } }
+        ]),
+        Donation.aggregate([
+          { $match: { ...match, type: "financial" } },
+          { $group: { _id: null, total: { $sum: { $ifNull: ["$amount", 0] } } } }
+        ]),
+        Donation.aggregate([
+          { $match: { ...match, type: "essentials" } },
+          { $unwind: { path: "$items", preserveNullAndEmptyArrays: true } },
+          { $group: { _id: null, total: { $sum: { $ifNull: ["$items.quantity", 0] } } } }
+        ])
+      ]);
+
+      return {
+        donationsCount,
+        mothersSupported: mothersSupported[0]?.total || 0,
+        financialDonated: financialDonated[0]?.total || 0,
+        essentialsDonated: essentialsDonated[0]?.total || 0,
+      };
+    };
+
+    const [current, previous, allTime] = await Promise.all([
+      buildStats(currentStart, now),
+      buildStats(previousStart, previousEnd),
+      buildAllTime()
     ]);
 
-    res.json({
-      totalDonations,
-      mothersSupported: mothersSupported[0]?.total || 0,
-      financialDonated: financialDonated[0]?.total || 0,
-      essentialsDonated: essentialsDonated[0]?.total || 0
+    return res.json({
+      period,
+      current,
+      previous,
+      allTime,
+      window: {
+        currentStart,
+        currentEnd: now,
+        previousStart,
+        previousEnd
+      }
     });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });

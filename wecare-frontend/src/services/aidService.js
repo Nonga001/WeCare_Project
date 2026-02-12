@@ -55,8 +55,12 @@ export const getAidLimits = async (token) => {
   return res.data;
 };
 
-export const getAdminReports = async (token) => {
-  const res = await axios.get(`${API_URL}/reports`, auth(token));
+export const getAdminReports = async (token, period) => {
+  const params = new URLSearchParams();
+  if (period) params.set("period", period);
+  const query = params.toString();
+  const url = query ? `${API_URL}/reports?${query}` : `${API_URL}/reports`;
+  const res = await axios.get(url, auth(token));
   return res.data;
 };
 

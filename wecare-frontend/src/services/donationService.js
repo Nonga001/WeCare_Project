@@ -34,8 +34,12 @@ export const getGlobalAidRequests = async (token, filters = {}) => {
   return res.data;
 };
 
-export const getDonorStats = async (token) => {
-  const res = await axios.get(`${API_URL}/stats`, auth(token));
+export const getDonorStats = async (token, period) => {
+  const params = new URLSearchParams();
+  if (period) params.set("period", period);
+  const query = params.toString();
+  const url = query ? `${API_URL}/stats?${query}` : `${API_URL}/stats`;
+  const res = await axios.get(url, auth(token));
   return res.data;
 };
 

@@ -27,8 +27,8 @@ const Donations = () => {
     message: "",
     startedAt: null
   });
-  const paymentTimeoutMs = 30 * 1000;
-  const paymentGraceMs = 50 * 1000;
+  const paymentTimeoutMs = 2 * 60 * 1000;
+  const paymentGraceMs = 2 * 60 * 1000;
 
   const handle = (e) => setForm({ ...form, [e.target.name]: e.target.value });
   const handlePhone = (e) => {
@@ -118,6 +118,18 @@ const Donations = () => {
     () => history.some((donation) => donation.status === "pending"),
     [history]
   );
+
+  const getPaymentMethodLabel = (method) => {
+    const value = String(method || "").toLowerCase();
+    if (value === "sandbox") return "WeCare";
+    if (value === "mpesa") return "M-Pesa";
+    if (value === "bank_transfer") return "Bank Transfer";
+    if (value === "card") return "Card";
+    return method || "-";
+  };
+
+  const getReferenceId = (donation) =>
+    donation?.transactionId || donation?.accountReference || donation?.mpesaReceiptNumber || "-";
 
   useEffect(() => {
     if (!user?.token || !hasPending) return undefined;
@@ -330,7 +342,20 @@ const Donations = () => {
     }
   };
 
-  const canCloseModal = paymentState.status !== "waiting" && paymentState.status !== "idle";
+  const isWaitingForPayment = paymentState.status === "waiting";
+  const canCloseModal = true;
+  const handleCloseModal = () => {
+    setShowModal(false);
+    if (!isWaitingForPayment) {
+      setPaymentState({ status: "idle", donationId: null, message: "", startedAt: null });
+    }
+  };
+  const handleOpenModal = () => {
+    if (paymentState.status === "waiting") {
+      setPaymentState({ status: "idle", donationId: null, message: "", startedAt: null });
+    }
+    setShowModal(true);
+  };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -352,7 +377,7 @@ const Donations = () => {
           <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">Click donate to enter your amount and details in a quick popup.</p>
           <button
             type="button"
-            onClick={() => setShowModal(true)}
+            onClick={handleOpenModal}
             className="btn btn-primary w-full"
           >
             Donate
@@ -389,7 +414,10 @@ const Donations = () => {
                     }
                   </p>
                   <p className="text-slate-500 dark:text-slate-400 text-xs">
-                    {donation.paymentMethod} • {new Date(donation.createdAt).toLocaleString()}
+                    {getPaymentMethodLabel(donation.paymentMethod)} • {new Date(donation.createdAt).toLocaleString()}
+                  </p>
+                  <p className="text-slate-500 dark:text-slate-400 text-xs">
+                    Reference: {getReferenceId(donation)}
                   </p>
                   <p className="text-slate-500 dark:text-slate-400 text-xs">
                     Status: <span className={`font-medium ${
@@ -431,10 +459,10 @@ const Donations = () => {
                 <p className="text-sm text-slate-600 dark:text-stone-300">Add your amount or items and confirm.</p>
               </div>
               <button
-                onClick={() => canCloseModal && setShowModal(false)}
+                onClick={handleCloseModal}
                 className={`text-stone-500 hover:text-stone-700 ${canCloseModal ? "" : "opacity-40 cursor-not-allowed"}`}
                 disabled={!canCloseModal}
-                title={canCloseModal ? "Close" : "Please wait for the transaction to finish"}
+                title="Close"
               >
                 ✕
               </button>
@@ -592,11 +620,11 @@ const Donations = () => {
               <div className="flex gap-3 justify-end">
                 <button
                   type="button"
-                  onClick={() => canCloseModal && setShowModal(false)}
+                  onClick={handleCloseModal}
                   className="btn btn-ghost"
                   disabled={!canCloseModal}
                 >
-                  {canCloseModal ? "Close" : "Please wait"}
+                  {isWaitingForPayment ? "Close" : "Close"}
                 </button>
                 <button
                   type="submit"

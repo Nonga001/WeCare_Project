@@ -86,6 +86,7 @@ const DonorNotifications = () => {
     ));
   };
 
+
   useEffect(() => {
     if (user?.token) fetchData();
   }, [user?.token]);
@@ -176,9 +177,10 @@ const DonorNotifications = () => {
   const handleDeleteReceivedNotification = async (id) => {
     if (!window.confirm("Are you sure you want to delete this notification?")) return;
     try {
-      await deleteNotification(user?.token, id);
+      await hideNotificationServer(user?.token, id);
       setNotifications(prev => prev.filter(n => n._id !== id));
-      setSuccess("Notification deleted successfully");
+      setSuccess("Notification removed");
+      try { setHiddenList(await getHiddenNotifications(user?.token)); } catch {}
     } catch (err) {
       setError(err.response?.data?.message || "Failed to delete notification");
     }

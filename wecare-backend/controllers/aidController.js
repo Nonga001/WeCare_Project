@@ -2,6 +2,7 @@ import AidRequest from "../models/AidRequest.js";
 import User from "../models/User.js";
 import Donation from "../models/Donation.js";
 import Notification from "../models/Notification.js";
+import EthicalFeedback from "../models/EthicalFeedback.js";
 import { io } from "../server.js";
 
 const CATEGORY_RULES = {
@@ -769,17 +770,79 @@ export const getAdminReports = async (req, res) => {
     }
     const university = req.user.role === "admin" ? req.user.university : (req.query.university || null);
 
+    const period = String(req.query.period || "month").toLowerCase();
     const now = new Date();
-    const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const startOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+    const getPeriodStart = (p, base) => {
+      const d = new Date(base);
+      if (p === "day") return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      if (p === "week") {
+        const day = d.getDay();
+        const diff = (day + 6) % 7;
+        d.setDate(d.getDate() - diff);
+        return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      }
+      if (p === "semester") {
+        const startMonth = d.getMonth() < 6 ? 0 : 6;
+        return new Date(d.getFullYear(), startMonth, 1);
+      }
+      if (p === "year") return new Date(d.getFullYear(), 0, 1);
+      return new Date(d.getFullYear(), d.getMonth(), 1);
+    };
+
+    const currentStart = getPeriodStart(period, now);
+    const previousEnd = new Date(currentStart);
+    let previousStart = new Date(currentStart);
+
+    if (period === "day") {
+      previousStart.setDate(previousStart.getDate() - 1);
+    } else if (period === "week") {
+      previousStart.setDate(previousStart.getDate() - 7);
+    } else if (period === "semester") {
+      const prevMonth = currentStart.getMonth() < 6 ? 6 : 0;
+      const prevYear = currentStart.getMonth() < 6 ? currentStart.getFullYear() - 1 : currentStart.getFullYear();
+      previousStart = new Date(prevYear, prevMonth, 1);
+    } else if (period === "year") {
+      previousStart = new Date(currentStart.getFullYear() - 1, 0, 1);
+    } else {
+      previousStart = new Date(currentStart.getFullYear(), currentStart.getMonth() - 1, 1);
+    }
+
+    const getWindow = (windowType) => {
+      if (windowType === "week") {
+        const start = new Date(now);
+        start.setDate(start.getDate() - 7);
+        return { start, end: now };
+      }
+      if (windowType === "month") {
+        const start = new Date(now);
+        start.setDate(start.getDate() - 30);
+        return { start, end: now };
+      }
+      if (windowType === "semester") {
+        const start = new Date(now);
+        start.setDate(start.getDate() - 182);
+        return { start, end: now };
+      }
+      return { start: currentStart, end: now };
+    };
 
     // If superadmin did not specify a university, return zeroed metrics but 200 OK so frontend can render
     if (!university) {
       return res.json({
-        verifiedMoms: { currentTotal: 0, currentMonth: 0, previousMonth: 0 },
-        financialAid: { currentMonth: 0, previousMonth: 0 },
-        essentialsDistributed: { currentMonthItems: 0, previousMonthItems: 0 },
-        retention: 0
+        verifiedMoms: { currentTotal: 0, currentPeriod: 0, previousPeriod: 0 },
+        financialAid: { currentPeriod: 0, previousPeriod: 0 },
+        essentialsDistributed: { currentPeriodItems: 0, previousPeriodItems: 0 },
+        retention: 0,
+        aidDisbursementSummary: { totalFundsReceived: 0, totalFundsDisbursed: 0, remainingBalance: 0, essentialsItemsDisbursed: 0, breakdown: { week: { financial: {}, essentials: {} }, month: { financial: {}, essentials: {} }, semester: { financial: {}, essentials: {} } } },
+        beneficiaryActivity: { supportedStudents: 0, requestsPerStudent: 0, avgAidPerStudent: 0, repeatBeneficiaries: 0, newBeneficiaries: 0 },
+        pendingRejected: { pendingReview: 0, waitingFunds: 0, rejectedCount: 0, rejectionReasons: [] },
+        rateLimitOverride: { rateLimitBlocks: 0, overrideUsageCount: 0, overrideAdmins: [], overrideCategories: [] },
+        disbursementMethod: { byPaymentMethod: [], successfulDisbursements: 0, failedDisbursements: 0, averageProcessingTimeHours: 0 },
+        impactSnapshot: { retention: 0, semesterOutcomes: { current: { disbursedRequests: 0, financialDisbursed: 0, essentialsItems: 0 }, previous: { disbursedRequests: 0, financialDisbursed: 0, essentialsItems: 0 } }, feedbackStats: { count: 0, averageScore: 0 } },
+        auditCompliance: { recentEvents: [] },
+        period,
+        window: { currentStart, currentEnd: now, previousStart, previousEnd }
       });
     }
 
@@ -796,20 +859,20 @@ export const getAdminReports = async (req, res) => {
       role: "student",
       university,
       profileApproved: true,
-      profileApprovedAt: { $gte: startOfCurrentMonth }
+      profileApprovedAt: { $gte: currentStart, $lt: now }
     });
 
     const verifiedPrevMonth = await User.countDocuments({
       role: "student",
       university,
       profileApproved: true,
-      profileApprovedAt: { $gte: startOfPrevMonth, $lt: startOfCurrentMonth }
+      profileApprovedAt: { $gte: previousStart, $lt: previousEnd }
     });
 
     // Disbursed to this university (financial and essentials)
     const financialAgg = await Donation.aggregate([
       { $unwind: "$disbursedTo" },
-      { $match: { "disbursedTo.disbursedAt": { $gte: startOfCurrentMonth } } },
+      { $match: { "disbursedTo.disbursedAt": { $gte: currentStart, $lt: now } } },
       { $lookup: { from: "aidrequests", localField: "disbursedTo.aidRequestId", foreignField: "_id", as: "ar" } },
       { $unwind: "$ar" },
       { $match: { "ar.university": university } },
@@ -818,7 +881,7 @@ export const getAdminReports = async (req, res) => {
 
     const financialAggPrev = await Donation.aggregate([
       { $unwind: "$disbursedTo" },
-      { $match: { "disbursedTo.disbursedAt": { $gte: startOfPrevMonth, $lt: startOfCurrentMonth } } },
+      { $match: { "disbursedTo.disbursedAt": { $gte: previousStart, $lt: previousEnd } } },
       { $lookup: { from: "aidrequests", localField: "disbursedTo.aidRequestId", foreignField: "_id", as: "ar" } },
       { $unwind: "$ar" },
       { $match: { "ar.university": university } },
@@ -827,7 +890,7 @@ export const getAdminReports = async (req, res) => {
 
     const essentialsAgg = await Donation.aggregate([
       { $unwind: "$disbursedTo" },
-      { $match: { "disbursedTo.disbursedAt": { $gte: startOfCurrentMonth } } },
+      { $match: { "disbursedTo.disbursedAt": { $gte: currentStart, $lt: now } } },
       { $lookup: { from: "aidrequests", localField: "disbursedTo.aidRequestId", foreignField: "_id", as: "ar" } },
       { $unwind: "$ar" },
       { $match: { "ar.university": university } },
@@ -837,7 +900,7 @@ export const getAdminReports = async (req, res) => {
 
     const essentialsAggPrev = await Donation.aggregate([
       { $unwind: "$disbursedTo" },
-      { $match: { "disbursedTo.disbursedAt": { $gte: startOfPrevMonth, $lt: startOfCurrentMonth } } },
+      { $match: { "disbursedTo.disbursedAt": { $gte: previousStart, $lt: previousEnd } } },
       { $lookup: { from: "aidrequests", localField: "disbursedTo.aidRequestId", foreignField: "_id", as: "ar" } },
       { $unwind: "$ar" },
       { $match: { "ar.university": university } },
@@ -846,26 +909,345 @@ export const getAdminReports = async (req, res) => {
     ]);
 
     // Retention: active verified moms in last 30 days / total verified
-    const last30 = new Date(now);
-    last30.setDate(now.getDate() - 30);
-    const activeVerified = await AidRequest.distinct("student", { university, createdAt: { $gte: last30 } });
+    const activeVerified = await AidRequest.distinct("student", { university, createdAt: { $gte: currentStart, $lt: now } });
     const retention = totalVerified > 0 ? Math.round((activeVerified.length / totalVerified) * 100) : 0;
+
+    const financialRequestedAgg = await AidRequest.aggregate([
+      { $match: { university, type: "financial", status: { $ne: "rejected" } } },
+      { $group: { _id: null, total: { $sum: { $ifNull: ["$amount", 0] } } } }
+    ]);
+
+    const financialDisbursedAllAgg = await Donation.aggregate([
+      { $unwind: "$disbursedTo" },
+      { $lookup: { from: "aidrequests", localField: "disbursedTo.aidRequestId", foreignField: "_id", as: "ar" } },
+      { $unwind: "$ar" },
+      { $match: { "ar.university": university } },
+      { $group: { _id: null, total: { $sum: { $ifNull: ["$disbursedTo.amount", 0] } } } }
+    ]);
+
+    const essentialsDisbursedAllAgg = await Donation.aggregate([
+      { $unwind: "$disbursedTo" },
+      { $lookup: { from: "aidrequests", localField: "disbursedTo.aidRequestId", foreignField: "_id", as: "ar" } },
+      { $unwind: "$ar" },
+      { $match: { "ar.university": university } },
+      { $unwind: { path: "$disbursedTo.items", preserveNullAndEmptyArrays: true } },
+      { $group: { _id: null, total: { $sum: { $ifNull: ["$disbursedTo.items.quantity", 0] } } } }
+    ]);
+
+    const totalFundsReceived = financialDisbursedAllAgg[0]?.total || 0;
+    const totalFundsDisbursed = totalFundsReceived;
+    const totalFinancialRequested = financialRequestedAgg[0]?.total || 0;
+    const remainingBalance = Math.max(0, totalFinancialRequested - totalFundsDisbursed);
+
+    const buildCategoryBreakdown = async (start, end) => {
+      const rows = await Donation.aggregate([
+        { $unwind: "$disbursedTo" },
+        { $match: { "disbursedTo.disbursedAt": { $gte: start, $lt: end } } },
+        { $lookup: { from: "aidrequests", localField: "disbursedTo.aidRequestId", foreignField: "_id", as: "ar" } },
+        { $unwind: "$ar" },
+        { $match: { "ar.university": university } },
+        { $project: { aidCategory: "$ar.aidCategory", type: "$ar.type", amount: "$disbursedTo.amount", items: "$disbursedTo.items" } },
+        { $unwind: { path: "$items", preserveNullAndEmptyArrays: true } },
+        { $group: {
+          _id: { category: "$aidCategory", type: "$type" },
+          amount: { $sum: { $ifNull: ["$amount", 0] } },
+          items: { $sum: { $ifNull: ["$items.quantity", 0] } }
+        } }
+      ]);
+
+      const financial = {};
+      const essentials = {};
+      rows.forEach((row) => {
+        const category = row._id?.category || "unknown";
+        if (row._id?.type === "financial") financial[category] = row.amount || 0;
+        if (row._id?.type === "essentials") essentials[category] = row.items || 0;
+      });
+      return { financial, essentials };
+    };
+
+    const weekWindow = getWindow("week");
+    const monthWindow = getWindow("month");
+    const semesterWindow = getWindow("semester");
+
+    const [weekBreakdown, monthBreakdown, semesterBreakdown] = await Promise.all([
+      buildCategoryBreakdown(weekWindow.start, weekWindow.end),
+      buildCategoryBreakdown(monthWindow.start, monthWindow.end),
+      buildCategoryBreakdown(semesterWindow.start, semesterWindow.end)
+    ]);
+
+    const supportedStudents = await AidRequest.distinct("student", {
+      university,
+      status: "disbursed",
+      disbursedAt: { $gte: currentStart, $lt: now }
+    });
+    const totalRequestsPeriod = await AidRequest.countDocuments({ university, createdAt: { $gte: currentStart, $lt: now } });
+    const studentsWithRequests = await AidRequest.distinct("student", { university, createdAt: { $gte: currentStart, $lt: now } });
+
+    const disbursedPeriodAgg = await Donation.aggregate([
+      { $unwind: "$disbursedTo" },
+      { $match: { "disbursedTo.disbursedAt": { $gte: currentStart, $lt: now } } },
+      { $lookup: { from: "aidrequests", localField: "disbursedTo.aidRequestId", foreignField: "_id", as: "ar" } },
+      { $unwind: "$ar" },
+      { $match: { "ar.university": university } },
+      { $group: { _id: null, total: { $sum: { $ifNull: ["$disbursedTo.amount", 0] } } } }
+    ]);
+    const totalFinancialDisbursedPeriod = disbursedPeriodAgg[0]?.total || 0;
+    const requestsPerStudent = studentsWithRequests.length > 0 ? Number((totalRequestsPeriod / studentsWithRequests.length).toFixed(2)) : 0;
+    const avgAidPerStudent = supportedStudents.length > 0 ? Number((totalFinancialDisbursedPeriod / supportedStudents.length).toFixed(2)) : 0;
+
+    const beneficiaryAgg = await AidRequest.aggregate([
+      { $match: { university, status: "disbursed" } },
+      { $group: { _id: "$student", first: { $min: "$disbursedAt" }, last: { $max: "$disbursedAt" } } },
+      { $match: { last: { $gte: currentStart, $lt: now } } }
+    ]);
+    const newBeneficiaries = beneficiaryAgg.filter(b => b.first >= currentStart).length;
+    const repeatBeneficiaries = beneficiaryAgg.filter(b => b.first < currentStart).length;
+
+    const pendingReviewCount = await AidRequest.countDocuments({
+      university,
+      status: { $in: ["pending_admin", "pending_verification", "clarification_required"] }
+    });
+    const waitingFundsCount = await AidRequest.countDocuments({ university, status: "waiting_funds" });
+    const rejectedCount = await AidRequest.countDocuments({ university, status: "rejected", rejectedAt: { $gte: currentStart, $lt: now } });
+    const rejectedReasonsAgg = await AidRequest.aggregate([
+      { $match: { university, status: "rejected", rejectedAt: { $gte: currentStart, $lt: now } } },
+      { $group: { _id: { $ifNull: ["$rejectedReason", "Unspecified"] }, count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 10 }
+    ]);
+
+    const rateLimitBlocks = await AidRequest.countDocuments({
+      university,
+      status: "precheck_failed",
+      createdAt: { $gte: currentStart, $lt: now }
+    });
+    const overrideUsageCount = await AidRequest.countDocuments({
+      university,
+      emergencyOverrideApproved: true,
+      emergencyOverrideAt: { $gte: currentStart, $lt: now }
+    });
+    const overrideAdminsAgg = await AidRequest.aggregate([
+      { $match: { university, emergencyOverrideApproved: true, emergencyOverrideAt: { $gte: currentStart, $lt: now } } },
+      { $group: { _id: "$emergencyOverrideBy", count: { $sum: 1 } } },
+      { $lookup: { from: "users", localField: "_id", foreignField: "_id", as: "admin" } },
+      { $unwind: { path: "$admin", preserveNullAndEmptyArrays: true } },
+      { $project: { _id: 0, adminId: "$_id", name: "$admin.name", count: 1 } },
+      { $sort: { count: -1 } },
+      { $limit: 10 }
+    ]);
+    const overrideCategoriesAgg = await AidRequest.aggregate([
+      { $match: { university, emergencyOverrideApproved: true, emergencyOverrideAt: { $gte: currentStart, $lt: now } } },
+      { $group: { _id: { $ifNull: ["$aidCategory", "unknown"] }, count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 10 }
+    ]);
+
+    const disbursementByMethodAgg = await Donation.aggregate([
+      { $unwind: "$disbursedTo" },
+      { $match: { "disbursedTo.disbursedAt": { $gte: currentStart, $lt: now } } },
+      { $lookup: { from: "aidrequests", localField: "disbursedTo.aidRequestId", foreignField: "_id", as: "ar" } },
+      { $unwind: "$ar" },
+      { $match: { "ar.university": university } },
+      { $group: {
+        _id: "$paymentMethod",
+        totalAmount: { $sum: { $ifNull: ["$disbursedTo.amount", 0] } },
+        disbursementCount: { $sum: 1 }
+      } },
+      { $sort: { totalAmount: -1 } }
+    ]);
+
+    const successfulDisbursements = await AidRequest.countDocuments({
+      university,
+      status: "disbursed",
+      disbursedAt: { $gte: currentStart, $lt: now }
+    });
+    const failedDisbursements = await AidRequest.countDocuments({
+      university,
+      status: "rejected",
+      rejectedAt: { $gte: currentStart, $lt: now }
+    });
+    const avgProcessingAgg = await AidRequest.aggregate([
+      { $match: { university, status: "disbursed", disbursedAt: { $gte: currentStart, $lt: now } } },
+      { $project: { durationMs: { $subtract: ["$disbursedAt", "$createdAt"] } } },
+      { $group: { _id: null, avgMs: { $avg: "$durationMs" } } }
+    ]);
+    const avgProcessingMs = avgProcessingAgg[0]?.avgMs || 0;
+
+    const currentSemesterStart = getPeriodStart("semester", now);
+    const previousSemesterEnd = new Date(currentSemesterStart);
+    const previousSemesterStart = new Date(currentSemesterStart.getMonth() < 6 ? currentSemesterStart.getFullYear() - 1 : currentSemesterStart.getFullYear(), currentSemesterStart.getMonth() < 6 ? 6 : 0, 1);
+    const buildSemesterSummary = async (start, end) => {
+      const [disbursedCount, financialAggSemester, essentialsAggSemester] = await Promise.all([
+        AidRequest.countDocuments({ university, status: "disbursed", disbursedAt: { $gte: start, $lt: end } }),
+        Donation.aggregate([
+          { $unwind: "$disbursedTo" },
+          { $match: { "disbursedTo.disbursedAt": { $gte: start, $lt: end } } },
+          { $lookup: { from: "aidrequests", localField: "disbursedTo.aidRequestId", foreignField: "_id", as: "ar" } },
+          { $unwind: "$ar" },
+          { $match: { "ar.university": university } },
+          { $group: { _id: null, total: { $sum: { $ifNull: ["$disbursedTo.amount", 0] } } } }
+        ]),
+        Donation.aggregate([
+          { $unwind: "$disbursedTo" },
+          { $match: { "disbursedTo.disbursedAt": { $gte: start, $lt: end } } },
+          { $lookup: { from: "aidrequests", localField: "disbursedTo.aidRequestId", foreignField: "_id", as: "ar" } },
+          { $unwind: "$ar" },
+          { $match: { "ar.university": university } },
+          { $unwind: { path: "$disbursedTo.items", preserveNullAndEmptyArrays: true } },
+          { $group: { _id: null, total: { $sum: { $ifNull: ["$disbursedTo.items.quantity", 0] } } } }
+        ])
+      ]);
+      return {
+        disbursedRequests: disbursedCount,
+        financialDisbursed: financialAggSemester[0]?.total || 0,
+        essentialsItems: essentialsAggSemester[0]?.total || 0
+      };
+    };
+
+    const [currentSemesterSummary, previousSemesterSummary] = await Promise.all([
+      buildSemesterSummary(currentSemesterStart, now),
+      buildSemesterSummary(previousSemesterStart, previousSemesterEnd)
+    ]);
+
+    const feedbackAgg = await EthicalFeedback.aggregate([
+      { $match: { createdAt: { $gte: currentStart, $lt: now } } },
+      { $group: { _id: null, avgScore: { $avg: { $toDouble: "$averageScore" } }, count: { $sum: 1 } } }
+    ]);
+    const feedbackStats = {
+      count: feedbackAgg[0]?.count || 0,
+      averageScore: Number(feedbackAgg[0]?.avgScore || 0)
+    };
+
+    const auditRequests = await AidRequest.find({ university })
+      .select("requestId aidCategory type amount items verifiedBy verifiedAt approvedBy approvedAt secondApprovedBy secondApprovedAt rejectedBy rejectedAt disbursedBy disbursedAt emergencyOverrideBy emergencyOverrideAt disbursementMatches")
+      .sort({ updatedAt: -1 })
+      .limit(200)
+      .lean();
+
+    const donationIds = new Set();
+    auditRequests.forEach((r) => {
+      (r.disbursementMatches || []).forEach((m) => {
+        if (m.donationId) donationIds.add(String(m.donationId));
+      });
+    });
+    const donationDocs = await Donation.find({ _id: { $in: Array.from(donationIds) } }).select("_id transactionId").lean();
+    const donationMap = new Map(donationDocs.map(d => [String(d._id), d.transactionId]));
+
+    const auditLog = [];
+    auditRequests.forEach((r) => {
+      if (r.verifiedAt) auditLog.push({
+        type: "verified",
+        requestId: r.requestId,
+        aidCategory: r.aidCategory,
+        adminId: r.verifiedBy,
+        timestamp: r.verifiedAt
+      });
+      if (r.approvedAt) auditLog.push({
+        type: "approved",
+        requestId: r.requestId,
+        aidCategory: r.aidCategory,
+        adminId: r.approvedBy,
+        timestamp: r.approvedAt
+      });
+      if (r.secondApprovedAt) auditLog.push({
+        type: "second_approved",
+        requestId: r.requestId,
+        aidCategory: r.aidCategory,
+        adminId: r.secondApprovedBy,
+        timestamp: r.secondApprovedAt
+      });
+      if (r.rejectedAt) auditLog.push({
+        type: "rejected",
+        requestId: r.requestId,
+        aidCategory: r.aidCategory,
+        adminId: r.rejectedBy,
+        timestamp: r.rejectedAt
+      });
+      if (r.disbursedAt) {
+        const transactionId = (r.disbursementMatches || []).map(m => donationMap.get(String(m.donationId))).find(Boolean);
+        auditLog.push({
+          type: "disbursed",
+          requestId: r.requestId,
+          aidCategory: r.aidCategory,
+          adminId: r.disbursedBy,
+          timestamp: r.disbursedAt,
+          transactionId
+        });
+      }
+      if (r.emergencyOverrideAt) auditLog.push({
+        type: "override_approved",
+        requestId: r.requestId,
+        aidCategory: r.aidCategory,
+        adminId: r.emergencyOverrideBy,
+        timestamp: r.emergencyOverrideAt
+      });
+    });
+    auditLog.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
     res.json({
       verifiedMoms: {
         currentTotal: totalVerified,
-        currentMonth: verifiedThisMonth,
-        previousMonth: verifiedPrevMonth
+        currentPeriod: verifiedThisMonth,
+        previousPeriod: verifiedPrevMonth
       },
       financialAid: {
-        currentMonth: financialAgg[0]?.total || 0,
-        previousMonth: financialAggPrev[0]?.total || 0
+        currentPeriod: financialAgg[0]?.total || 0,
+        previousPeriod: financialAggPrev[0]?.total || 0
       },
       essentialsDistributed: {
-        currentMonthItems: essentialsAgg[0]?.total || 0,
-        previousMonthItems: essentialsAggPrev[0]?.total || 0
+        currentPeriodItems: essentialsAgg[0]?.total || 0,
+        previousPeriodItems: essentialsAggPrev[0]?.total || 0
       },
-      retention
+      retention,
+      aidDisbursementSummary: {
+        totalFundsReceived,
+        totalFundsDisbursed,
+        remainingBalance,
+        essentialsItemsDisbursed: essentialsDisbursedAllAgg[0]?.total || 0,
+        breakdown: {
+          week: weekBreakdown,
+          month: monthBreakdown,
+          semester: semesterBreakdown
+        }
+      },
+      beneficiaryActivity: {
+        supportedStudents: supportedStudents.length,
+        requestsPerStudent,
+        avgAidPerStudent,
+        repeatBeneficiaries,
+        newBeneficiaries
+      },
+      pendingRejected: {
+        pendingReview: pendingReviewCount,
+        waitingFunds: waitingFundsCount,
+        rejectedCount,
+        rejectionReasons: rejectedReasonsAgg.map(r => ({ reason: r._id, count: r.count }))
+      },
+      rateLimitOverride: {
+        rateLimitBlocks,
+        overrideUsageCount,
+        overrideAdmins: overrideAdminsAgg,
+        overrideCategories: overrideCategoriesAgg.map(r => ({ category: r._id, count: r.count }))
+      },
+      disbursementMethod: {
+        byPaymentMethod: disbursementByMethodAgg.map(r => ({ method: r._id || "unknown", totalAmount: r.totalAmount, count: r.disbursementCount })),
+        successfulDisbursements,
+        failedDisbursements,
+        averageProcessingTimeHours: Number((avgProcessingMs / (1000 * 60 * 60)).toFixed(2))
+      },
+      impactSnapshot: {
+        retention,
+        semesterOutcomes: {
+          current: currentSemesterSummary,
+          previous: previousSemesterSummary
+        },
+        feedbackStats
+      },
+      auditCompliance: {
+        recentEvents: auditLog.slice(0, 100)
+      },
+      period,
+      window: { currentStart, currentEnd: now, previousStart, previousEnd }
     });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });

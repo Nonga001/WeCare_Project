@@ -9,7 +9,6 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import { getAidStats } from "../../../services/aidService";
 import { getDonorStats } from "../../../services/donationService";
-import BrowseRequests from "./BrowseRequests";
 
 const DonorHome = () => {
   const { user } = useAuth();
@@ -107,9 +106,6 @@ const DonorHome = () => {
           </div>
         </Card>
 
-        <Card title="Browse Requests">
-          <BrowseRequests initialLimit={2} />
-        </Card>
       </div>
 
       <div className="space-y-4">

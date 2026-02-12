@@ -224,6 +224,12 @@ export const login = async (req, res) => {
           isApproved: user.isApproved,
           university: user.university,
           department: user.department,
+          organization: user.organization,
+          phone: user.phone,
+          donorType: user.donorType,
+          donorPreference: user.donorPreference,
+          contactPerson: user.contactPerson,
+          csrFocus: user.csrFocus,
         },
       });
     }
@@ -245,6 +251,11 @@ export const login = async (req, res) => {
         university: user.university,
         department: user.department,
         organization: user.organization,
+        phone: user.phone,
+        donorType: user.donorType,
+        donorPreference: user.donorPreference,
+        contactPerson: user.contactPerson,
+        csrFocus: user.csrFocus,
       },
     });
   } catch (err) {

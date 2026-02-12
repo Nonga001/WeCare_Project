@@ -380,10 +380,6 @@ const DashboardLayout = ({ title, children }) => {
                     className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-semibold transition ${isActive ? 'bg-gradient-to-r from-stone-700 to-stone-800 text-white shadow' : 'text-stone-800 hover:bg-stone-50 dark:text-stone-100 dark:hover:bg-slate-800/50'}`}
                   >Donations</NavLink>
                   <NavLink
-                    to="/dashboard/donor/browse"
-                    className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-semibold transition ${isActive ? 'bg-gradient-to-r from-stone-700 to-stone-800 text-white shadow' : 'text-stone-800 hover:bg-stone-50 dark:text-stone-100 dark:hover:bg-slate-800/50'}`}
-                  >Browse</NavLink>
-                  <NavLink
                     to="/dashboard/donor/reports"
                     className={({ isActive }) => `px-3 py-1 rounded-md text-sm font-semibold transition ${isActive ? 'bg-gradient-to-r from-stone-700 to-stone-800 text-white shadow' : 'text-stone-800 hover:bg-stone-50 dark:text-stone-100 dark:hover:bg-slate-800/50'}`}
                   >Reports</NavLink>
@@ -605,9 +601,6 @@ const DashboardLayout = ({ title, children }) => {
                       </NavLink>
                       <NavLink to="/dashboard/donor/donations" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-stone-600 to-stone-700 text-white shadow' : 'text-slate-800 hover:bg-stone-50 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
                         <span className="text-sm font-medium">Donations</span>
-                      </NavLink>
-                      <NavLink to="/dashboard/donor/browse" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-stone-600 to-stone-700 text-white shadow' : 'text-slate-800 hover:bg-stone-50 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
-                        <span className="text-sm font-medium">Browse</span>
                       </NavLink>
                       <NavLink to="/dashboard/donor/reports" onClick={()=>setMobileOpen(false)} className={({isActive})=>`flex items-center gap-3 px-3 py-2 rounded-lg ${isActive? 'bg-gradient-to-r from-stone-600 to-stone-700 text-white shadow' : 'text-slate-800 hover:bg-stone-50 dark:text-slate-200 dark:hover:bg-slate-800/50'}`}>
                         <span className="text-sm font-medium">Reports</span>
