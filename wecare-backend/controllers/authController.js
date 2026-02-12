@@ -219,6 +219,11 @@ export const login = async (req, res) => {
       return res.status(403).json({ message: "Account suspended. Contact support." });
     }
 
+    // Update lastActive and generate JWT before approval checks
+    user.lastActive = new Date();
+    await user.save();
+    const token = await generateToken(user);
+
     // Approval checks: admins approved by superadmin; students by their admin
     if ((user.role === "admin" || user.role === "student") && !user.isApproved) {
       const pendingBy = user.role === "admin" ? "Super Admin" : "Your University Admin";
@@ -245,11 +250,6 @@ export const login = async (req, res) => {
         },
       });
     }
-
-    // Update lastActive and generate JWT
-    user.lastActive = new Date();
-    await user.save();
-    const token = await generateToken(user);
 
     res.json({
       message: `${role} login successful`,

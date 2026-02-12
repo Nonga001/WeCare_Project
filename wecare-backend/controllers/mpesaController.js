@@ -65,6 +65,10 @@ export const handleMpesaCallback = async (req, res) => {
       donation.mpesaReceiptNumber = values.receiptNumber || donation.mpesaReceiptNumber;
       donation.mpesaTransactionDate = values.transactionDate || donation.mpesaTransactionDate;
       donation.mpesaPhoneNumber = values.phone || donation.mpesaPhoneNumber;
+    } else if (callback.ResultCode === 1001) {
+      // User cancelled the STK prompt
+      donation.status = "failed";
+      donation.mpesaResultDesc = "User cancelled the payment prompt";
     } else {
       donation.status = "failed";
     }

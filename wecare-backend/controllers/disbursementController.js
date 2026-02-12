@@ -197,6 +197,15 @@ export const disburseWithMatch = async (req, res) => {
         disbursedAt: new Date()
       });
 
+      // Credit student wallet
+      await creditWallet(
+        aidRequest.student,
+        aidRequest.amount,
+        aidRequest._id,
+        donation._id,
+        `Disbursement for ${aidRequest.aidCategory} aid request`
+      );
+
     } else if (aidRequest.type === "essentials") {
       // Check if donation can fulfill the request
       const availableItems = {};

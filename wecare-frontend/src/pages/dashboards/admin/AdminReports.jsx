@@ -316,12 +316,13 @@ const AdminReports = () => {
         {(audit.recentEvents || []).length === 0 ? (
           <div className="text-sm text-slate-500 dark:text-slate-400">No recent events.</div>
         ) : (
-          <div className="overflow-auto">
-            <table className="min-w-full text-sm">
+          <div className="overflow-auto rounded-lg border border-slate-100 dark:border-slate-700">
+            <table className="min-w-full text-sm text-slate-700 dark:text-slate-200">
               <thead>
-                <tr className="text-left text-slate-600 dark:text-slate-300">
+                <tr className="text-left text-slate-600 dark:text-slate-200 bg-slate-50 dark:bg-slate-900/60">
                   <th className="py-2 pr-4">Time</th>
                   <th className="py-2 pr-4">Type</th>
+                  <th className="py-2 pr-4">Admin</th>
                   <th className="py-2 pr-4">Request</th>
                   <th className="py-2 pr-4">Category</th>
                   <th className="py-2">Transaction</th>
@@ -329,9 +330,10 @@ const AdminReports = () => {
               </thead>
               <tbody>
                 {(audit.recentEvents || []).map((e, idx) => (
-                  <tr key={`${e.requestId}-${idx}`} className="border-t border-slate-100 dark:border-slate-700">
+                  <tr key={`${e.requestId}-${idx}`} className="border-t border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/60">
                     <td className="py-2 pr-4">{new Date(e.timestamp).toLocaleString()}</td>
                     <td className="py-2 pr-4">{e.type.replace(/_/g, " ")}</td>
+                    <td className="py-2 pr-4">{e.adminName || "-"}</td>
                     <td className="py-2 pr-4">{e.requestId || "-"}</td>
                     <td className="py-2 pr-4 capitalize">{e.aidCategory || "-"}</td>
                     <td className="py-2">{e.transactionId || "-"}</td>
@@ -366,6 +368,21 @@ const AdminReports = () => {
           <button onClick={() => {
             const w = window.open('', '_blank');
             if (!w) return;
+            const auditRows = (audit.recentEvents || []).slice(0, 10).map((e) => `
+              <tr>
+                <td>${new Date(e.timestamp).toLocaleString()}</td>
+                <td>${String(e.type || '').replace(/_/g, ' ')}</td>
+                <td>${e.adminName || '-'}</td>
+                <td>${e.requestId || '-'}</td>
+                <td>${e.aidCategory || '-'}</td>
+              </tr>
+            `).join('');
+            const rejectionRows = (pendingRejected.rejectionReasons || []).map((r) => `
+              <li>${r.reason}: ${r.count}</li>
+            `).join('') || '<li>None</li>';
+            const methodRows = (methodReport.byPaymentMethod || []).map((m) => `
+              <li>${String(m.method || 'unknown').toUpperCase()}: ${formatCurrency(m.totalAmount)} (${m.count})</li>
+            `).join('') || '<li>None</li>';
             const html = `
               <html>
                 <head>
@@ -377,6 +394,8 @@ const AdminReports = () => {
                     table{border-collapse:collapse;width:100%;margin-top:12px}
                     th,td{border:1px solid #e2e8f0;padding:8px 10px;text-align:left;font-size:12px}
                     th{background:#f8fafc}
+                    h3{margin:20px 0 8px 0}
+                    ul{margin:8px 0 0 16px;padding:0}
                   </style>
                 </head>
                 <body>
@@ -391,6 +410,76 @@ const AdminReports = () => {
                       <tr><td>Financial Aid (KES)</td><td>${fa.currentPeriod || 0}</td><td>${fa.previousPeriod || 0}</td></tr>
                       <tr><td>Essentials Items</td><td>${ed.currentPeriodItems || 0}</td><td>${ed.previousPeriodItems || 0}</td></tr>
                       <tr><td>Retention (%)</td><td>${retention}</td><td>-</td></tr>
+                    </tbody>
+                  </table>
+
+                  <h3>Aid Disbursement Summary</h3>
+                  <table>
+                    <thead>
+                      <tr><th>Funds Received</th><th>Funds Disbursed</th><th>Remaining</th><th>Essentials Items</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>${formatCurrency(summary.totalFundsReceived)}</td>
+                        <td>${formatCurrency(summary.totalFundsDisbursed)}</td>
+                        <td>${formatCurrency(summary.remainingBalance)}</td>
+                        <td>${summary.essentialsItemsDisbursed || 0}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  <h3>Beneficiary Activity</h3>
+                  <table>
+                    <thead>
+                      <tr><th>Supported Students</th><th>Requests per Student</th><th>Avg Aid per Student</th><th>Repeat vs New</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>${beneficiary.supportedStudents || 0}</td>
+                        <td>${beneficiary.requestsPerStudent || 0}</td>
+                        <td>${formatCurrency(beneficiary.avgAidPerStudent)}</td>
+                        <td>${beneficiary.repeatBeneficiaries || 0} / ${beneficiary.newBeneficiaries || 0}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  <h3>Pending & Rejected</h3>
+                  <table>
+                    <thead>
+                      <tr><th>Pending Review</th><th>Waiting for Funds</th><th>Rejected</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>${pendingRejected.pendingReview || 0}</td>
+                        <td>${pendingRejected.waitingFunds || 0}</td>
+                        <td>${pendingRejected.rejectedCount || 0}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <div><strong>Top Rejection Reasons:</strong><ul>${rejectionRows}</ul></div>
+
+                  <h3>Disbursement Method</h3>
+                  <table>
+                    <thead>
+                      <tr><th>Successful</th><th>Failed</th><th>Avg Processing (hrs)</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>${methodReport.successfulDisbursements || 0}</td>
+                        <td>${methodReport.failedDisbursements || 0}</td>
+                        <td>${methodReport.averageProcessingTimeHours || 0}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <div><strong>By Payment Method:</strong><ul>${methodRows}</ul></div>
+
+                  <h3>Audit & Compliance (Recent 10)</h3>
+                  <table>
+                    <thead>
+                      <tr><th>Time</th><th>Type</th><th>Admin</th><th>Request</th><th>Category</th></tr>
+                    </thead>
+                    <tbody>
+                      ${auditRows || '<tr><td colspan="5">No recent events.</td></tr>'}
                     </tbody>
                   </table>
                 </body>

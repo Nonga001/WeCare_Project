@@ -88,19 +88,80 @@ httpServer.listen(PORT, async () => {
   console.log(`🚀 Server running on port ${PORT}`);
   try {
     // Ensure a single global group exists for all students
-    let global = await Group.findOne({ isGlobal: true, name: "All Universities Students" });
-    if (!global) {
-      // Make all university admins moderators of this global group
-      const admins = await User.find({ role: "admin" }).select("_id");
-      global = await Group.create({
-        name: "All Universities Students",
-        isGlobal: true,
-        createdBy: admins[0]?._id || (await User.findOne({ role: "superadmin" }))?._id,
-        moderators: admins.map(a => a._id)
-      });
-      console.log("✅ Created global group: All Universities Students");
+    const admins = await User.find({ role: "admin" }).select("_id");
+    const superadmin = await User.findOne({ role: "superadmin" }).select("_id");
+    const seededSuperadmin = await User.findOne({ email: "wecare@admin.com" }).select("_id");
+    const creatorId = admins[0]?._id || superadmin?._id || seededSuperadmin?._id;
+    
+    if (creatorId) {
+      let global = await Group.findOne({ isGlobal: true, name: "All Universities Students" });
+      if (!global) {
+        // Make all university admins moderators of this global group
+        global = await Group.create({
+          name: "All Universities Students",
+          isGlobal: true,
+          createdBy: creatorId,
+          moderators: admins.map(a => a._id)
+        });
+        console.log("✅ Created global group: All Universities Students");
+      }
+    } else {
+      console.log("ℹ️  Skipping global group creation - no admins or superadmin found");
     }
   } catch (e) {
     console.error("Failed to ensure global group:", e?.message || e);
   }
+
+  // Background task: Sync old pending donations with M-Pesa status
+  const syncPendingDonations = async () => {
+    try {
+      const Donation = (await import("./models/Donation.js")).default;
+      const { querySTKPushStatus } = await import("./services/mpesaService.js");
+      
+      // Find donations pending for more than 2 minutes but less than 3 minutes
+      const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
+      const threeMinutesAgo = new Date(Date.now() - 3 * 60 * 1000);
+      
+      const pendingDonations = await Donation.find({
+        status: "pending",
+        paymentMethod: "mpesa",
+        mpesaCheckoutRequestId: { $exists: true, $ne: null },
+        createdAt: { $lt: twoMinutesAgo }
+      }).limit(10);
+
+      for (const donation of pendingDonations) {
+        try {
+          const response = await querySTKPushStatus(donation.mpesaCheckoutRequestId);
+          const resultCode = Number(response?.ResultCode ?? response?.ResponseCode ?? NaN);
+          
+          if (!Number.isNaN(resultCode)) {
+            donation.mpesaResultCode = resultCode;
+            donation.mpesaResultDesc = response?.ResultDesc || response?.ResponseDescription;
+            
+            if (resultCode === 0) {
+              donation.status = "confirmed";
+              await donation.save();
+              console.log(`[Sync] Updated donation ${donation._id.toString()} to confirmed`);
+            } else if (resultCode === 1001 || resultCode === 1002) {
+              donation.status = "failed";
+              if (resultCode === 1001) {
+                donation.mpesaResultDesc = "User cancelled the payment prompt";
+              }
+              await donation.save();
+              console.log(`[Sync] Updated donation ${donation._id.toString()} to failed`);
+            }
+          }
+        } catch (err) {
+          console.warn(`[Sync] Failed to check donation ${donation._id.toString()}:`, err.message);
+        }
+      }
+    } catch (err) {
+      console.warn("[Sync] Background sync task failed:", err.message);
+    }
+  };
+
+  // Run sync task every 30 seconds
+  setInterval(syncPendingDonations, 30 * 1000);
+  console.log("✅ Background donation sync task started");
+
 });

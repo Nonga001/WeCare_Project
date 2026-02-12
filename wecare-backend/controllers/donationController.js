@@ -128,6 +128,7 @@ export const queryDonationStatus = async (req, res) => {
     }
 
     const { donationId } = req.params;
+    const force = req.query.force === "true";  // Allow forced refresh to bypass timeout checks
     const donation = await Donation.findOne({ _id: donationId, donor: req.user._id });
     if (!donation) {
       return res.status(404).json({ message: "Donation not found" });
@@ -145,49 +146,65 @@ export const queryDonationStatus = async (req, res) => {
       return res.json({ donation, mpesa: null });
     }
 
-    if (donation.status === "pending") {
-      const createdAt = donation.createdAt ? new Date(donation.createdAt).getTime() : 0;
-      const pendingLimitMs = 2 * 60 * 1000;
-      if (createdAt && Date.now() - createdAt > pendingLimitMs) {
-        donation.status = "failed";
-        donation.mpesaResultDesc = "Payment timed out after 2 minutes.";
+    // Skip timeout checks if force=true (manual refresh requested)
+    if (!force) {
+      if (donation.status === "pending") {
+        const createdAt = donation.createdAt ? new Date(donation.createdAt).getTime() : 0;
+        const pendingLimitMs = 3 * 60 * 1000;  // Give M-Pesa 3 minutes to respond (user might be slow entering PIN)
+        if (createdAt && Date.now() - createdAt > pendingLimitMs) {
+          // Only mark as failed if we've been waiting more than 3 minutes with no response from M-Pesa
+          donation.status = "failed";
+          donation.mpesaResultDesc = "No response from M-Pesa after 3 minutes. Please try again.";
+          await donation.save();
+          return res.json({ donation, mpesa: null });
+        }
+      }
+
+      if (donation.status === "failed") {
+        const updatedAt = donation.updatedAt ? new Date(donation.updatedAt).getTime() : 0;
+        const graceWindowMs = 1 * 60 * 1000;  // 1 minute instead of 2
+        if (Date.now() - updatedAt > graceWindowMs) {
+          return res.json({ donation, mpesa: null });
+        }
+      }
+    }
+
+    try {
+      const response = await querySTKPushStatus(donation.mpesaCheckoutRequestId);
+      const resultCode = Number(response?.ResultCode ?? response?.ResponseCode ?? NaN);
+      const resultDesc = response?.ResultDesc || response?.ResponseDescription;
+
+      if (!Number.isNaN(resultCode)) {
+        donation.mpesaResultCode = resultCode;
+        donation.mpesaResultDesc = resultDesc || donation.mpesaResultDesc;
+
+        if (resultCode === 0) {
+          donation.status = "confirmed";
+        } else if (resultCode === 1001 || resultCode === 1002) {
+          // 1001 = User cancelled prompt, 1002 = Timed out
+          donation.status = "failed";
+          if (resultCode === 1001 && !donation.mpesaResultDesc?.includes("cancelled")) {
+            donation.mpesaResultDesc = "User cancelled the payment prompt";
+          }
+        } else {
+          donation.status = "failed";
+        }
+
         await donation.save();
-        return res.json({ donation, mpesa: null });
-      }
-    }
-
-    if (donation.status === "failed") {
-      const updatedAt = donation.updatedAt ? new Date(donation.updatedAt).getTime() : 0;
-      const graceWindowMs = 2 * 60 * 1000;
-      if (Date.now() - updatedAt > graceWindowMs) {
-        return res.json({ donation, mpesa: null });
-      }
-    }
-
-    const response = await querySTKPushStatus(donation.mpesaCheckoutRequestId);
-    const resultCode = Number(response?.ResultCode ?? response?.ResponseCode ?? NaN);
-    const resultDesc = response?.ResultDesc || response?.ResponseDescription;
-
-    if (!Number.isNaN(resultCode)) {
-      donation.mpesaResultCode = resultCode;
-      donation.mpesaResultDesc = resultDesc || donation.mpesaResultDesc;
-
-      if (resultCode === 0) {
-        donation.status = "confirmed";
-      } else {
-        donation.status = "failed";
+        console.log("[M-Pesa] Status query response:", {
+          id: donation._id.toString(),
+          status: donation.status,
+          resultCode: donation.mpesaResultCode,
+          resultDesc: donation.mpesaResultDesc,
+        });
       }
 
-      await donation.save();
-      console.log("[M-Pesa] Status query response:", {
-        id: donation._id.toString(),
-        status: donation.status,
-        resultCode: donation.mpesaResultCode,
-        resultDesc: donation.mpesaResultDesc,
-      });
+      res.json({ donation, mpesa: response });
+    } catch (mpesaErr) {
+      console.error("[M-Pesa] Query failed:", mpesaErr.message);
+      // Return donation with last known status instead of throwing 500
+      res.json({ donation, mpesa: null, note: "Could not reach M-Pesa service" });
     }
-
-    res.json({ donation, mpesa: response });
   } catch (err) {
     res.status(500).json({ message: err?.message || "Failed to query payment" });
   }
@@ -260,20 +277,30 @@ export const getDonorStats = async (req, res) => {
       previousStart = new Date(currentStart.getFullYear(), currentStart.getMonth() - 1, 1);
     }
 
+    const successfulStatuses = ["confirmed", "disbursed", "partially_disbursed"];
+
     const buildStats = async (start, end) => {
       const match = { donor: req.user._id, createdAt: { $gte: start, $lt: end } };
+      const disbursedMatch = { donor: req.user._id };
+      const disbursedWindow = { $gte: start, $lt: end };
+
       const [donationsCount, mothersSupported, financialDonated, essentialsDonated] = await Promise.all([
-        Donation.countDocuments(match),
+        Donation.countDocuments({ ...match, status: { $in: successfulStatuses } }),
         Donation.aggregate([
-          { $match: match },
-          { $group: { _id: null, total: { $sum: "$mothersSupported" } } }
+          { $match: disbursedMatch },
+          { $unwind: "$disbursedTo" },
+          { $match: { "disbursedTo.disbursedAt": disbursedWindow } },
+          { $lookup: { from: "aidrequests", localField: "disbursedTo.aidRequestId", foreignField: "_id", as: "ar" } },
+          { $unwind: "$ar" },
+          { $group: { _id: "$ar.student" } },
+          { $count: "total" }
         ]),
         Donation.aggregate([
-          { $match: { ...match, type: "financial" } },
+          { $match: { ...match, type: "financial", status: { $in: ["confirmed", "pending"] } } },
           { $group: { _id: null, total: { $sum: { $ifNull: ["$amount", 0] } } } }
         ]),
         Donation.aggregate([
-          { $match: { ...match, type: "essentials" } },
+          { $match: { ...match, type: "essentials", status: { $in: ["confirmed", "pending"] } } },
           { $unwind: { path: "$items", preserveNullAndEmptyArrays: true } },
           { $group: { _id: null, total: { $sum: { $ifNull: ["$items.quantity", 0] } } } }
         ])
@@ -290,17 +317,21 @@ export const getDonorStats = async (req, res) => {
     const buildAllTime = async () => {
       const match = { donor: req.user._id };
       const [donationsCount, mothersSupported, financialDonated, essentialsDonated] = await Promise.all([
-        Donation.countDocuments(match),
+        Donation.countDocuments({ ...match, status: { $in: successfulStatuses } }),
         Donation.aggregate([
           { $match: match },
-          { $group: { _id: null, total: { $sum: "$mothersSupported" } } }
+          { $unwind: "$disbursedTo" },
+          { $lookup: { from: "aidrequests", localField: "disbursedTo.aidRequestId", foreignField: "_id", as: "ar" } },
+          { $unwind: "$ar" },
+          { $group: { _id: "$ar.student" } },
+          { $count: "total" }
         ]),
         Donation.aggregate([
-          { $match: { ...match, type: "financial" } },
+          { $match: { ...match, type: "financial", status: { $in: ["confirmed", "pending"] } } },
           { $group: { _id: null, total: { $sum: { $ifNull: ["$amount", 0] } } } }
         ]),
         Donation.aggregate([
-          { $match: { ...match, type: "essentials" } },
+          { $match: { ...match, type: "essentials", status: { $in: ["confirmed", "pending"] } } },
           { $unwind: { path: "$items", preserveNullAndEmptyArrays: true } },
           { $group: { _id: null, total: { $sum: { $ifNull: ["$items.quantity", 0] } } } }
         ])
@@ -463,20 +494,20 @@ export const getSuperAnalytics = async (req, res) => {
       AidRequest.countDocuments({ status: "disbursed" })
     ]);
 
-    // Donation totals and balances
+    // Donation totals and balances (only successful donations)
     const financialAgg = await Donation.aggregate([
-      { $match: { type: "financial" } },
+      { $match: { type: "financial", status: { $in: ["confirmed", "disbursed", "partially_disbursed"] } } },
       { $group: { _id: null, amount: { $sum: { $ifNull: ["$amount", 0] } }, disbursed: { $sum: { $ifNull: ["$disbursedAmount", 0] } } } }
     ]);
 
     const essentialsAgg = await Donation.aggregate([
-      { $match: { type: "essentials" } },
+      { $match: { type: "essentials", status: { $in: ["confirmed", "disbursed", "partially_disbursed"] } } },
       { $unwind: { path: "$items", preserveNullAndEmptyArrays: true } },
       { $group: { _id: null, itemsTotal: { $sum: { $ifNull: ["$items.quantity", 0] } } } }
     ]);
 
     const essentialsDisbursedAgg = await Donation.aggregate([
-      { $match: { type: "essentials" } },
+      { $match: { type: "essentials", status: { $in: ["confirmed", "disbursed", "partially_disbursed"] } } },
       { $unwind: { path: "$disbursedItems", preserveNullAndEmptyArrays: true } },
       { $group: { _id: null, itemsDisbursed: { $sum: { $ifNull: ["$disbursedItems.quantity", 0] } } } }
     ]);
@@ -504,9 +535,9 @@ export const getSuperAnalytics = async (req, res) => {
     const windowStats = async (start, end) => {
       const [users, donationsCount, donationsAmount, requests, fulfilled] = await Promise.all([
         User.countDocuments({ createdAt: { $gte: start, $lt: end || now } }),
-        Donation.countDocuments({ createdAt: { $gte: start, $lt: end || now } }),
+        Donation.countDocuments({ status: { $in: ["confirmed", "disbursed", "partially_disbursed"] }, createdAt: { $gte: start, $lt: end || now } }),
         Donation.aggregate([
-          { $match: { createdAt: { $gte: start, $lt: end || now }, type: "financial" } },
+          { $match: { createdAt: { $gte: start, $lt: end || now }, type: "financial", status: { $in: ["confirmed", "disbursed", "partially_disbursed"] } } },
           { $group: { _id: null, total: { $sum: { $ifNull: ["$amount", 0] } } } }
         ]),
         AidRequest.countDocuments({ createdAt: { $gte: start, $lt: end || now } }),
@@ -531,11 +562,11 @@ export const getSuperAnalytics = async (req, res) => {
     const flowWindow = async (start, end) => {
       const [inflowAgg, outflowAgg] = await Promise.all([
         Donation.aggregate([
-          { $match: { type: "financial", createdAt: { $gte: start, $lt: end || now } } },
+          { $match: { type: "financial", status: { $in: ["confirmed", "disbursed", "partially_disbursed"] }, createdAt: { $gte: start, $lt: end || now } } },
           { $group: { _id: null, total: { $sum: { $ifNull: ["$amount", 0] } } } }
         ]),
         Donation.aggregate([
-          { $match: { type: "financial", disbursedAt: { $gte: start, $lt: end || now } } },
+          { $match: { type: "financial", status: { $in: ["confirmed", "disbursed", "partially_disbursed"] }, disbursedAt: { $gte: start, $lt: end || now } } },
           { $group: { _id: null, total: { $sum: { $ifNull: ["$disbursedAmount", 0] } } } }
         ])
       ]);
@@ -852,7 +883,8 @@ export const getSuperAnalytics = async (req, res) => {
         fulfilled: totalFulfilled,
         donations: {
           financialAmount: totalFinancialDonations,
-          essentialsItems: totalEssentialsItems
+          essentialsItems: totalEssentialsItems,
+          count: successCount
         }
       },
       funding: {

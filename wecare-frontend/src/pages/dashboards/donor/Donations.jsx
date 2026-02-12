@@ -19,6 +19,7 @@ const Donations = () => {
   const [showAllHistory, setShowAllHistory] = useState(false);
   const [loading, setLoading] = useState(false);
   const [clearing, setClearing] = useState(false);
+  const [refreshing, setRefreshing] = useState(null);  // Track which donation is being refreshed
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [paymentState, setPaymentState] = useState({
@@ -27,8 +28,8 @@ const Donations = () => {
     message: "",
     startedAt: null
   });
-  const paymentTimeoutMs = 2 * 60 * 1000;
-  const paymentGraceMs = 2 * 60 * 1000;
+  const paymentTimeoutMs = 3 * 60 * 1000;
+  const paymentGraceMs = 3 * 60 * 1000;
 
   const handle = (e) => setForm({ ...form, [e.target.name]: e.target.value });
   const handlePhone = (e) => {
@@ -151,22 +152,29 @@ const Donations = () => {
     if (!user?.token || !paymentState.donationId) return undefined;
     if (paymentState.status !== "waiting" && paymentState.status !== "timeout") return undefined;
     const startedAt = paymentState.startedAt || Date.now();
-    const pollStatus = async () => {
-      try {
-        const data = await queryDonationStatus(user?.token, paymentState.donationId);
-        if (data?.donation) upsertDonation(data.donation);
-      } catch (err) {
-        console.error("Failed to query donation status:", err);
-      }
-    };
+    
+    // Start polling after 30 seconds delay
+    const delayMs = 30 * 1000;
+    const pollStart = setTimeout(() => {
+      const pollStatus = async () => {
+        try {
+          const data = await queryDonationStatus(user?.token, paymentState.donationId);
+          if (data?.donation) upsertDonation(data.donation);
+        } catch (err) {
+          console.error("Failed to query donation status:", err);
+        }
+      };
 
-    pollStatus();
-    const interval = setInterval(pollStatus, 5000);
-    const timeoutId = setTimeout(() => clearInterval(interval), paymentGraceMs - (Date.now() - startedAt));
-    return () => {
-      clearInterval(interval);
-      clearTimeout(timeoutId);
-    };
+      pollStatus();
+      const interval = setInterval(pollStatus, 5000);
+      const timeoutId = setTimeout(() => clearInterval(interval), paymentGraceMs - (Date.now() - startedAt));
+      return () => {
+        clearInterval(interval);
+        clearTimeout(timeoutId);
+      };
+    }, delayMs);
+    
+    return () => clearTimeout(pollStart);
   }, [user?.token, paymentState.status, paymentState.donationId, paymentState.startedAt]);
 
   useEffect(() => {
@@ -186,7 +194,8 @@ const Donations = () => {
 
     if (latest.status === "failed") {
       const desc = (latest.mpesaResultDesc || "").toLowerCase();
-      const cancelled = desc.includes("cancelled") || desc.includes("canceled");
+      const resultCode = latest.mpesaResultCode;
+      const cancelled = resultCode === 1001 || resultCode === 1002 || desc.includes("cancelled") || desc.includes("canceled");
       setPaymentState({
         status: cancelled ? "canceled" : "failed",
         donationId: paymentState.donationId,
@@ -213,7 +222,7 @@ const Donations = () => {
         setPaymentState((prev) => ({
           ...prev,
           status: "timeout",
-          message: "No response received yet. We will keep checking briefly."
+          message: "Taking longer than expected. Check your phone for the M-Pesa prompt. We'll keep checking for you."
         }));
       }
     };
@@ -241,6 +250,21 @@ const Donations = () => {
       setError(message);
     } finally {
       setClearing(false);
+    }
+  };
+
+  const handleRefreshDonationStatus = async (donationId) => {
+    try {
+      setRefreshing(donationId);
+      const data = await queryDonationStatus(user?.token, donationId, true);  // force=true
+      if (data?.donation) {
+        upsertDonation(data.donation);
+      }
+    } catch (err) {
+      console.error("Failed to refresh donation status:", err);
+      setError("Failed to refresh donation status");
+    } finally {
+      setRefreshing(null);
     }
   };
 
@@ -419,14 +443,27 @@ const Donations = () => {
                   <p className="text-slate-500 dark:text-slate-400 text-xs">
                     Reference: {getReferenceId(donation)}
                   </p>
-                  <p className="text-slate-500 dark:text-slate-400 text-xs">
-                    Status: <span className={`font-medium ${
-                      (donation.status || 'pending') === 'pending' ? 'text-yellow-600' :
-                      donation.status === 'confirmed' ? 'text-blue-600' :
-                      donation.status === 'disbursed' ? 'text-green-600' :
-                      donation.status === 'failed' ? 'text-rose-600' : 'text-gray-600'
-                    }`}>{donation.status || 'pending'}</span>
-                  </p>
+                  <div className="flex items-center justify-between mt-2">
+                    <p className="text-slate-500 dark:text-slate-400 text-xs">
+                      Status: <span className={`font-medium ${
+                        (donation.status || 'pending') === 'pending' ? 'text-yellow-600' :
+                        donation.status === 'confirmed' ? 'text-blue-600' :
+                        donation.status === 'disbursed' ? 'text-green-600' :
+                        donation.status === 'failed' ? 'text-rose-600' : 'text-gray-600'
+                      }`}>{donation.status || 'pending'}</span>
+                    </p>
+                    {donation.paymentMethod === 'mpesa' && (donation.status === 'pending' || donation.status === 'failed') && (
+                      <button
+                        type="button"
+                        onClick={() => handleRefreshDonationStatus(donation._id)}
+                        disabled={refreshing === donation._id}
+                        className="text-xs font-semibold text-stone-600 hover:text-stone-800 dark:text-stone-400 disabled:opacity-50"
+                        title="Refresh payment status"
+                      >
+                        {refreshing === donation._id ? 'Checking...' : 'Refresh'}
+                      </button>
+                    )}
+                  </div>
                   {donation.mpesaResultDesc && (
                     <p className="text-slate-500 dark:text-slate-400 text-xs">
                       Result: {donation.mpesaResultDesc}
@@ -479,9 +516,6 @@ const Donations = () => {
                   )}
                   {paymentState.status === "success" && (
                     <span className="text-emerald-700 dark:text-emerald-300 text-sm">✓ Payment successful.</span>
-                  )}
-                  {paymentState.status === "failed" && (
-                    <span className="text-rose-700 dark:text-rose-300 text-sm">⚠ Payment failed.</span>
                   )}
                   {paymentState.status === "timeout" && (
                     <span className="text-amber-700 dark:text-amber-300 text-sm">⏳ Payment taking longer than usual.</span>

@@ -20,8 +20,9 @@ export const clearMyDonations = async (token) => {
   return res.data;
 };
 
-export const queryDonationStatus = async (token, donationId) => {
-  const res = await axios.get(`${API_URL}/${donationId}/status`, auth(token));
+export const queryDonationStatus = async (token, donationId, force = false) => {
+  const query = force ? "?force=true" : "";
+  const res = await axios.get(`${API_URL}/${donationId}/status${query}`, auth(token));
   return res.data;
 };
 

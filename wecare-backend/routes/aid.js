@@ -38,7 +38,7 @@ router.post("/:id/disburse", requireAdminDepartment, disburseAid);
 
 // Stats - require admin department
 router.get("/stats", requireAdminDepartment, getAidStats);
-router.get("/reports", requireAdminDepartment, getAdminReports);
+router.get("/reports", getAdminReports);
 router.get("/clarifications/recent", requireAdminDepartment, getRecentClarificationResponses);
 
 export default router;

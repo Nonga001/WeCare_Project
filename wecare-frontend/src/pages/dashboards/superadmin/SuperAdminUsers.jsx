@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useAuth } from "../../../context/AuthContext";
-import { listUsers, approveAdmin as approveAdminApi, suspendUser, resetAdminDepartmentByAdmin } from "../../../services/userService";
+import { listUsers, approveAdmin as approveAdminApi, approveAdminsBulk as approveAdminsBulkApi, suspendUser, resetAdminDepartmentByAdmin } from "../../../services/userService";
 
 const SuperAdminUsers = () => {
   const { user } = useAuth();
@@ -53,12 +53,41 @@ const SuperAdminUsers = () => {
 
   const handleApproveAdmin = async (id) => {
     try {
-      await approveAdminApi(token, id);
+      const res = await approveAdminApi(token, id);
+      setUsers((prev) =>
+        prev.map((u) => (u._id === id ? { ...u, isApproved: true } : u))
+      );
+      alert("Admin approved");
       setSuccess("Admin approved successfully");
       setTimeout(() => setSuccess(""), 3000);
       await fetchUsers();
     } catch (err) {
       setError(err.response?.data?.message || "Failed to approve admin");
+      setTimeout(() => setError(""), 3000);
+    }
+  };
+
+  const handleBulkApproveAdmins = async () => {
+    try {
+      const selectedAdmins = users
+        .filter((u) => selectedUsers.includes(u._id) && u.role === "admin" && !u.isApproved)
+        .map((u) => u._id);
+      if (selectedAdmins.length === 0) {
+        setError("No pending admins selected");
+        setTimeout(() => setError(""), 3000);
+        return;
+      }
+      await approveAdminsBulkApi(token, selectedAdmins);
+      setUsers((prev) =>
+        prev.map((u) => (selectedAdmins.includes(u._id) ? { ...u, isApproved: true } : u))
+      );
+      alert("Admins approved");
+      setSuccess("Admins approved successfully");
+      setTimeout(() => setSuccess(""), 3000);
+      setSelectedUsers([]);
+      await fetchUsers();
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to approve admins");
       setTimeout(() => setError(""), 3000);
     }
   };
@@ -196,6 +225,12 @@ const SuperAdminUsers = () => {
           {selectedUsers.length > 0 && (
             <div className="flex items-center gap-2">
               <span className="text-sm text-stone-600 dark:text-stone-400">{selectedUsers.length} selected</span>
+              <button
+                onClick={handleBulkApproveAdmins}
+                className="px-3 py-1.5 bg-gradient-to-r from-emerald-500 to-green-600 text-white text-sm font-semibold rounded-lg hover:from-emerald-600 hover:to-green-700 transition"
+              >
+                Approve Selected Admins
+              </button>
               <button
                 onClick={handleBulkSuspend}
                 className="px-3 py-1.5 bg-gradient-to-r from-red-500 to-rose-600 text-white text-sm font-semibold rounded-lg hover:from-red-600 hover:to-rose-700 transition"

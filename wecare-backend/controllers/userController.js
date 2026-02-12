@@ -115,7 +115,38 @@ export const approveAdmin = async (req, res) => {
     }
     admin.isApproved = true;
     await admin.save();
-    res.json({ message: "Admin approved" });
+    res.json({
+      message: "Admin approved",
+      admin: {
+        id: admin._id,
+        email: admin.email,
+        isApproved: admin.isApproved,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+// Superadmin bulk approves admins (all or selected)
+export const approveAdminsBulk = async (req, res) => {
+  try {
+    if (req.user.role !== "superadmin") {
+      return res.status(403).json({ message: "Only superadmin can approve admins" });
+    }
+
+    const { adminIds } = req.body || {};
+    const filter = { role: "admin", isApproved: false };
+    if (Array.isArray(adminIds) && adminIds.length > 0) {
+      filter._id = { $in: adminIds };
+    }
+
+    const result = await User.updateMany(filter, { $set: { isApproved: true } });
+    res.json({
+      message: "Admins approved",
+      matched: result.matchedCount || 0,
+      modified: result.modifiedCount || 0,
+    });
   } catch (err) {
     res.status(500).json({ message: "Server error", error: err.message });
   }
@@ -170,14 +201,20 @@ export const approveStudent = async (req, res) => {
       return res.status(403).json({ message: "Admin can only approve students from their university" });
     }
     
+    const now = new Date();
     // If student has submitted profile, approve both profile and account
     if (student.profileSubmitted && !student.profileApproved) {
       student.profileApproved = true;
-      student.profileApprovedAt = new Date();
+      student.profileApprovedAt = now;
+      student.profileApprovedBy = req.user._id;
       student.isApproved = true; // Also approve the account
+      student.approvedAt = now;
+      student.approvedBy = req.user._id;
     } else if (!student.isApproved) {
       // Otherwise, just approve the student registration
       student.isApproved = true;
+      student.approvedAt = now;
+      student.approvedBy = req.user._id;
     }
     
     await student.save();

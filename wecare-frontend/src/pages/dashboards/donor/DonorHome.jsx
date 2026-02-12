@@ -35,11 +35,12 @@ const DonorHome = () => {
           essentials: aidStats.essentialsOpen || 0 
         });
         
+        const allTime = donorStats?.allTime || {};
         setImpact({
-          mothersSupported: donorStats.mothersSupported || 0,
-          financialDonated: donorStats.financialDonated || 0,
-          essentialsDonated: donorStats.essentialsDonated || 0,
-          totalDonations: donorStats.totalDonations || 0
+          mothersSupported: allTime.mothersSupported || 0,
+          financialDonated: allTime.financialDonated || 0,
+          essentialsDonated: allTime.essentialsDonated || 0,
+          totalDonations: allTime.donationsCount || 0
         });
       } catch (err) {
         console.error("Failed to load data:", err);

@@ -1,7 +1,7 @@
 import express from "express";
 import multer from "multer";
 import path from "path";
-import { getProfile, approveAdmin, approveStudent, listUsers, setSuspended, listStudentsForAdmin, rejectStudent, getAdminStats, updateStudentProfile, updateDonorProfile, submitProfileForApproval, getProfileCompletion, updateAdminProfile, changePassword, resetAdminDepartment, submitEthicalFeedback, getEthicalFeedbackStats } from "../controllers/userController.js";
+import { getProfile, approveAdmin, approveAdminsBulk, approveStudent, listUsers, setSuspended, listStudentsForAdmin, rejectStudent, getAdminStats, updateStudentProfile, updateDonorProfile, submitProfileForApproval, getProfileCompletion, updateAdminProfile, changePassword, resetAdminDepartment, submitEthicalFeedback, getEthicalFeedbackStats } from "../controllers/userController.js";
 import { protect, requireAdminDepartment } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
@@ -24,6 +24,7 @@ router.post("/password/change", protect, changePassword);
 
 // Approvals - require admin to have department assigned
 router.post("/approve/admin/:adminId", protect, requireAdminDepartment, approveAdmin);
+router.post("/approve/admins", protect, requireAdminDepartment, approveAdminsBulk);
 router.post("/approve/student/:studentId", protect, requireAdminDepartment, approveStudent);
 router.post("/reject/student/:studentId", protect, requireAdminDepartment, rejectStudent);
 router.get("/students", protect, requireAdminDepartment, listStudentsForAdmin);

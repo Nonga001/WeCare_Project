@@ -23,6 +23,11 @@ export const approveAdmin = async (token, adminId) => {
   return res.data;
 };
 
+export const approveAdminsBulk = async (token, adminIds) => {
+  const res = await axios.post(`${API_URL}/approve/admins`, { adminIds }, getAuthHeaders(token));
+  return res.data;
+};
+
 export const suspendUser = async (token, userId, suspended) => {
   const res = await axios.patch(`${API_URL}/${userId}/suspend`, { suspended }, getAuthHeaders(token));
   return res.data;

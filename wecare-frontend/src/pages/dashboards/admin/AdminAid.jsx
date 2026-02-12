@@ -179,7 +179,7 @@ const AdminAid = () => {
               
               {expandedRequests[r._id] && (
                 <div className="mt-4 pt-4 border-t border-amber-100 dark:border-slate-700">
-                  <div className="space-y-2 mb-4 text-sm">
+                  <div className="space-y-2 mb-4 text-sm break-words overflow-hidden">
                     <p className="text-slate-600 dark:text-slate-300"><strong>Request ID:</strong> {r.requestId}</p>
                     <p className="text-slate-600 dark:text-slate-300"><strong>Details:</strong> {r.detail}</p>
                     <p className="text-slate-600 dark:text-slate-300"><strong>Reason:</strong> {r.reason}</p>

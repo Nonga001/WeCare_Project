@@ -2,6 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../../context/AuthContext";
 import { approveStudent, listStudentsForAdmin, rejectStudent } from "../../../services/userService";
 
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const UPLOAD_BASE = import.meta.env.VITE_SOCKET_URL || API_BASE;
+
 const AdminVerify = () => {
   const { user } = useAuth();
   const token = user?.token;
@@ -70,7 +73,16 @@ const AdminVerify = () => {
           <p className="text-sm text-slate-600 dark:text-slate-300 mb-1"><strong>Course:</strong> {student.course || 'Not provided'}</p>
           <p className="text-sm text-slate-600 dark:text-slate-300 mb-1"><strong>Year of Study:</strong> {student.yearOfStudy || 'Not provided'}</p>
           <p className="text-sm text-slate-600 dark:text-slate-300 mb-1"><strong>Child Details:</strong> {student.childDetails || 'Not provided'}</p>
-          <p className="text-sm text-slate-600 dark:text-slate-300 mb-1"><strong>Documents:</strong> {student.documents ? 'Uploaded' : 'Not uploaded'}</p>
+          <p className="text-sm text-slate-600 dark:text-slate-300 mb-1"><strong>Documents:</strong> {student.documents ? (
+            <a
+              href={`${UPLOAD_BASE}/uploads/${encodeURIComponent(student.documents)}`}
+              target="_blank"
+              rel="noreferrer"
+              className="text-amber-700 dark:text-amber-300 underline hover:text-amber-800"
+            >
+              View document
+            </a>
+          ) : 'Not uploaded'}</p>
         </div>
       </div>
       {student.childDetails && (

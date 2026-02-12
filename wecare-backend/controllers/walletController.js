@@ -22,6 +22,28 @@ const notifyUser = async ({ userId, title, message }) => {
   }
 };
 
+const notifyAdminsByUniversity = async ({ university, title, message }) => {
+  try {
+    if (!university) return;
+    const admins = await User.find({ role: "admin", university }).select("_id");
+    if (!admins.length) return;
+    const doc = {
+      title: String(title || "").trim(),
+      message: String(message || "").trim(),
+      recipientType: "single_admin",
+      recipients: admins.map(a => a._id),
+      university
+    };
+    const notification = await Notification.create(doc);
+    const populated = await Notification.findById(notification._id)
+      .populate("sender", "name email role")
+      .populate("recipients", "name email role");
+    admins.forEach((a) => io.to(`user:${a._id}`).emit("notification:new", populated));
+  } catch (err) {
+    console.error("Error notifying admins:", err);
+  }
+};
+
 // Get wallet balance and info
 export const getWalletBalance = async (req, res) => {
   try {
@@ -90,8 +112,8 @@ export const withdrawToMpesa = async (req, res) => {
 
     const { amount, phone } = req.body;
 
-    if (!amount || amount <= 0) {
-      return res.status(400).json({ message: "Invalid withdrawal amount" });
+    if (!amount || amount < 1 || amount > 10000) {
+      return res.status(400).json({ message: "Withdrawal amount must be between 1 and 10,000" });
     }
 
     if (!phone || !phone.match(/^254\d{9}$|^0\d{9}$/)) {
@@ -171,6 +193,18 @@ export const creditWallet = async (studentId, amount, aidRequestId, donationId, 
       title: "Funds Received",
       message: `KES ${amount} has been added to your wallet.`
     });
+
+    if (aidRequestId) {
+      const aidRequest = await AidRequest.findById(aidRequestId)
+        .select("requestId university aidCategory")
+        .lean();
+      const requestLabel = aidRequest?.requestId || aidRequestId;
+      await notifyAdminsByUniversity({
+        university: aidRequest?.university,
+        title: "Disbursement received",
+        message: `Wallet credited: KES ${amount} for request ${requestLabel}.`
+      });
+    }
 
     return wallet;
   } catch (err) {

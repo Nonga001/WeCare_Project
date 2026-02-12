@@ -191,6 +191,19 @@ const autoDisburseFinancial = async (reqDoc, actorId) => {
   reqDoc.disbursedAt = new Date();
   reqDoc.disbursementMatches.push(...matches);
   await reqDoc.save();
+  // Credit student wallet for financial disbursement
+  try {
+    const { creditWallet } = await import("./walletController.js");
+    await creditWallet(
+      reqDoc.student,
+      target,
+      reqDoc._id,
+      matches[0]?.donationId,
+      `Disbursement for ${reqDoc.aidCategory} aid request`
+    );
+  } catch (err) {
+    console.error("Failed to credit wallet on auto disbursement:", err?.message || err);
+  }
   return { ok: true };
 };
 
@@ -574,9 +587,7 @@ export const secondApproveAid = async (req, res) => {
       return res.status(403).json({ message: "Only welfare admins can finalize approvals and disburse" });
     }
     if (doc.status !== "second_approval_pending") return res.status(400).json({ message: "Request not ready for second approval" });
-    if (doc.verifiedBy && String(doc.verifiedBy) === String(req.user._id)) {
-      return res.status(400).json({ message: "Second approval must be done by a different admin" });
-    }
+    // Allow welfare admin to perform second approval even if they verified the request.
     if (doc.emergencyOverrideRequired && !doc.emergencyOverrideApproved) {
       return res.status(400).json({ message: "Emergency override must be approved before final approval" });
     }
@@ -824,8 +835,8 @@ export const getAidStats = async (req, res) => {
     }
     if (role === "donor") {
       const [financialOpen, essentialsOpen] = await Promise.all([
-        AidRequest.countDocuments({ type: "financial", status: { $in: ["pending_admin", "clarification_required", "verified", "second_approval_pending", "waiting_funds"] } }),
-        AidRequest.countDocuments({ type: "essentials", status: { $in: ["pending_admin", "clarification_required", "verified", "second_approval_pending", "waiting_funds"] } })
+        AidRequest.countDocuments({ type: "financial", status: { $in: ["pending_admin", "clarification_required", "verified", "second_approval_pending", "approved", "waiting_funds"] } }),
+        AidRequest.countDocuments({ type: "essentials", status: { $in: ["pending_admin", "clarification_required", "verified", "second_approval_pending", "approved", "waiting_funds"] } })
       ]);
       return res.json({ financialOpen, essentialsOpen });
     }
@@ -1001,12 +1012,34 @@ export const getAdminReports = async (req, res) => {
       { $group: { _id: null, total: { $sum: { $ifNull: ["$amount", 0] } } } }
     ]);
 
-    const financialDisbursedAllAgg = await Donation.aggregate([
+    // Funds received by university = donations disbursed to university's aid requests
+    const fundsReceivedAgg = await Donation.aggregate([
       { $unwind: "$disbursedTo" },
       { $lookup: { from: "aidrequests", localField: "disbursedTo.aidRequestId", foreignField: "_id", as: "ar" } },
       { $unwind: "$ar" },
-      { $match: { "ar.university": university } },
+      { $match: { 
+        "ar.university": university,
+        "ar.type": "financial"
+      } },
       { $group: { _id: null, total: { $sum: { $ifNull: ["$disbursedTo.amount", 0] } } } }
+    ]);
+
+    // Funds disbursed = wallet credits linked to aid requests at this university
+    const { default: Wallet } = await import("../models/Wallet.js");
+    const universityStudents = await User.find({ university, role: "student" }).select("_id");
+    const studentIds = universityStudents.map(s => s._id);
+    
+    const walletDisbursedAgg = await Wallet.aggregate([
+      { $match: { student: { $in: studentIds } } },
+      { $unwind: "$transactions" },
+      { $match: { 
+        "transactions.type": "credit",
+        "transactions.aidRequestId": { $exists: true, $ne: null }
+      } },
+      { $lookup: { from: "aidrequests", localField: "transactions.aidRequestId", foreignField: "_id", as: "ar" } },
+      { $unwind: "$ar" },
+      { $match: { "ar.type": "financial" } },
+      { $group: { _id: null, total: { $sum: "$transactions.amount" } } }
     ]);
 
     const essentialsDisbursedAllAgg = await Donation.aggregate([
@@ -1018,10 +1051,10 @@ export const getAdminReports = async (req, res) => {
       { $group: { _id: null, total: { $sum: { $ifNull: ["$disbursedTo.items.quantity", 0] } } } }
     ]);
 
-    const totalFundsReceived = financialDisbursedAllAgg[0]?.total || 0;
-    const totalFundsDisbursed = totalFundsReceived;
+    const totalFundsReceived = fundsReceivedAgg[0]?.total || 0;
+    const totalFundsDisbursed = walletDisbursedAgg[0]?.total || 0;
     const totalFinancialRequested = financialRequestedAgg[0]?.total || 0;
-    const remainingBalance = Math.max(0, totalFinancialRequested - totalFundsDisbursed);
+    const remainingBalance = Math.max(0, totalFundsReceived - totalFundsDisbursed);
 
     const buildCategoryBreakdown = async (start, end) => {
       const rows = await Donation.aggregate([
@@ -1208,6 +1241,19 @@ export const getAdminReports = async (req, res) => {
       .limit(200)
       .lean();
 
+    const studentApprovals = await User.find({
+      role: "student",
+      university,
+      $or: [
+        { approvedAt: { $ne: null } },
+        { profileApprovedAt: { $ne: null } }
+      ]
+    })
+      .select("name email approvedBy approvedAt profileApprovedBy profileApprovedAt")
+      .sort({ updatedAt: -1 })
+      .limit(200)
+      .lean();
+
     const donationIds = new Set();
     auditRequests.forEach((r) => {
       (r.disbursementMatches || []).forEach((m) => {
@@ -1266,7 +1312,36 @@ export const getAdminReports = async (req, res) => {
         timestamp: r.emergencyOverrideAt
       });
     });
+    studentApprovals.forEach((s) => {
+      if (s.approvedAt) auditLog.push({
+        type: "student_approved",
+        requestId: s.email || s.name || "student",
+        aidCategory: "student",
+        adminId: s.approvedBy,
+        timestamp: s.approvedAt
+      });
+      if (s.profileApprovedAt) auditLog.push({
+        type: "profile_approved",
+        requestId: s.email || s.name || "student",
+        aidCategory: "student",
+        adminId: s.profileApprovedBy || s.approvedBy,
+        timestamp: s.profileApprovedAt
+      });
+    });
     auditLog.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    const adminIds = Array.from(
+      new Set(auditLog.map((e) => e.adminId).filter(Boolean).map((id) => String(id)))
+    );
+    const adminDocs = await User.find({ _id: { $in: adminIds } })
+      .select("name email")
+      .lean();
+    const adminMap = new Map(adminDocs.map((a) => [String(a._id), a]));
+    auditLog.forEach((e) => {
+      if (!e.adminId) return;
+      const admin = adminMap.get(String(e.adminId));
+      e.adminName = admin?.name || admin?.email || "Admin";
+    });
 
     const payload = {
       verifiedMoms: {

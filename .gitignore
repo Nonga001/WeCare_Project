@@ -31,8 +31,21 @@ temp/
 
 # Root-level artifacts
 node_modules/
-package.json
-package-lock.json
+wecare-backend/node_modules/
+wecare-frontend/node_modules/
+
+# Sensitive scripts (database utilities)
+wecare-backend/clearDatabase.js
+clearDatabase.js
 
 # Backend uploads
 wecare-backend/uploads/
+
+# Database dumps
+*.dump
+*.sql
+
+# Private keys and certificates
+*.pem
+*.key
+*.cert

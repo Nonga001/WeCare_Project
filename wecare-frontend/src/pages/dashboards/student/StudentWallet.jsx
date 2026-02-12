@@ -56,6 +56,10 @@ const StudentWallet = () => {
       setError("Enter a valid amount");
       return;
     }
+    if (Number(withdrawAmount) < 1 || Number(withdrawAmount) > 10000) {
+      setError("Withdrawal amount must be between KES 1 and KES 10,000");
+      return;
+    }
     if (withdrawAmount > balance) {
       setError("Insufficient balance");
       return;
@@ -247,13 +251,13 @@ const StudentWallet = () => {
                     <input
                       type="number"
                       placeholder="1000"
-                      min="100"
-                      max={balance}
+                      min="1"
+                      max="10000"
                       value={withdrawAmount}
                       onChange={(e) => setWithdrawAmount(e.target.value)}
                       className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                     />
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Min: KES 100, Max: KES {balance.toLocaleString()}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Min: KES 1, Max: KES 10,000</p>
                   </div>
 
                   <div>

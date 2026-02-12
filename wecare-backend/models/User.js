@@ -19,6 +19,8 @@ const userSchema = new mongoose.Schema(
       required: true,
     },
     isApproved: { type: Boolean, default: false }, // superadmin approves admins; admins approve students
+    approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    approvedAt: { type: Date },
     isSuspended: { type: Boolean, default: false },
     
     // Student profile fields
@@ -33,6 +35,7 @@ const userSchema = new mongoose.Schema(
     profileSubmittedAt: { type: Date },
     profileApproved: { type: Boolean, default: false }, // Admin approves the submitted profile
     profileApprovedAt: { type: Date },
+    profileApprovedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     // Activity tracking
     lastActive: { type: Date, default: Date.now },
   },

@@ -172,10 +172,10 @@ const AdminHome = () => {
         <div className="rounded-2xl border border-amber-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5">
           <h3 className="font-semibold text-slate-800 dark:text-slate-100 mb-3">Quick Links</h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <a href="#verify" className="rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-white text-center py-3 text-sm font-medium hover:from-amber-600 hover:to-amber-700 transition-all">Verify Students</a>
-            <a href="#aid" className="rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-white text-center py-3 text-sm font-medium hover:from-amber-600 hover:to-amber-700 transition-all">Manage Aid</a>
-            <a href="#reports" className="rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 text-white text-center py-3 text-sm font-medium hover:from-amber-700 hover:to-amber-800 transition-all">Reports</a>
-            <a href="#notify" className="rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-white text-center py-3 text-sm font-medium hover:from-amber-600 hover:to-amber-700 transition-all">Notifications</a>
+            <a href="/dashboard/admin/verify" className="rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-white text-center py-3 text-sm font-medium hover:from-amber-600 hover:to-amber-700 transition-all">Verify Students</a>
+            <a href="/dashboard/admin/aid" className="rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-white text-center py-3 text-sm font-medium hover:from-amber-600 hover:to-amber-700 transition-all">Manage Aid</a>
+            <a href="/dashboard/admin/reports" className="rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 text-white text-center py-3 text-sm font-medium hover:from-amber-700 hover:to-amber-800 transition-all">Reports</a>
+            <a href="/dashboard/admin/notifications" className="rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-white text-center py-3 text-sm font-medium hover:from-amber-600 hover:to-amber-700 transition-all">Notifications</a>
           </div>
         </div>
       </div>
