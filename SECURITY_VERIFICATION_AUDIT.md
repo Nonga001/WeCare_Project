@@ -7,12 +7,12 @@ This document outlines current verification mechanisms and identifies security g
 
 ## SCENARIO 1: Verification of Genuine Aid Requests & Donor Liability
 
-### Current State ✅
+### Current State (IMPLEMENTED)
 ```
-✓ Student profile verification required (profileApproved by admin)
-✓ Aid request reason provided but NOT VALIDATED
-✓ Donor receives "confirmed" status on donation creation
-✓ Admin verifies donation-request match before disbursement
+YES: Student profile verification required (profileApproved by admin)
+YES: Aid request reason provided but NOT VALIDATED
+YES: Donor receives "confirmed" status on donation creation
+YES: Admin verifies donation-request match before disbursement
 ```
 
 ### Current Implementation
@@ -21,14 +21,14 @@ This document outlines current verification mechanisms and identifies security g
 - **Donation**: Created with "confirmed" status (no payment verification)
 - **Disbursement**: Admin matches donation to request manually
 
-### CRITICAL GAPS 🔴
+### CRITICAL GAPS
 
 **Gap 1.1: No Payment Verification**
 ```javascript
 // Current: Donation created immediately as "confirmed"
 const donation = await Donation.create({
   // ... other fields
-  status: "confirmed"  // ❌ No actual payment processed!
+  status: "confirmed"  // NO: No actual payment processed!
 });
 ```
 **Problem**: Donors can claim donations without actual payment
@@ -37,7 +37,7 @@ const donation = await Donation.create({
 **Gap 1.2: No Aid Request Validation**
 ```javascript
 const aidRequest = new AidRequest({
-  reason: req.body.reason,  // ❌ Free text, no validation
+  reason: req.body.reason,  // NO: Free text, no validation
   status: "pending"
 });
 ```
@@ -53,7 +53,7 @@ const aidRequest = new AidRequest({
 - Previous aid recipient status
 ```
 
-### Recommendations 🛠️
+### Recommendations (IMPLEMENTATION NEEDED)
 
 **1. Payment Gateway Integration**
 ```javascript
@@ -95,13 +95,13 @@ const eligibilityCriteria = {
 
 ## SCENARIO 2: Collaborative Fraud Prevention (Cross-Rank Collusion)
 
-### Current State ⚠️
+### Current State (WARNING - NEEDS PROTECTION)
 ```
 Risk: Student + Admin collusion to steal donations
 Mechanism: Admin creates false aid request + Student claims it + Disburse to personal account
 ```
 
-### CRITICAL VULNERABILITIES 🔴
+### CRITICAL VULNERABILITIES
 
 **Vulnerability 2.1: Insufficient Admin Verification**
 ```javascript
@@ -117,7 +117,7 @@ const donation = await Donation.findOne({
   status: { $in: ["confirmed", "partially_disbursed"] }
 });
 
-// ❌ Missing:
+// NO - Missing:
 // - Verification that admin who created request != admin who disburses
 // - No approval chain
 // - No donor consent
@@ -148,7 +148,7 @@ const donation = await Donation.findOne({
 // - Disburse aid
 // - View all donations
 
-// ❌ Missing: Separation of duties
+// NO - Missing: Separation of duties
 ```
 
 **Vulnerability 2.4: No Audit Trail for Sensitive Actions**
@@ -161,7 +161,7 @@ const donation = await Donation.findOne({
 - Any modifications after creation?
 ```
 
-### Recommendations 🛠️
+### Recommendations (IMPLEMENTATION NEEDED)
 
 **1. Implement Dual Verification**
 ```javascript
@@ -255,18 +255,18 @@ if (aidRequest.amount > 30000 || donation.amount > 30000) {
 
 ## SCENARIO 3: Disbursement Delivery Verification
 
-### Current State ❌
+### Current State (MISSING VERIFICATION)
 ```
-✗ No proof that student actually received the money/items
-✗ No receipt/acknowledgment from student
-✗ No follow-up verification
-✗ No dispute resolution mechanism
+NO: No proof that student actually received the money/items
+NO: No receipt/acknowledgment from student
+NO: No follow-up verification
+NO: No dispute resolution mechanism
 ```
 
 ### Current Gap Analysis
 ```javascript
 // AidRequest disbursed, but:
-aidRequest.disbursedAt = new Date();  // ❌ System time, not actual delivery
+aidRequest.disbursedAt = new Date();  // NO - System time, not actual delivery
 // Missing:
 // - Student signature/confirmation
 // - Recipient feedback
@@ -275,7 +275,7 @@ aidRequest.disbursedAt = new Date();  // ❌ System time, not actual delivery
 // - Dispute period
 ```
 
-### Recommendations 🛠️
+### Recommendations (IMPLEMENTATION NEEDED)
 
 **1. Add Delivery Confirmation Flow**
 ```javascript

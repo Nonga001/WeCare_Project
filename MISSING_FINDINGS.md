@@ -14,42 +14,42 @@ Your WeCare platform collects **significant personal data** from users, but **wa
 
 ### All Users Collect:
 ```
-✓ Full Name         (Required)
-✓ Email             (Required)
-✓ Phone Number      (Required for M-Pesa)
-✓ Password          (Hashed & Secure)
-✓ University/Org    (Required)
-✓ Role              (Required)
-✓ Account Status    (Auto)
-✓ Last Active Time  (Auto)
+YES: Full Name         (Required)
+YES: Email             (Required)
+YES: Phone Number      (Required for M-Pesa)
+YES: Password          (Hashed & Secure)
+YES: University/Org    (Required)
+YES: Role              (Required)
+YES: Account Status    (Auto)
+YES: Last Active Time  (Auto)
 ```
 
 ### Students Also Collect:
 ```
-✓ Student ID        (For verification)
-✓ Academic Email    (Must end with .ac.ke)
-✓ Course Name       (Academic info)
-✓ Year of Study     (Academic info)
-✓ Child Details     (If applicable)
-✓ Documents         (ID card, Admission letter)
-✓ Profile Status    (Submitted/Approved)
+YES: Student ID        (For verification)
+YES: Academic Email    (Must end with .ac.ke)
+YES: Course Name       (Academic info)
+YES: Year of Study     (Academic info)
+YES: Child Details     (If applicable)
+YES: Documents         (ID card, Admission letter)
+YES: Profile Status    (Submitted/Approved)
 ```
 
 ### Donors Also Collect:
 ```
-✓ Organization      (Company/Individual name)
-✓ Donor Type        (Individual/Corporate)
-✓ Preferences       (Monthly/Occasional)
-✓ Contact Person    (For corporate)
-✓ CSR Focus         (Social focus area)
-✓ Donation History  (All transactions)
+YES: Organization      (Company/Individual name)
+YES: Donor Type        (Individual/Corporate)
+YES: Preferences       (Monthly/Occasional)
+YES: Contact Person    (For corporate)
+YES: CSR Focus         (Social focus area)
+YES: Donation History  (All transactions)
 ```
 
 ---
 
 ## What Was MISSING (Problems Found)
 
-### 🔴 CRITICAL - User Not Informed
+CRITICAL - User Not Informed
 
 | Issue | Impact | Example |
 |-------|--------|---------|
@@ -59,7 +59,7 @@ Your WeCare platform collects **significant personal data** from users, but **wa
 | **No Consent Request** | Violation of data protection laws | Users never explicitly agree |
 | **Silent Data Collection** | No transparency | Forms don't explain why phone is needed |
 
-### 🟡 CONCERNING - Data Practices
+CONCERNING - Data Practices
 
 | Issue | Example | Risk |
 |-------|---------|------|
@@ -69,15 +69,15 @@ Your WeCare platform collects **significant personal data** from users, but **wa
 | **No Data Download** | Users can't get a copy of their data | Violates right to data portability |
 | **No Account Deletion** | Users can't request to be forgotten | Legal compliance issue |
 
-### 🟢 GOOD - Security is Fine
+GOOD - Security is Fine
 
 ```
-✓ Passwords are hashed (bcryptjs)
-✓ HTTPS/Encryption enabled
-✓ JWT token authentication
-✓ Role-based access control (admins can only see their university)
-✓ Database authentication on MongoDB
-✓ CORS protection in place
+YES: Passwords are hashed (bcryptjs)
+YES: HTTPS/Encryption enabled
+YES: JWT token authentication
+YES: Role-based access control (admins can only see their university)
+YES: Database authentication on MongoDB
+YES: CORS protection in place
 ```
 
 ---
